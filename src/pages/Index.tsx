@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,7 +80,6 @@ const Index = () => {
     try {
       const zip = new JSZip();
       
-      // Add each converted file to the zip
       results.forEach(result => {
         const fileExtension = result.originalFile.name.includes('.') 
           ? result.originalFile.name.split('.').pop() 
@@ -93,10 +91,8 @@ const Index = () => {
         zip.file(`${baseName}_oracle.${fileExtension}`, result.convertedCode);
       });
       
-      // Generate the zip file
       const content = await zip.generateAsync({ type: 'blob' });
       
-      // Download the zip file
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
@@ -104,7 +100,6 @@ const Index = () => {
       document.body.appendChild(a);
       a.click();
       
-      // Clean up
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
@@ -436,14 +431,22 @@ const Index = () => {
             
             <div className="flex gap-2">
               {results.length > 0 && (
-                <Button variant="outline" onClick={handleDownloadAllFiles} className="text-white hover:bg-white/20 border-white">
+                <Button 
+                  variant="secondary" 
+                  className="text-foreground hover:bg-secondary/80 border border-secondary-foreground"
+                  onClick={handleDownloadAllFiles}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Download All Files
                 </Button>
               )}
               
               {currentStep !== 'connection' && (
-                <Button variant="outline" onClick={handleStartOver} className="text-white hover:bg-white/20 border-white">
+                <Button 
+                  variant="secondary" 
+                  className="text-foreground hover:bg-secondary/80 border border-secondary-foreground"
+                  onClick={handleStartOver}
+                >
                   Start New Migration
                 </Button>
               )}
