@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -23,9 +22,10 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const [activeTab, setActiveTab] = useState<'tables' | 'procedures' | 'triggers' | 'other'>('tables');
   const [manualContent, setManualContent] = useState<string>('');
   const [manualFileName, setManualFileName] = useState<string>('');
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = event.target.files;
+  const processFiles = (uploadedFiles: FileList | null) => {
     if (!uploadedFiles) return;
     
     // Convert FileList to array and process each file
@@ -61,9 +61,46 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       
       reader.readAsText(file);
     });
-    
+  };
+  
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    processFiles(event.target.files);
     // Reset the input field to allow uploading the same file again
     event.target.value = '';
+  };
+  
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const dt = e.dataTransfer;
+    processFiles(dt.files);
+  };
+  
+  const handleDropAreaClick = () => {
+    // Trigger the hidden file input's click event
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
   
   const determineFileType = (fileName: string): 'table' | 'procedure' | 'trigger' | 'other' => {
@@ -158,7 +195,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     onComplete(files);
   };
   
-  // Sample code templates for demonstration purposes
   const getCodeTemplate = (type: 'table' | 'procedure' | 'trigger') => {
     if (type === 'table') {
       return `CREATE TABLE customers (
@@ -223,9 +259,17 @@ END`;
         </CardHeader>
         
         <CardContent>
-          <div className="mb-8 border-2 border-dashed rounded-lg p-6 text-center bg-muted/30">
+          <div 
+            className={`mb-8 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+              ${isDragging ? 'border-primary bg-primary/10' : 'bg-muted/30'}`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleDropAreaClick}
+          >
             <div className="mb-4 flex justify-center">
-              <UploadCloud className="h-12 w-12 text-muted-foreground" />
+              <UploadCloud className={`h-12 w-12 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
             </div>
             <h3 className="mb-2 text-lg font-medium">Upload Files</h3>
             <p className="mb-4 text-sm text-muted-foreground">
@@ -240,6 +284,7 @@ END`;
                 className="hidden"
                 onChange={handleFileUpload}
                 accept=".sql,.txt,.tab,.prc,.trg"
+                ref={fileInputRef}
               />
             </Label>
           </div>
