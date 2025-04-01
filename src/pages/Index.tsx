@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +9,8 @@ import CodeUploader from '@/components/CodeUploader';
 import ConversionResults from '@/components/ConversionResults';
 import ReportViewer from '@/components/ReportViewer';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
-import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileCheck, FileWarning, Check, RefreshCw, Play } from 'lucide-react';
+import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileWarning, Check, RefreshCw, Play, Download } from 'lucide-react';
+import JSZip from 'jszip';
 
 const Index = () => {
   const { toast } = useToast();
@@ -45,6 +47,59 @@ const Index = () => {
     setFiles([]);
     setResults([]);
     setReport(null);
+  };
+  
+  const handleDownloadAllFiles = async () => {
+    if (results.length === 0) {
+      toast({
+        title: 'No Files to Download',
+        description: 'There are no converted files to download.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      const zip = new JSZip();
+      
+      // Add each converted file to the zip
+      results.forEach(result => {
+        const fileExtension = result.originalFile.name.includes('.') 
+          ? result.originalFile.name.split('.').pop() 
+          : 'sql';
+        const baseName = result.originalFile.name.includes('.')
+          ? result.originalFile.name.substring(0, result.originalFile.name.lastIndexOf('.'))
+          : result.originalFile.name;
+        
+        zip.file(`${baseName}_oracle.${fileExtension}`, result.convertedCode);
+      });
+      
+      // Generate the zip file
+      const content = await zip.generateAsync({ type: 'blob' });
+      
+      // Download the zip file
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'oracle_converted_files.zip';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Files Downloaded',
+        description: `Successfully downloaded ${results.length} converted files.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Download Failed',
+        description: 'Failed to create the ZIP archive.',
+        variant: 'destructive',
+      });
+    }
   };
   
   const handleAIReconversion = async (fileId: string, suggestion: string) => {
@@ -324,11 +379,20 @@ const Index = () => {
               <h1 className="text-2xl font-bold">Sybase to Oracle Migration Tool</h1>
             </div>
             
-            {currentStep !== 'connection' && (
-              <Button variant="outline" onClick={handleStartOver} className="text-white hover:bg-white/20 border-white">
-                Start New Migration
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {results.length > 0 && (
+                <Button variant="outline" onClick={handleDownloadAllFiles} className="text-white hover:bg-white/20 border-white">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download All Files
+                </Button>
+              )}
+              
+              {currentStep !== 'connection' && (
+                <Button variant="outline" onClick={handleStartOver} className="text-white hover:bg-white/20 border-white">
+                  Start New Migration
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>

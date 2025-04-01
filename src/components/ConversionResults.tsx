@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -76,6 +77,35 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   
   const handleRequestAIRewrite = (resultId: string, issue: string) => {
     onRequestReconversion(resultId, issue);
+  };
+  
+  const handleDownloadFile = (result: ConversionResult) => {
+    // Create a blob with the converted code
+    const blob = new Blob([result.convertedCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link element and trigger the download
+    const a = document.createElement('a');
+    a.href = url;
+    // Use original filename but add _oracle suffix
+    const fileExtension = result.originalFile.name.includes('.') 
+      ? result.originalFile.name.split('.').pop() 
+      : 'sql';
+    const baseName = result.originalFile.name.includes('.')
+      ? result.originalFile.name.substring(0, result.originalFile.name.lastIndexOf('.'))
+      : result.originalFile.name;
+    a.download = `${baseName}_oracle.${fileExtension}`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'File Downloaded',
+      description: `${result.originalFile.name} has been downloaded successfully.`,
+    });
   };
   
   const getStatusIcon = (status: 'success' | 'warning' | 'error') => {
@@ -175,18 +205,33 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                     {results.map(result => (
                       <div 
                         key={result.id}
-                        className={`p-3 rounded-md cursor-pointer flex items-center justify-between ${
+                        className={`p-3 rounded-md flex items-center justify-between ${
                           selectedResultId === result.id ? 'bg-primary text-white' : 'hover:bg-secondary/10'
                         }`}
-                        onClick={() => setSelectedResultId(result.id)}
                       >
-                        <div className="flex items-center">
+                        <div 
+                          className="flex items-center cursor-pointer flex-1"
+                          onClick={() => setSelectedResultId(result.id)}
+                        >
                           {getStatusIcon(result.status)}
                           <span className="ml-2 font-medium">{result.originalFile.name}</span>
                         </div>
-                        <Badge variant={selectedResultId === result.id ? 'secondary' : 'outline'}>
-                          {result.originalFile.type}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={selectedResultId === result.id ? 'secondary' : 'outline'}>
+                            {result.originalFile.type}
+                          </Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadFile(result);
+                            }}
+                            title="Download converted file"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -207,6 +252,13 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                       {selectedResult.originalFile.name}
                     </h3>
                     <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleDownloadFile(selectedResult)}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
                       {getDeploymentStatusButton(selectedResult.id)}
                       <Button variant="outline" onClick={() => handleRequestAIRewrite(selectedResult.id, "Optimize for performance")}>
                         <RefreshCw className="h-4 w-4 mr-2" />
