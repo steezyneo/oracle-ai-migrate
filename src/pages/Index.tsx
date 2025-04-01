@@ -9,7 +9,7 @@ import CodeUploader from '@/components/CodeUploader';
 import ConversionResults from '@/components/ConversionResults';
 import ReportViewer from '@/components/ReportViewer';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
-import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileWarning, Check, RefreshCw, Play, Download } from 'lucide-react';
+import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
 
 const Index = () => {
@@ -47,6 +47,25 @@ const Index = () => {
     setFiles([]);
     setResults([]);
     setReport(null);
+  };
+
+  const handleGoBack = () => {
+    switch (currentStep) {
+      case 'upload':
+        setCurrentStep('connection');
+        break;
+      case 'conversion':
+        setCurrentStep('upload');
+        break;
+      case 'review':
+        setCurrentStep('conversion');
+        break;
+      case 'report':
+        setCurrentStep('review');
+        break;
+      default:
+        break;
+    }
   };
   
   const handleDownloadAllFiles = async () => {
@@ -277,11 +296,35 @@ const Index = () => {
         return <ConnectionForm onComplete={handleConnectionComplete} />;
         
       case 'upload':
-        return <CodeUploader onComplete={handleUploadComplete} />;
+        return (
+          <div className="w-full">
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                onClick={handleGoBack}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to Connections
+              </Button>
+            </div>
+            <CodeUploader onComplete={handleUploadComplete} />
+          </div>
+        );
         
       case 'conversion':
         return (
           <div className="w-full max-w-4xl mx-auto">
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                onClick={handleGoBack}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to Upload
+              </Button>
+            </div>
             <Card>
               <CardContent className="pt-6 pb-6">
                 <div className="text-center">
@@ -341,13 +384,25 @@ const Index = () => {
         
       case 'review':
         return (
-          <ConversionResults 
-            results={results}
-            oracleConnection={oracleConnection!}
-            onRequestReconversion={handleAIReconversion}
-            onGenerateReport={handleGenerateReport}
-            onComplete={handleReviewComplete}
-          />
+          <div className="w-full">
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                onClick={handleGoBack}
+                className="flex items-center gap-2 mb-4"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to Conversion
+              </Button>
+            </div>
+            <ConversionResults 
+              results={results}
+              oracleConnection={oracleConnection!}
+              onRequestReconversion={handleAIReconversion}
+              onGenerateReport={handleGenerateReport}
+              onComplete={handleReviewComplete}
+            />
+          </div>
         );
         
       case 'report':

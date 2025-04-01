@@ -1,7 +1,8 @@
+
 import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ChevronLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -115,6 +116,27 @@ const NavigationMenuIndicator = React.forwardRef<
 NavigationMenuIndicator.displayName =
   NavigationMenuPrimitive.Indicator.displayName
 
+const NavigationMenuBackLink = React.forwardRef<
+  React.ElementRef<typeof NavigationMenuLink>,
+  React.ComponentPropsWithoutRef<typeof NavigationMenuLink> & {
+    onClick?: () => void;
+  }
+>(({ className, children, onClick, ...props }, ref) => (
+  <NavigationMenuLink
+    ref={ref}
+    className={cn(
+      "flex w-full select-none items-center rounded-sm px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none border-b mb-1",
+      className
+    )}
+    {...props}
+    onClick={onClick}
+  >
+    <ChevronLeft className="mr-2 h-4 w-4" />
+    {children || "Back"}
+  </NavigationMenuLink>
+))
+NavigationMenuBackLink.displayName = "NavigationMenuBackLink"
+
 export {
   navigationMenuTriggerStyle,
   NavigationMenu,
@@ -125,4 +147,5 @@ export {
   NavigationMenuLink,
   NavigationMenuIndicator,
   NavigationMenuViewport,
+  NavigationMenuBackLink,
 }

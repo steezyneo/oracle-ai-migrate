@@ -1,6 +1,7 @@
+
 import * as React from "react"
 import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
-import { Check, ChevronRight, Circle } from "lucide-react"
+import { Check, ChevronRight, Circle, ChevronLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -179,6 +180,24 @@ const ContextMenuShortcut = ({
 }
 ContextMenuShortcut.displayName = "ContextMenuShortcut"
 
+const ContextMenuBack = React.forwardRef<
+  React.ElementRef<typeof ContextMenuItem>,
+  React.ComponentPropsWithoutRef<typeof ContextMenuItem>
+>(({ className, children, ...props }, ref) => (
+  <ContextMenuItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground font-medium border-b",
+      className
+    )}
+    {...props}
+  >
+    <ChevronLeft className="mr-2 h-4 w-4" />
+    {children || "Back"}
+  </ContextMenuItem>
+))
+ContextMenuBack.displayName = "ContextMenuBack"
+
 export {
   ContextMenu,
   ContextMenuTrigger,
@@ -195,4 +214,5 @@ export {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuRadioGroup,
+  ContextMenuBack,
 }

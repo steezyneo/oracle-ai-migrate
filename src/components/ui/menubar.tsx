@@ -1,6 +1,7 @@
+
 import * as React from "react"
 import * as MenubarPrimitive from "@radix-ui/react-menubar"
-import { Check, ChevronRight, Circle } from "lucide-react"
+import { Check, ChevronRight, Circle, ChevronLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -214,6 +215,24 @@ const MenubarShortcut = ({
 }
 MenubarShortcut.displayname = "MenubarShortcut"
 
+const MenubarBack = React.forwardRef<
+  React.ElementRef<typeof MenubarItem>,
+  React.ComponentPropsWithoutRef<typeof MenubarItem>
+>(({ className, children, ...props }, ref) => (
+  <MenubarItem
+    ref={ref}
+    className={cn(
+      "flex items-center border-b mb-1 font-medium",
+      className
+    )}
+    {...props}
+  >
+    <ChevronLeft className="mr-2 h-4 w-4" />
+    {children || "Back"}
+  </MenubarItem>
+))
+MenubarBack.displayName = "MenubarBack"
+
 export {
   Menubar,
   MenubarMenu,
@@ -231,4 +250,5 @@ export {
   MenubarGroup,
   MenubarSub,
   MenubarShortcut,
+  MenubarBack,
 }
