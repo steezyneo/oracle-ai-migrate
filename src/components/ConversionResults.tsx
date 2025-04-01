@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -69,8 +68,6 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   
   const handleUpdateConvertedCode = (resultId: string, updatedCode: string) => {
     console.log('Updated code for', resultId, updatedCode);
-    // In a real app, this would update the code in the state
-    // For this demo, we'll just show a toast
     toast({
       title: 'Code Updated',
       description: 'Your changes to the converted code have been saved.'
@@ -254,7 +251,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                           {selectedResult.issues.map(issue => (
                             <Alert 
                               key={issue.id}
-                              variant={issue.severity === 'error' ? 'destructive' : issue.severity === 'warning' ? 'default' : 'outline'}
+                              variant={issue.severity === 'error' ? 'destructive' : 'default'}
                             >
                               <div className="flex justify-between items-start">
                                 <div>
