@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import ConversionResults from '@/components/ConversionResults';
 import AIModelSelector from '@/components/AIModelSelector';
 import ReportViewer from '@/components/ReportViewer';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
-import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
+import { Database as DatabaseIcon, Code, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
 
 const Index = () => {
@@ -19,7 +18,7 @@ const Index = () => {
   const [results, setResults] = useState<ConversionResult[]>([]);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [report, setReport] = useState<ConversionReport | null>(null);
-  const [selectedAIModel, setSelectedAIModel] = useState<string>('default');
+  const [selectedAIModel, setSelectedAIModel] = useState<string>('gemini');
   const [oracleConnection, setOracleConnection] = useState<DatabaseConnection>({
     type: 'oracle',
     host: 'localhost',
@@ -125,7 +124,7 @@ const Index = () => {
     setIsConverting(true);
     
     try {
-      const newResult = await convertSybaseToOracle(file, selectedAIModel);
+      const newResult = await convertSybaseToOracle(file, 'gemini');
       
       setResults(prevResults => 
         prevResults.map(result => 
@@ -194,7 +193,7 @@ const Index = () => {
           )
         );
         
-        const result = await convertSybaseToOracle(file, selectedAIModel);
+        const result = await convertSybaseToOracle(file, 'gemini');
         newResults.push(result);
         
         setFiles(prevFiles => 
@@ -292,15 +291,11 @@ const Index = () => {
             <Card>
               <CardContent className="pt-6 pb-6">
                 <div className="text-center">
-                  <Cpu className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">AI Code Conversion</h2>
+                  <DatabaseIcon className="h-16 w-16 text-primary mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold mb-2">Sybase to Oracle Migration</h2>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Upload your Sybase code files and select an AI model to convert them to Oracle.
+                    Upload your Sybase code files to convert them to Oracle format using Gemini AI.
                   </p>
-                  
-                  <div className="mb-8">
-                    <AIModelSelector selectedModel={selectedAIModel} onModelChange={handleAIModelChange} />
-                  </div>
                   
                   <div className="mb-8">
                     <CodeUploader onComplete={handleUploadComplete} />
