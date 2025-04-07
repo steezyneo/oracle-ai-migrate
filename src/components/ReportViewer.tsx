@@ -4,20 +4,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, Download, Mail } from 'lucide-react';
+import { Check, AlertTriangle, X, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 
 interface ReportViewerProps {
   report: ConversionReport;
   onBack: () => void;
-  onSendReport?: (email: string) => void;
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({
   report,
   onBack,
-  onSendReport,
 }) => {
   const { toast } = useToast();
   
@@ -41,19 +39,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       title: 'Report Downloaded',
       description: 'The migration report has been downloaded to your device.',
     });
-  };
-  
-  const handleSendReport = () => {
-    // In a real app, this would show a modal to enter the email address
-    // For this demo, we'll simulate sending to a fixed email
-    if (onSendReport) {
-      onSendReport('executive@example.com');
-      
-      toast({
-        title: 'Report Sent',
-        description: 'The migration report has been sent to executive@example.com.',
-      });
-    }
   };
   
   return (
@@ -138,16 +123,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             <Button variant="outline" onClick={onBack}>
               Back to Results
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </Button>
-              <Button onClick={handleSendReport}>
-                <Mail className="h-4 w-4 mr-2" />
-                Send to Executive
-              </Button>
-            </div>
+            <Button onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Report
+            </Button>
           </div>
         </CardFooter>
       </Card>

@@ -32,7 +32,7 @@ const Index = () => {
   
   const handleUploadComplete = (uploadedFiles: CodeFile[]) => {
     setFiles(uploadedFiles);
-    setCurrentStep('conversion');
+    startConversion(uploadedFiles);
   };
   
   const handleConversionComplete = () => {
@@ -53,11 +53,8 @@ const Index = () => {
 
   const handleGoBack = () => {
     switch (currentStep) {
-      case 'conversion':
-        setCurrentStep('upload');
-        break;
       case 'review':
-        setCurrentStep('conversion');
+        setCurrentStep('upload');
         break;
       case 'report':
         setCurrentStep('review');
@@ -174,8 +171,8 @@ const Index = () => {
     }
   };
   
-  const startConversion = async () => {
-    if (files.length === 0) {
+  const startConversion = async (filesToConvert: CodeFile[] = files) => {
+    if (filesToConvert.length === 0) {
       toast({
         title: 'No Files',
         description: 'Please upload files before starting conversion.',
@@ -190,7 +187,7 @@ const Index = () => {
     try {
       const newResults: ConversionResult[] = [];
       
-      for (const file of files) {
+      for (const file of filesToConvert) {
         setFiles(prevFiles => 
           prevFiles.map(f => 
             f.id === file.id ? { ...f, status: 'converting' } : f
@@ -236,7 +233,6 @@ const Index = () => {
   const renderStepIndicator = () => {
     const steps: { key: ConversionStep; label: string; icon: React.ReactNode }[] = [
       { key: 'upload', label: 'Upload Code', icon: <Code className="h-5 w-5" /> },
-      { key: 'conversion', label: 'AI Conversion', icon: <Cpu className="h-5 w-5" /> },
       { key: 'review', label: 'Code Review', icon: <FileSearch className="h-5 w-5" /> },
       { key: 'report', label: 'Migration Report', icon: <FileWarning className="h-5 w-5" /> },
     ];
@@ -251,7 +247,7 @@ const Index = () => {
             return (
               <div 
                 key={step.key} 
-                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/4' : ''}`}
+                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/3' : ''}`}
               >
                 <div 
                   className={`
@@ -284,35 +280,22 @@ const Index = () => {
   };
   
   const getStepIndex = (step: ConversionStep): number => {
-    const steps: ConversionStep[] = ['upload', 'conversion', 'review', 'report'];
+    const steps: ConversionStep[] = ['upload', 'review', 'report'];
     return steps.indexOf(step);
   };
   
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'upload':
-        return <CodeUploader onComplete={handleUploadComplete} />;
-        
-      case 'conversion':
         return (
           <div className="w-full max-w-4xl mx-auto">
-            <div className="mb-4">
-              <Button 
-                variant="outline" 
-                onClick={handleGoBack}
-                className="flex items-center gap-2"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back to Upload
-              </Button>
-            </div>
             <Card>
               <CardContent className="pt-6 pb-6">
                 <div className="text-center">
                   <Cpu className="h-16 w-16 text-primary mx-auto mb-4" />
                   <h2 className="text-2xl font-bold mb-2">AI Code Conversion</h2>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    The AI will analyze your Sybase code and convert it to Oracle-compatible syntax.
+                    Upload your Sybase code files and select an AI model to convert them to Oracle.
                   </p>
                   
                   <div className="mb-8">
@@ -320,47 +303,8 @@ const Index = () => {
                   </div>
                   
                   <div className="mb-8">
-                    <h3 className="text-lg font-medium mb-4">Files to Process</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="p-4 bg-muted rounded-md text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Tables</p>
-                        <p className="text-2xl font-bold">
-                          {files.filter(f => f.type === 'table').length}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-muted rounded-md text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Procedures</p>
-                        <p className="text-2xl font-bold">
-                          {files.filter(f => f.type === 'procedure').length}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-muted rounded-md text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Triggers</p>
-                        <p className="text-2xl font-bold">
-                          {files.filter(f => f.type === 'trigger').length}
-                        </p>
-                      </div>
-                    </div>
+                    <CodeUploader onComplete={handleUploadComplete} />
                   </div>
-                  
-                  <Button 
-                    size="lg"
-                    onClick={startConversion}
-                    disabled={isConverting}
-                    className="w-full max-w-xs"
-                  >
-                    {isConverting ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Converting...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Conversion
-                      </>
-                    )}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -377,7 +321,7 @@ const Index = () => {
                 className="flex items-center gap-2 mb-4"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Back to Conversion
+                Back to Upload
               </Button>
             </div>
             <ConversionResults 

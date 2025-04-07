@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -5,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, FileWarning, ArrowRight, Send, Download, RefreshCw } from 'lucide-react';
+import { Check, AlertTriangle, X, FileWarning, RefreshCw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CodeFile, ConversionResult, DatabaseConnection } from '@/types';
-import { deployToOracle } from '@/utils/databaseUtils';
 import CodeDiffViewer from './CodeDiffViewer';
 import { generateConversionReport } from '@/utils/conversionUtils';
 
@@ -31,42 +31,8 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
 }) => {
   const { toast } = useToast();
   const [selectedResultId, setSelectedResultId] = useState<string>(results[0]?.id || '');
-  const [deploymentStatus, setDeploymentStatus] = useState<{[key: string]: 'pending' | 'deploying' | 'success' | 'error'}>({});
   
   const selectedResult = results.find(r => r.id === selectedResultId);
-  
-  const handleDeploy = async (resultId: string) => {
-    const result = results.find(r => r.id === resultId);
-    if (!result) return;
-    
-    setDeploymentStatus(prev => ({ ...prev, [resultId]: 'deploying' }));
-    
-    try {
-      const deployResult = await deployToOracle(oracleConnection, result.convertedCode);
-      
-      if (deployResult.success) {
-        setDeploymentStatus(prev => ({ ...prev, [resultId]: 'success' }));
-        toast({
-          title: 'Deployment Successful',
-          description: `${result.originalFile.name} has been deployed to Oracle successfully.`,
-        });
-      } else {
-        setDeploymentStatus(prev => ({ ...prev, [resultId]: 'error' }));
-        toast({
-          title: 'Deployment Failed',
-          description: deployResult.message,
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      setDeploymentStatus(prev => ({ ...prev, [resultId]: 'error' }));
-      toast({
-        title: 'Deployment Error',
-        description: 'An unexpected error occurred during deployment.',
-        variant: 'destructive',
-      });
-    }
-  };
   
   const handleUpdateConvertedCode = (resultId: string, updatedCode: string) => {
     console.log('Updated code for', resultId, updatedCode);
@@ -115,40 +81,6 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
     }
   };
   
-  const getDeploymentStatusButton = (resultId: string) => {
-    const status = deploymentStatus[resultId];
-    
-    if (status === 'deploying') {
-      return (
-        <Button disabled>
-          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-          Deploying...
-        </Button>
-      );
-    } else if (status === 'success') {
-      return (
-        <Button variant="ghost" disabled>
-          <Check className="h-4 w-4 mr-2 text-green-500" />
-          Deployed
-        </Button>
-      );
-    } else if (status === 'error') {
-      return (
-        <Button variant="outline" onClick={() => handleDeploy(resultId)}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
-        </Button>
-      );
-    } else {
-      return (
-        <Button onClick={() => handleDeploy(resultId)}>
-          <ArrowRight className="h-4 w-4 mr-2" />
-          Deploy
-        </Button>
-      );
-    }
-  };
-  
   const summaryCountsByStatus = {
     success: results.filter(r => r.status === 'success').length,
     warning: results.filter(r => r.status === 'warning').length,
@@ -161,7 +93,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
         <CardHeader>
           <CardTitle className="text-2xl">Conversion Results</CardTitle>
           <CardDescription>
-            Review and manage the converted code before deployment.
+            Review and manage the converted code before finalizing.
             {selectedAIModel === 'gemini' && (
               <Badge variant="outline" className="ml-2 bg-blue-50">Powered by Gemini AI</Badge>
             )}
@@ -259,7 +191,6 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
-                      {getDeploymentStatusButton(selectedResult.id)}
                       <Button variant="outline" onClick={() => handleRequestAIRewrite(selectedResult.id, "Optimize for performance")}>
                         <RefreshCw className="h-4 w-4 mr-2" />
                         AI Rewrite
@@ -411,7 +342,6 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
               Export Report
             </Button>
             <Button onClick={onComplete}>
-              <Send className="h-4 w-4 mr-2" />
               Complete Migration
             </Button>
           </div>
