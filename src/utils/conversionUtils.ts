@@ -1,4 +1,3 @@
-
 import { ConversionResult, CodeFile, ConversionIssue } from '@/types';
 
 // Simulate AI-based code conversion
@@ -39,8 +38,8 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
       lineNumber: Math.floor(Math.random() * 20) + 1,
       description: 'Potential data type mismatch',
       severity: 'warning',
-      originalCode: 'DATETIME',
-      suggestedFix: 'Replace with TIMESTAMP'
+      originalCode: 'DECIMAL(10,2)',
+      suggestedFix: 'Replace with NUMBER(10,2)'
     });
   }
   
@@ -69,7 +68,10 @@ const simulateTableConversion = (sybaseCode: string, aiModel: string): string =>
     .replace(/TEXT/g, 'CLOB')
     .replace(/IMAGE/g, 'BLOB')
     .replace(/UNIQUEIDENTIFIER/g, 'RAW(16)')
-    .replace(/BIT/g, 'NUMBER(1)');
+    .replace(/BIT/g, 'NUMBER(1)')
+    .replace(/INT/g, 'NUMBER')
+    .replace(/VARCHAR\(/g, 'VARCHAR2(')
+    .replace(/DECIMAL\((\d+),(\d+)\)/g, 'NUMBER($1,$2)');
   
   // Add Oracle-specific formatting
   oracleCode = `-- Oracle converted table definition with ${aiModel} AI
@@ -101,7 +103,10 @@ const simulateProcedureConversion = (sybaseCode: string, aiModel: string): strin
     .replace(/PRINT/g, 'DBMS_OUTPUT.PUT_LINE')
     .replace(/BEGIN TRANSACTION/g, 'BEGIN')
     .replace(/COMMIT TRANSACTION/g, 'COMMIT')
-    .replace(/ROLLBACK TRANSACTION/g, 'ROLLBACK');
+    .replace(/ROLLBACK TRANSACTION/g, 'ROLLBACK')
+    .replace(/INT/g, 'NUMBER')
+    .replace(/VARCHAR\(/g, 'VARCHAR2(')
+    .replace(/DECIMAL\((\d+),(\d+)\)/g, 'NUMBER($1,$2)');
   
   // Wrap in Oracle PL/SQL block
   oracleCode = `-- Oracle converted procedure with ${aiModel} AI
@@ -138,7 +143,10 @@ const simulateTriggerConversion = (sybaseCode: string, aiModel: string): string 
     .replace(/REFERENCING OLD AS/g, 'REFERENCING OLD ROW AS')
     .replace(/REFERENCING NEW AS/g, 'REFERENCING NEW ROW AS')
     .replace(/inserted/g, ':new')
-    .replace(/deleted/g, ':old');
+    .replace(/deleted/g, ':old')
+    .replace(/INT/g, 'NUMBER')
+    .replace(/VARCHAR\(/g, 'VARCHAR2(')
+    .replace(/DECIMAL\((\d+),(\d+)\)/g, 'NUMBER($1,$2)');
   
   // Wrap in Oracle trigger syntax
   oracleCode = `-- Oracle converted trigger with ${aiModel} AI
@@ -190,6 +198,27 @@ export const validateOracleCode = (code: string): ConversionIssue[] => {
     });
   }
   
+  // Check for incorrect Oracle data types
+  if (code.includes('VARCHAR(')) {
+    issues.push({
+      id: crypto.randomUUID(),
+      description: 'VARCHAR is not an Oracle data type, use VARCHAR2 instead',
+      severity: 'error',
+      originalCode: 'VARCHAR',
+      suggestedFix: 'VARCHAR2'
+    });
+  }
+  
+  if (code.includes('DECIMAL(')) {
+    issues.push({
+      id: crypto.randomUUID(),
+      description: 'DECIMAL is not preferred in Oracle, use NUMBER instead',
+      severity: 'warning',
+      originalCode: 'DECIMAL(10,2)',
+      suggestedFix: 'NUMBER(10,2)'
+    });
+  }
+  
   return issues;
 };
 
@@ -224,4 +253,3 @@ ${result.issues.map(issue => `- ${issue.severity.toUpperCase()}: ${issue.descrip
 - Test the converted code thoroughly
 - Consider performance testing for critical procedures
 `;
-};
