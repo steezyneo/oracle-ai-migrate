@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +18,7 @@ interface ConversionResultsProps {
   onRequestReconversion: (fileId: string, suggestion: string) => void;
   onGenerateReport: () => void;
   onComplete: () => void;
+  selectedAIModel: string;
 }
 
 const ConversionResults: React.FC<ConversionResultsProps> = ({
@@ -27,6 +27,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   onRequestReconversion,
   onGenerateReport,
   onComplete,
+  selectedAIModel,
 }) => {
   const { toast } = useToast();
   const [selectedResultId, setSelectedResultId] = useState<string>(results[0]?.id || '');
@@ -80,14 +81,11 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   };
   
   const handleDownloadFile = (result: ConversionResult) => {
-    // Create a blob with the converted code
     const blob = new Blob([result.convertedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
-    // Create a link element and trigger the download
     const a = document.createElement('a');
     a.href = url;
-    // Use original filename but add _oracle suffix
     const fileExtension = result.originalFile.name.includes('.') 
       ? result.originalFile.name.split('.').pop() 
       : 'sql';
@@ -98,7 +96,6 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
     document.body.appendChild(a);
     a.click();
     
-    // Clean up
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
@@ -165,6 +162,9 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
           <CardTitle className="text-2xl">Conversion Results</CardTitle>
           <CardDescription>
             Review and manage the converted code before deployment.
+            {selectedAIModel === 'gemini' && (
+              <Badge variant="outline" className="ml-2 bg-blue-50">Powered by Gemini AI</Badge>
+            )}
           </CardDescription>
         </CardHeader>
         

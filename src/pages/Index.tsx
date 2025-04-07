@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseConnection, CodeFile, ConversionResult, ConversionStep, ConversionReport } from '@/types';
-import ConnectionForm from '@/components/ConnectionForm';
 import CodeUploader from '@/components/CodeUploader';
 import ConversionResults from '@/components/ConversionResults';
+import AIModelSelector from '@/components/AIModelSelector';
 import ReportViewer from '@/components/ReportViewer';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { Database as DatabaseIcon, Code, Cpu, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
@@ -13,19 +14,21 @@ import JSZip from 'jszip';
 
 const Index = () => {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<ConversionStep>('connection');
-  const [sybaseConnection, setSybaseConnection] = useState<DatabaseConnection | null>(null);
-  const [oracleConnection, setOracleConnection] = useState<DatabaseConnection | null>(null);
+  const [currentStep, setCurrentStep] = useState<ConversionStep>('upload');
   const [files, setFiles] = useState<CodeFile[]>([]);
   const [results, setResults] = useState<ConversionResult[]>([]);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [report, setReport] = useState<ConversionReport | null>(null);
-  
-  const handleConnectionComplete = (sybase: DatabaseConnection, oracle: DatabaseConnection) => {
-    setSybaseConnection(sybase);
-    setOracleConnection(oracle);
-    setCurrentStep('upload');
-  };
+  const [selectedAIModel, setSelectedAIModel] = useState<string>('default');
+  const [oracleConnection, setOracleConnection] = useState<DatabaseConnection>({
+    type: 'oracle',
+    host: 'localhost',
+    port: '1521',
+    username: 'system',
+    password: 'password',
+    database: 'ORCL',
+    connectionString: '',
+  });
   
   const handleUploadComplete = (uploadedFiles: CodeFile[]) => {
     setFiles(uploadedFiles);
@@ -42,7 +45,7 @@ const Index = () => {
   };
   
   const handleStartOver = () => {
-    setCurrentStep('connection');
+    setCurrentStep('upload');
     setFiles([]);
     setResults([]);
     setReport(null);
@@ -50,9 +53,6 @@ const Index = () => {
 
   const handleGoBack = () => {
     switch (currentStep) {
-      case 'upload':
-        setCurrentStep('connection');
-        break;
       case 'conversion':
         setCurrentStep('upload');
         break;
@@ -128,7 +128,7 @@ const Index = () => {
     setIsConverting(true);
     
     try {
-      const newResult = await convertSybaseToOracle(file);
+      const newResult = await convertSybaseToOracle(file, selectedAIModel);
       
       setResults(prevResults => 
         prevResults.map(result => 
@@ -197,7 +197,7 @@ const Index = () => {
           )
         );
         
-        const result = await convertSybaseToOracle(file);
+        const result = await convertSybaseToOracle(file, selectedAIModel);
         newResults.push(result);
         
         setFiles(prevFiles => 
@@ -228,10 +228,13 @@ const Index = () => {
       setIsConverting(false);
     }
   };
+
+  const handleAIModelChange = (model: string) => {
+    setSelectedAIModel(model);
+  };
   
   const renderStepIndicator = () => {
     const steps: { key: ConversionStep; label: string; icon: React.ReactNode }[] = [
-      { key: 'connection', label: 'Database Connections', icon: <DatabaseIcon className="h-5 w-5" /> },
       { key: 'upload', label: 'Upload Code', icon: <Code className="h-5 w-5" /> },
       { key: 'conversion', label: 'AI Conversion', icon: <Cpu className="h-5 w-5" /> },
       { key: 'review', label: 'Code Review', icon: <FileSearch className="h-5 w-5" /> },
@@ -248,7 +251,7 @@ const Index = () => {
             return (
               <div 
                 key={step.key} 
-                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/5' : ''}`}
+                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/4' : ''}`}
               >
                 <div 
                   className={`
@@ -281,31 +284,14 @@ const Index = () => {
   };
   
   const getStepIndex = (step: ConversionStep): number => {
-    const steps: ConversionStep[] = ['connection', 'upload', 'conversion', 'review', 'report'];
+    const steps: ConversionStep[] = ['upload', 'conversion', 'review', 'report'];
     return steps.indexOf(step);
   };
   
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'connection':
-        return <ConnectionForm onComplete={handleConnectionComplete} />;
-        
       case 'upload':
-        return (
-          <div className="w-full">
-            <div className="mb-4">
-              <Button 
-                variant="outline" 
-                onClick={handleGoBack}
-                className="flex items-center gap-2"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back to Connections
-              </Button>
-            </div>
-            <CodeUploader onComplete={handleUploadComplete} />
-          </div>
-        );
+        return <CodeUploader onComplete={handleUploadComplete} />;
         
       case 'conversion':
         return (
@@ -328,6 +314,10 @@ const Index = () => {
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                     The AI will analyze your Sybase code and convert it to Oracle-compatible syntax.
                   </p>
+                  
+                  <div className="mb-8">
+                    <AIModelSelector selectedModel={selectedAIModel} onModelChange={handleAIModelChange} />
+                  </div>
                   
                   <div className="mb-8">
                     <h3 className="text-lg font-medium mb-4">Files to Process</h3>
@@ -392,10 +382,11 @@ const Index = () => {
             </div>
             <ConversionResults 
               results={results}
-              oracleConnection={oracleConnection!}
+              oracleConnection={oracleConnection}
               onRequestReconversion={handleAIReconversion}
               onGenerateReport={handleGenerateReport}
               onComplete={handleReviewComplete}
+              selectedAIModel={selectedAIModel}
             />
           </div>
         );
@@ -441,7 +432,7 @@ const Index = () => {
                 </Button>
               )}
               
-              {currentStep !== 'connection' && (
+              {currentStep !== 'upload' && (
                 <Button 
                   variant="secondary" 
                   className="text-foreground hover:bg-secondary/80 border border-secondary-foreground"

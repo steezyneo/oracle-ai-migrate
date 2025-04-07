@@ -2,9 +2,11 @@
 import { ConversionResult, CodeFile, ConversionIssue } from '@/types';
 
 // Simulate AI-based code conversion
-export const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionResult> => {
+export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
   // In a real implementation, this would call an AI model API
   // For this demo, we'll use a simplified simulation
+  
+  console.log(`Converting with ${aiModel} AI model`);
   
   // Simulate processing time
   await new Promise(resolve => setTimeout(resolve, 1500));
@@ -13,13 +15,13 @@ export const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionR
   let convertedCode = '';
   const issues: ConversionIssue[] = [];
   
-  // Simple simulation of conversion logic based on file type
+  // Simple simulation of conversion logic based on file type and AI model
   if (file.type === 'table') {
-    convertedCode = simulateTableConversion(file.content);
+    convertedCode = simulateTableConversion(file.content, aiModel);
   } else if (file.type === 'procedure') {
-    convertedCode = simulateProcedureConversion(file.content);
+    convertedCode = simulateProcedureConversion(file.content, aiModel);
   } else if (file.type === 'trigger') {
-    convertedCode = simulateTriggerConversion(file.content);
+    convertedCode = simulateTriggerConversion(file.content, aiModel);
   } else {
     convertedCode = file.content; // Fallback for other types
     issues.push({
@@ -30,7 +32,8 @@ export const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionR
   }
   
   // Add some random issues to simulate the AI detecting potential problems
-  if (Math.random() > 0.5) {
+  // Gemini should have fewer issues on average
+  if (Math.random() > (aiModel === 'gemini' ? 0.7 : 0.5)) {
     issues.push({
       id: crypto.randomUUID(),
       lineNumber: Math.floor(Math.random() * 20) + 1,
@@ -49,7 +52,7 @@ export const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionR
     performance: {
       originalComplexity: Math.floor(Math.random() * 100) + 50,
       convertedComplexity: Math.floor(Math.random() * 50) + 20,
-      improvementPercentage: Math.floor(Math.random() * 40) + 10,
+      improvementPercentage: aiModel === 'gemini' ? Math.floor(Math.random() * 50) + 20 : Math.floor(Math.random() * 40) + 10,
       notes: ['Replaced loops with SQL queries', 'Optimized index usage']
     },
     status: issues.some(i => i.severity === 'error') ? 'error' : 
@@ -58,7 +61,7 @@ export const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionR
 };
 
 // Simple simulation of table conversion
-const simulateTableConversion = (sybaseCode: string): string => {
+const simulateTableConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
     .replace(/IDENTITY/g, 'GENERATED ALWAYS AS IDENTITY')
@@ -69,18 +72,26 @@ const simulateTableConversion = (sybaseCode: string): string => {
     .replace(/BIT/g, 'NUMBER(1)');
   
   // Add Oracle-specific formatting
-  oracleCode = `-- Oracle converted table definition
+  oracleCode = `-- Oracle converted table definition with ${aiModel} AI
 ${oracleCode}
 
 -- Added Oracle-specific indexes and optimizations
 CREATE INDEX idx_tablename_column ON tablename(column);
 `;
 
+  if (aiModel === 'gemini') {
+    oracleCode += `
+-- Gemini AI added performance optimizations
+ALTER TABLE tablename ADD CONSTRAINT pk_tablename PRIMARY KEY (id);
+COMMENT ON TABLE tablename IS 'Converted from Sybase by Gemini AI';
+`;
+  }
+
   return oracleCode;
 };
 
 // Simple simulation of stored procedure conversion
-const simulateProcedureConversion = (sybaseCode: string): string => {
+const simulateProcedureConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
     .replace(/CREATE PROCEDURE/g, 'CREATE OR REPLACE PROCEDURE')
@@ -93,7 +104,7 @@ const simulateProcedureConversion = (sybaseCode: string): string => {
     .replace(/ROLLBACK TRANSACTION/g, 'ROLLBACK');
   
   // Wrap in Oracle PL/SQL block
-  oracleCode = `-- Oracle converted procedure
+  oracleCode = `-- Oracle converted procedure with ${aiModel} AI
 CREATE OR REPLACE PROCEDURE procedure_name (
   param1 IN NUMBER,
   param2 IN VARCHAR2
@@ -108,11 +119,18 @@ EXCEPTION
 END procedure_name;
 /`;
 
+  if (aiModel === 'gemini') {
+    oracleCode = oracleCode.replace('EXCEPTION', `
+  -- Gemini AI added performance optimizations
+  COMMIT;
+EXCEPTION`);
+  }
+
   return oracleCode;
 };
 
 // Simple simulation of trigger conversion
-const simulateTriggerConversion = (sybaseCode: string): string => {
+const simulateTriggerConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
     .replace(/CREATE TRIGGER/g, 'CREATE OR REPLACE TRIGGER')
@@ -123,7 +141,7 @@ const simulateTriggerConversion = (sybaseCode: string): string => {
     .replace(/deleted/g, ':old');
   
   // Wrap in Oracle trigger syntax
-  oracleCode = `-- Oracle converted trigger
+  oracleCode = `-- Oracle converted trigger with ${aiModel} AI
 CREATE OR REPLACE TRIGGER trigger_name
 AFTER INSERT OR UPDATE OR DELETE ON table_name
 FOR EACH ROW
@@ -131,6 +149,19 @@ BEGIN
 ${oracleCode}
 END;
 /`;
+
+  if (aiModel === 'gemini') {
+    oracleCode = oracleCode.replace('BEGIN', `BEGIN
+  -- Gemini AI added exception handling
+  PRAGMA AUTONOMOUS_TRANSACTION;`);
+    
+    oracleCode = oracleCode.replace('END;', `EXCEPTION
+  WHEN OTHERS THEN
+    -- Gemini AI added logging
+    DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+    RAISE;
+END;`);
+  }
 
   return oracleCode;
 };
