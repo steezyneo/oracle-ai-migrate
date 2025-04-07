@@ -288,21 +288,9 @@ const Index = () => {
       case 'upload':
         return (
           <div className="w-full max-w-4xl mx-auto">
-            <Card>
-              <CardContent className="pt-6 pb-6">
-                <div className="text-center">
-                  <DatabaseIcon className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Sybase to Oracle Migration</h2>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Upload your Sybase code files to convert them to Oracle format using Gemini AI.
-                  </p>
-                  
-                  <div className="mb-8">
-                    <CodeUploader onComplete={handleUploadComplete} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div>
+              <CodeUploader onComplete={handleUploadComplete} />
+            </div>
           </div>
         );
         

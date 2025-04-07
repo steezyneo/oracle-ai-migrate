@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 
 interface AIModelSelectorProps {
   selectedModel: string;
@@ -15,21 +14,8 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({ selectedModel, onMode
     }
   }, [selectedModel, onModelChange]);
 
-  return (
-    <div className="w-full">
-      <h3 className="text-lg font-medium mb-4">AI Model</h3>
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-2 border p-4 rounded-md bg-primary/10">
-            <div className="flex-grow">
-              <div className="font-medium">Gemini AI</div>
-              <div className="text-sm text-muted-foreground">Enhanced syntax accuracy for Sybase to Oracle conversion</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Return null since we don't want to render anything
+  return null;
 };
 
 export default AIModelSelector;

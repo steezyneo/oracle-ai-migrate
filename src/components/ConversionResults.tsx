@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -336,11 +335,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
         </CardContent>
         
         <CardFooter>
-          <div className="w-full flex justify-between">
-            <Button variant="outline" onClick={onGenerateReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
+          <div className="w-full flex justify-end">
             <Button onClick={onComplete}>
               Complete Migration
             </Button>
