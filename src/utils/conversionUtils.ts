@@ -1,3 +1,4 @@
+
 import { ConversionResult, CodeFile, ConversionIssue } from '@/types';
 
 // Simulate AI-based code conversion
@@ -238,3 +239,4 @@ ${result.issues.map(issue => `- ${issue.severity.toUpperCase()}: ${issue.descrip
 - Test the converted code thoroughly
 - Consider performance testing for critical procedures
 `;
+}
