@@ -1,4 +1,3 @@
-
 import { ConversionResult, CodeFile, ConversionIssue } from '@/types';
 
 // Simulate AI-based code conversion
@@ -63,7 +62,7 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   };
 };
 
-// Simple simulation of table conversion
+// Enhanced table conversion with more Sybase-specific patterns
 const simulateTableConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
@@ -103,22 +102,16 @@ const simulateTableConversion = (sybaseCode: string, aiModel: string): string =>
     .replace(/\bCREATE\s+UNIQUE\s+NONCLUSTERED\s+INDEX\b/gi, 'CREATE UNIQUE INDEX')
     // Default values
     .replace(/DEFAULT\s+getdate\(\)/gi, 'DEFAULT SYSDATE')
-    .replace(/DEFAULT\s+CURRENT_TIMESTAMP/gi, 'DEFAULT SYSTIMESTAMP');
-  
-  // If it's a table definition, completely restructure it to Oracle format
-  if (oracleCode.match(/CREATE\s+TABLE/i)) {
-    // Convert some typical Sybase table structures to Oracle
-    oracleCode = oracleCode
-      // Remove Sybase-specific storage options
-      .replace(/ON\s+\w+(\.\w+)?/gi, '')
-      .replace(/WITH\s*\(\s*[^)]*\)/gi, '')
-      .replace(/TEXTSIZE\s+\d+/gi, '')
-      // Replace filegroups
-      .replace(/ON\s+\[PRIMARY\]/gi, '');
-  }
-  
+    .replace(/DEFAULT\s+CURRENT_TIMESTAMP/gi, 'DEFAULT SYSTIMESTAMP')
+    // Table options and storage
+    .replace(/ON\s+\[PRIMARY\]/gi, '')
+    .replace(/WITH\s*\(\s*[^)]*\)/gi, '')
+    .replace(/TEXTIMAGE_ON\s+\[PRIMARY\]/gi, '')
+    .replace(/ON\s+\w+(\.\w+)?/gi, '');
+
   // Add Oracle-specific formatting and comments
-  oracleCode = `-- Oracle converted table definition with ${aiModel} AI
+  oracleCode = `
+-- Oracle converted table definition with ${aiModel} AI
 -- Converted from Sybase to Oracle syntax
 ${oracleCode}
 
@@ -132,7 +125,7 @@ ${oracleCode}
   return oracleCode;
 };
 
-// Simple simulation of stored procedure conversion
+// Enhanced stored procedure conversion
 const simulateProcedureConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
@@ -171,16 +164,18 @@ const simulateProcedureConversion = (sybaseCode: string, aiModel: string): strin
     .replace(/\bCHAR\s*\(\s*(\d+)\s*\)/gi, 'CHAR($1)')
     .replace(/\bTEXT\b/gi, 'CLOB')
     .replace(/\bgetdate\(\)/gi, 'SYSDATE');
-  
+
   // Handle control flow statement endings
   oracleCode = oracleCode
     .replace(/\bBEGIN\b(?!\s+TRANSACTION)/gi, 'BEGIN')
     .replace(/\bEND\b(?!\s+IF)(?!\s+LOOP)/gi, 'END;');
-  
-  // Wrap in Oracle PL/SQL block
+
+  // Extract procedure name or use default
   const procName = extractProcedureName(oracleCode) || 'converted_proc';
-  
-  oracleCode = `-- Oracle converted procedure with ${aiModel} AI
+
+  // Wrap in Oracle PL/SQL block
+  oracleCode = `
+-- Oracle converted procedure with ${aiModel} AI
 -- Converted from Sybase to Oracle PL/SQL syntax
 
 CREATE OR REPLACE PROCEDURE ${procName}
@@ -195,19 +190,12 @@ EXCEPTION
     RAISE;
 END;
 /
-
--- Note: In Oracle:
--- 1. Variables use v_ prefix and := for assignment
--- 2. Control flow uses THEN/LOOP instead of BEGIN/END blocks
--- 3. PRINT statements become DBMS_OUTPUT.PUT_LINE()
--- 4. Exception handling is different
--- 5. Semicolons are required at the end of statements
 `;
 
   return oracleCode;
 };
 
-// Simple simulation of trigger conversion
+// Enhanced trigger conversion
 const simulateTriggerConversion = (sybaseCode: string, aiModel: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
@@ -239,49 +227,42 @@ const simulateTriggerConversion = (sybaseCode: string, aiModel: string): string 
     .replace(/\bGETDATE\(\)/gi, 'SYSDATE')
     // Handle GO batch separator
     .replace(/GO\b/gi, '/');
-  
+
   // Handle control flow statement endings
   oracleCode = oracleCode
     .replace(/\bBEGIN\b(?!\s+TRANSACTION)/gi, 'BEGIN')
     .replace(/\bEND\b(?!\s+IF)/gi, 'END;');
-  
-  // Extract trigger name
+
+  // Extract trigger name or use default
   const trigName = extractTriggerName(oracleCode) || 'converted_trg';
-  
+
   // Wrap in Oracle trigger syntax
-  oracleCode = `-- Oracle converted trigger with ${aiModel} AI
+  oracleCode = `
+-- Oracle converted trigger with ${aiModel} AI
 -- Converted from Sybase to Oracle syntax
 
 CREATE OR REPLACE TRIGGER ${trigName}
 ${oracleCode}
-  -- Oracle trigger body
 EXCEPTION
   WHEN OTHERS THEN
     RAISE_APPLICATION_ERROR(-20001, 'Trigger error: ' || SQLERRM);
 END;
 /
-
--- Note: In Oracle:
--- 1. References to 'inserted'/'deleted' tables change to :new/:old
--- 2. Triggers use different syntax for before/after/instead of
--- 3. Exception handling is different
--- 4. Column references in :new/:old may need table qualifier
 `;
 
   return oracleCode;
 };
 
-// Helper function to extract procedure name
-function extractProcedureName(code: string): string | null {
+// Helper functions for extracting names
+const extractProcedureName = (code: string): string | null => {
   const match = code.match(/CREATE\s+(?:OR\s+REPLACE\s+)?PROCEDURE\s+(\w+)/i);
   return match ? match[1] : null;
-}
+};
 
-// Helper function to extract trigger name
-function extractTriggerName(code: string): string | null {
+const extractTriggerName = (code: string): string | null => {
   const match = code.match(/CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(\w+)/i);
   return match ? match[1] : null;
-}
+};
 
 export const validateOracleCode = (code: string): ConversionIssue[] => {
   const issues: ConversionIssue[] = [];
@@ -391,4 +372,3 @@ ${result.issues.map(issue => `- ${issue.severity.toUpperCase()}: ${issue.descrip
 - Test the converted code thoroughly
 - Consider performance testing for critical procedures
 `;
-}
