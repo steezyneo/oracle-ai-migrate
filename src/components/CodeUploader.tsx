@@ -1,9 +1,10 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UploadCloud, File, Trash2, Plus } from 'lucide-react';
+import { UploadCloud, File, Trash2, Plus, Folder } from 'lucide-react';
 import { CodeFile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const [manualFileName, setManualFileName] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   
   const processFiles = (uploadedFiles: FileList | null) => {
     if (!uploadedFiles) return;
@@ -69,6 +71,12 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     // Reset the input field to allow uploading the same file again
     event.target.value = '';
   };
+
+  const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    processFiles(event.target.files);
+    // Reset the input field to allow uploading the same folder again
+    event.target.value = '';
+  };
   
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -101,6 +109,13 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     // Trigger the hidden file input's click event
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleFolderSelect = () => {
+    // Trigger the hidden folder input's click event
+    if (folderInputRef.current) {
+      folderInputRef.current.click();
     }
   };
   
@@ -303,18 +318,36 @@ END`;
             <p className="mb-4 text-sm text-muted-foreground">
               Drag and drop files or click to browse
             </p>
-            <Label htmlFor="file-upload" className="cursor-pointer">
-              <Button variant="secondary">Select Files</Button>
-              <Input
-                id="file-upload"
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileUpload}
-                accept=".sql,.txt,.tab,.prc,.trg"
-                ref={fileInputRef}
-              />
-            </Label>
+            <div className="flex gap-3 justify-center">
+              <Label htmlFor="file-upload" className="cursor-pointer">
+                <Button variant="secondary">Select Files</Button>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  accept=".sql,.txt,.tab,.prc,.trg"
+                  ref={fileInputRef}
+                />
+              </Label>
+              <Label htmlFor="folder-upload" className="cursor-pointer">
+                <Button variant="outline">
+                  <Folder className="h-4 w-4 mr-2" />
+                  Select Folder
+                </Button>
+                <Input
+                  id="folder-upload"
+                  type="file"
+                  webkitdirectory="true"
+                  directory=""
+                  multiple
+                  className="hidden"
+                  onChange={handleFolderUpload}
+                  ref={folderInputRef}
+                />
+              </Label>
+            </div>
           </div>
           
           <div className="mb-8">

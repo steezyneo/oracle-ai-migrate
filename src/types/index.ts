@@ -1,3 +1,4 @@
+
 export type DatabaseType = 'sybase' | 'oracle';
 
 export interface DatabaseConnection {
@@ -53,4 +54,4 @@ export interface ConversionReport {
   summary: string;
 }
 
-export type ConversionStep = 'upload' | 'conversion' | 'review' | 'report';
+export type ConversionStep = 'connection' | 'upload' | 'review' | 'report';

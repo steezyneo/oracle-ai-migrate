@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,18 +8,29 @@ import CodeUploader from '@/components/CodeUploader';
 import ConversionResults from '@/components/ConversionResults';
 import AIModelSelector from '@/components/AIModelSelector';
 import ReportViewer from '@/components/ReportViewer';
+import ConnectionForm from '@/components/ConnectionForm';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { Database as DatabaseIcon, Code, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
 
 const Index = () => {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<ConversionStep>('upload');
+  const [currentStep, setCurrentStep] = useState<ConversionStep>('connection');
   const [files, setFiles] = useState<CodeFile[]>([]);
   const [results, setResults] = useState<ConversionResult[]>([]);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [selectedAIModel, setSelectedAIModel] = useState<string>('gemini');
+  const [sybaseConnection, setSybaseConnection] = useState<DatabaseConnection>({
+    type: 'sybase',
+    host: 'localhost',
+    port: '5000',
+    username: 'sa',
+    password: 'password',
+    database: 'master',
+    connectionString: '',
+  });
+  
   const [oracleConnection, setOracleConnection] = useState<DatabaseConnection>({
     type: 'oracle',
     host: 'localhost',
@@ -28,6 +40,12 @@ const Index = () => {
     database: 'ORCL',
     connectionString: '',
   });
+  
+  const handleConnectionComplete = (sybaseConn: DatabaseConnection, oracleConn: DatabaseConnection) => {
+    setSybaseConnection(sybaseConn);
+    setOracleConnection(oracleConn);
+    setCurrentStep('upload');
+  };
   
   const handleUploadComplete = (uploadedFiles: CodeFile[]) => {
     setFiles(uploadedFiles);
@@ -44,7 +62,7 @@ const Index = () => {
   };
   
   const handleStartOver = () => {
-    setCurrentStep('upload');
+    setCurrentStep('connection');
     setFiles([]);
     setResults([]);
     setReport(null);
@@ -52,6 +70,9 @@ const Index = () => {
 
   const handleGoBack = () => {
     switch (currentStep) {
+      case 'upload':
+        setCurrentStep('connection');
+        break;
       case 'review':
         setCurrentStep('upload');
         break;
@@ -203,7 +224,7 @@ const Index = () => {
           )
         );
         
-        const result = await convertSybaseToOracle(file, 'gemini');
+        const result = await convertSybaseToOracle(file, selectedAIModel);
         newResults.push(result);
         
         setFiles(prevFiles => 
@@ -241,6 +262,7 @@ const Index = () => {
   
   const renderStepIndicator = () => {
     const steps: { key: ConversionStep; label: string; icon: React.ReactNode }[] = [
+      { key: 'connection', label: 'Connection', icon: <DatabaseIcon className="h-5 w-5" /> },
       { key: 'upload', label: 'Upload Code', icon: <Code className="h-5 w-5" /> },
       { key: 'review', label: 'Code Review', icon: <FileSearch className="h-5 w-5" /> },
       { key: 'report', label: 'Migration Report', icon: <FileWarning className="h-5 w-5" /> },
@@ -256,7 +278,7 @@ const Index = () => {
             return (
               <div 
                 key={step.key} 
-                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/3' : ''}`}
+                className={`flex flex-col items-center ${index < steps.length - 1 ? 'w-1/4' : ''}`}
               >
                 <div 
                   className={`
@@ -289,15 +311,32 @@ const Index = () => {
   };
   
   const getStepIndex = (step: ConversionStep): number => {
-    const steps: ConversionStep[] = ['upload', 'review', 'report'];
+    const steps: ConversionStep[] = ['connection', 'upload', 'review', 'report'];
     return steps.indexOf(step);
   };
   
   const renderCurrentStep = () => {
     switch (currentStep) {
+      case 'connection':
+        return (
+          <div className="w-full max-w-4xl mx-auto">
+            <ConnectionForm onComplete={handleConnectionComplete} />
+          </div>
+        );
+        
       case 'upload':
         return (
           <div className="w-full max-w-4xl mx-auto">
+            <div className="mb-4">
+              <Button 
+                variant="outline" 
+                onClick={handleGoBack}
+                className="flex items-center gap-2 mb-4"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to Connection
+              </Button>
+            </div>
             <div>
               <CodeUploader onComplete={handleUploadComplete} />
             </div>
@@ -369,7 +408,7 @@ const Index = () => {
                 </Button>
               )}
               
-              {currentStep !== 'upload' && (
+              {currentStep !== 'connection' && (
                 <Button 
                   variant="secondary" 
                   className="text-foreground hover:bg-secondary/80 border border-secondary-foreground"
