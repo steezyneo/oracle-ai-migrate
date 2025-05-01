@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -339,7 +338,7 @@ END`;
                 <Input
                   id="folder-upload"
                   type="file"
-                  webkitdirectory="true"
+                  webkitdirectory=""
                   directory=""
                   multiple
                   className="hidden"
