@@ -113,8 +113,15 @@ const Index = () => {
   };
   
   const handleAIReconversion = async (fileId: string, suggestion: string) => {
-    const file = files.find(f => f.id === fileId);
-    if (!file) return;
+    const fileToReconvert = results.find(r => r.id === fileId);
+    if (!fileToReconvert) {
+      toast({
+        title: 'Error',
+        description: 'File not found for reconversion',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     toast({
       title: 'AI Reconversion',
@@ -124,11 +131,14 @@ const Index = () => {
     setIsConverting(true);
     
     try {
-      const newResult = await convertSybaseToOracle(file, 'gemini');
+      // Find the original file from the results
+      const originalFile = fileToReconvert.originalFile;
+      
+      const newResult = await convertSybaseToOracle(originalFile, selectedAIModel);
       
       setResults(prevResults => 
         prevResults.map(result => 
-          result.originalFile.id === fileId ? newResult : result
+          result.id === fileId ? newResult : result
         )
       );
       

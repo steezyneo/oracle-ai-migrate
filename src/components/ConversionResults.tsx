@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,6 +31,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
 }) => {
   const { toast } = useToast();
   const [selectedResultId, setSelectedResultId] = useState<string>(results[0]?.id || '');
+  const [isRewriting, setIsRewriting] = useState<boolean>(false);
   
   const selectedResult = results.find(r => r.id === selectedResultId);
   
@@ -42,7 +44,18 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   };
   
   const handleRequestAIRewrite = (resultId: string, issue: string) => {
+    setIsRewriting(true);
+    toast({
+      title: 'AI Rewrite Requested',
+      description: `Processing: ${issue}`
+    });
+    
     onRequestReconversion(resultId, issue);
+    
+    // Reset rewriting state after a brief delay to show loading state
+    setTimeout(() => {
+      setIsRewriting(false);
+    }, 2000);
   };
   
   const handleDownloadFile = (result: ConversionResult) => {
@@ -190,9 +203,13 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
-                      <Button variant="outline" onClick={() => handleRequestAIRewrite(selectedResult.id, "Optimize for performance")}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        AI Rewrite
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleRequestAIRewrite(selectedResult.id, "Optimize for performance")}
+                        disabled={isRewriting}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isRewriting ? 'animate-spin' : ''}`} />
+                        {isRewriting ? 'Processing...' : 'AI Rewrite'}
                       </Button>
                     </div>
                   </div>
@@ -270,8 +287,17 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => handleRequestAIRewrite(selectedResult.id, issue.description)}
+                                  disabled={isRewriting}
+                                  className="min-w-[100px]"
                                 >
-                                  Fix with AI
+                                  {isRewriting ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    <>Fix with AI</>
+                                  )}
                                 </Button>
                               </div>
                             </Alert>
