@@ -29,6 +29,8 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const processFiles = (uploadedFiles: FileList | null) => {
     if (!uploadedFiles) return;
     
+    console.log('Processing files:', uploadedFiles.length);
+    
     // Convert FileList to array and process each file
     Array.from(uploadedFiles).forEach(file => {
       const reader = new FileReader();
@@ -72,6 +74,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   };
 
   const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Folder upload triggered:', event.target.files);
     processFiles(event.target.files);
     // Reset the input field to allow uploading the same folder again
     event.target.value = '';
@@ -330,22 +333,20 @@ END`;
                   ref={fileInputRef}
                 />
               </Label>
-              <Label htmlFor="folder-upload" className="cursor-pointer">
-                <Button variant="outline">
-                  <Folder className="h-4 w-4 mr-2" />
-                  Select Folder
-                </Button>
-                <Input
-                  id="folder-upload"
-                  type="file"
-                  webkitdirectory="true"
-                  directory="true"
-                  multiple
-                  className="hidden"
-                  onChange={handleFolderUpload}
-                  ref={folderInputRef}
-                />
-              </Label>
+              <Button variant="outline" onClick={handleFolderSelect}>
+                <Folder className="h-4 w-4 mr-2" />
+                Select Folder
+              </Button>
+              <Input
+                id="folder-upload"
+                type="file"
+                webkitdirectory={true}
+                directory={true}
+                multiple
+                className="hidden"
+                onChange={handleFolderUpload}
+                ref={folderInputRef}
+              />
             </div>
           </div>
           
