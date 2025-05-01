@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,6 +143,15 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     
     // Default fallback if no clear indication
     return 'other';
+  };
+  
+  const handleRemoveFile = (id: string) => {
+    setFiles(prevFiles => prevFiles.filter(file => file.id !== id));
+    
+    toast({
+      title: 'File Removed',
+      description: 'The file has been removed from the upload list.'
+    });
   };
   
   const handleManualSubmit = () => {
