@@ -1,9 +1,14 @@
 
 // Custom type declarations for HTML elements
 declare namespace JSX {
-  interface InputHTMLAttributes<T> extends React.HTMLAttributes<T> {
-    // Add support for the directory selection attributes
-    webkitdirectory?: string;
-    directory?: string;
+  interface IntrinsicElements {
+    // Extend input element with directory selection attributes
+    input: React.DetailedHTMLProps<
+      React.InputHTMLAttributes<HTMLInputElement> & {
+        webkitdirectory?: string | boolean;
+        directory?: string | boolean;
+      },
+      HTMLInputElement
+    >;
   }
 }

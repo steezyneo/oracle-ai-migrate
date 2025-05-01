@@ -338,8 +338,8 @@ END`;
                 <Input
                   id="folder-upload"
                   type="file"
-                  webkitdirectory=""
-                  directory=""
+                  webkitdirectory="true"
+                  directory="true"
                   multiple
                   className="hidden"
                   onChange={handleFolderUpload}
