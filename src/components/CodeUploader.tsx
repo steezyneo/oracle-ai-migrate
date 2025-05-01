@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,11 +35,12 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       
       reader.onload = (e) => {
         if (e.target && e.target.result) {
+          const content = e.target.result as string;
           const newFile: CodeFile = {
             id: crypto.randomUUID(),
             name: file.name,
-            content: e.target.result as string,
-            type: determineFileType(file.name),
+            content: content,
+            type: determineFileType(file.name, content),
             status: 'pending'
           };
           
@@ -103,27 +105,45 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     }
   };
   
-  const determineFileType = (fileName: string): 'table' | 'procedure' | 'trigger' | 'other' => {
+  const determineFileType = (fileName: string, content: string): 'table' | 'procedure' | 'trigger' | 'other' => {
     fileName = fileName.toLowerCase();
+    content = content.toLowerCase();
     
+    // Check file extension first
     if (fileName.includes('table') || fileName.includes('tbl') || fileName.endsWith('.tab')) {
       return 'table';
     } else if (fileName.includes('proc') || fileName.includes('sp_') || fileName.endsWith('.prc')) {
       return 'procedure';
     } else if (fileName.includes('trig') || fileName.includes('tr_') || fileName.endsWith('.trg')) {
       return 'trigger';
-    } else {
-      return 'other';
     }
-  };
-  
-  const handleRemoveFile = (id: string) => {
-    setFiles(prevFiles => prevFiles.filter(file => file.id !== id));
     
-    toast({
-      title: 'File Removed',
-      description: 'The file has been removed from the upload list.'
-    });
+    // If extension doesn't clearly indicate, analyze content
+    if (fileName.endsWith('.sql')) {
+      // Check for table creation patterns
+      if (content.includes('create table') || 
+          content.includes('alter table') || 
+          content.match(/\bcreate\s+.*\s+table\b/i)) {
+        return 'table';
+      }
+      
+      // Check for procedure patterns
+      if (content.includes('create procedure') || 
+          content.includes('create or replace procedure') || 
+          content.includes('create proc')) {
+        return 'procedure';
+      }
+      
+      // Check for trigger patterns
+      if (content.includes('create trigger') || 
+          content.includes('create or replace trigger') || 
+          content.match(/\btrigger\s+on\b/i)) {
+        return 'trigger';
+      }
+    }
+    
+    // Default fallback if no clear indication
+    return 'other';
   };
   
   const handleManualSubmit = () => {
@@ -149,7 +169,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       id: crypto.randomUUID(),
       name: manualFileName,
       content: manualContent,
-      type: determineFileType(manualFileName),
+      type: determineFileType(manualFileName, manualContent),
       status: 'pending'
     };
     

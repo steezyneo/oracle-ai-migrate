@@ -17,11 +17,11 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   
   // Simple simulation of conversion logic based on file type and AI model
   if (file.type === 'table') {
-    convertedCode = simulateTableConversion(file.content, aiModel);
+    convertedCode = simulateTableConversion(file.content);
   } else if (file.type === 'procedure') {
-    convertedCode = simulateProcedureConversion(file.content, aiModel);
+    convertedCode = simulateProcedureConversion(file.content);
   } else if (file.type === 'trigger') {
-    convertedCode = simulateTriggerConversion(file.content, aiModel);
+    convertedCode = simulateTriggerConversion(file.content);
   } else {
     convertedCode = file.content; // Fallback for other types
     issues.push({
@@ -64,7 +64,7 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
 };
 
 // Enhanced table conversion with more Sybase-specific patterns
-const simulateTableConversion = (sybaseCode: string, aiModel: string): string => {
+const simulateTableConversion = (sybaseCode: string): string => {
   // Replace Sybase-specific syntax with Oracle equivalents
   let oracleCode = sybaseCode
     // Data type conversions
@@ -120,7 +120,7 @@ ${oracleCode}
 };
 
 // Enhanced stored procedure conversion
-const simulateProcedureConversion = (sybaseCode: string, aiModel: string): string => {
+const simulateProcedureConversion = (sybaseCode: string): string => {
   // Extract procedure name or use default
   const procName = extractProcedureName(sybaseCode) || 'converted_proc';
   
@@ -188,7 +188,7 @@ END;
 };
 
 // Enhanced trigger conversion
-const simulateTriggerConversion = (sybaseCode: string, aiModel: string): string => {
+const simulateTriggerConversion = (sybaseCode: string): string => {
   // Extract trigger name or use default
   const trigName = extractTriggerName(sybaseCode) || 'converted_trg';
   
