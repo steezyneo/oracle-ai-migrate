@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,7 +125,9 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     }
   };
 
-  const handleFolderSelect = () => {
+  const handleFolderSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Trigger the hidden folder input's click event
     if (folderInputRef.current) {
       folderInputRef.current.click();
@@ -343,7 +346,10 @@ END`;
                   ref={fileInputRef}
                 />
               </Label>
-              <Button variant="outline" onClick={handleFolderSelect}>
+              <Button 
+                variant="outline" 
+                onClick={handleFolderSelect}
+              >
                 <Folder className="h-4 w-4 mr-2" />
                 Browse Folder
               </Button>
