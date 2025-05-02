@@ -5,8 +5,8 @@ declare namespace JSX {
     // Extend input element with directory selection attributes
     input: React.DetailedHTMLProps<
       React.InputHTMLAttributes<HTMLInputElement> & {
-        webkitdirectory?: string | boolean;
-        directory?: string | boolean;
+        webkitdirectory?: string;
+        directory?: string;
       },
       HTMLInputElement
     >;

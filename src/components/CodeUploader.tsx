@@ -350,7 +350,6 @@ END`;
               <input
                 id="folder-upload"
                 type="file"
-                // Fix the directory attributes to use string values instead of boolean
                 webkitdirectory=""
                 directory=""
                 multiple
