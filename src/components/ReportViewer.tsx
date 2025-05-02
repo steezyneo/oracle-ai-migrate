@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, Download } from 'lucide-react';
+import { Check, AlertTriangle, X, Download, Deploy, Database, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
+import { deployToOracle } from '@/utils/databaseUtils';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -18,6 +19,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   onBack,
 }) => {
   const { toast } = useToast();
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deploymentLogs, setDeploymentLogs] = useState<{timestamp: string, message: string}[]>([]);
   
   const handleDownload = () => {
     // Create a blob with the report content
@@ -39,6 +42,63 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       title: 'Report Downloaded',
       description: 'The migration report has been downloaded to your device.',
     });
+  };
+
+  const handleDeploy = async () => {
+    setIsDeploying(true);
+    
+    // Add deployment start log
+    const startLog = {
+      timestamp: new Date().toISOString(),
+      message: "Starting database deployment..."
+    };
+    setDeploymentLogs(prev => [...prev, startLog]);
+    
+    try {
+      // Simulate deployment using the mock function from databaseUtils
+      const result = await deployToOracle(
+        { 
+          type: 'oracle',
+          host: 'localhost',
+          port: '1521',
+          username: 'system',
+          password: 'password',
+          database: 'ORCL'
+        }, 
+        report.summary
+      );
+      
+      // Add result log
+      const resultLog = {
+        timestamp: new Date().toISOString(),
+        message: result.success ? 
+          "Database updated successfully" : 
+          `Deployment error: ${result.message}`
+      };
+      setDeploymentLogs(prev => [...prev, resultLog]);
+      
+      // Show toast notification
+      toast({
+        title: result.success ? 'Deployment Successful' : 'Deployment Failed',
+        description: result.message,
+        variant: result.success ? 'default' : 'destructive',
+      });
+    } catch (error) {
+      // Add error log
+      const errorLog = {
+        timestamp: new Date().toISOString(),
+        message: `Deployment error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+      setDeploymentLogs(prev => [...prev, errorLog]);
+      
+      toast({
+        title: 'Deployment Failed',
+        description: 'An unexpected error occurred during deployment.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeploying(false);
+    }
   };
   
   return (
@@ -106,13 +166,51 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             </ScrollArea>
           </div>
           
-          <div>
+          <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">Full Report</h3>
             <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
               <ScrollArea className="h-[300px] p-4">
                 <pre className="text-sm whitespace-pre-wrap font-mono text-slate-800 dark:text-slate-200">
                   {report.summary}
                 </pre>
+              </ScrollArea>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-medium">Deployment Logs</h3>
+              <Button 
+                onClick={handleDeploy} 
+                disabled={isDeploying}
+                className="flex items-center gap-2"
+              >
+                <Deploy className="h-4 w-4" />
+                {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
+              </Button>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
+              <ScrollArea className="h-[200px] p-4">
+                {deploymentLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <Database className="h-16 w-16 mb-2 opacity-20" />
+                    <p>No deployment logs yet. Click "Deploy to Oracle" to update the database.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {deploymentLogs.map((log, index) => (
+                      <div key={index} className="flex items-start gap-3 p-2 border-b border-gray-200 dark:border-gray-800">
+                        <History className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                        <div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(log.timestamp).toLocaleString()}
+                          </div>
+                          <div className="text-sm">{log.message}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </ScrollArea>
             </div>
           </div>
