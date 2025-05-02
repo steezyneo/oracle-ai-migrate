@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, Download, Deploy, Database, History } from 'lucide-react';
+import { Check, AlertTriangle, X, Download, Upload, Database, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
@@ -185,7 +185,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
                 disabled={isDeploying}
                 className="flex items-center gap-2"
               >
-                <Deploy className="h-4 w-4" />
+                <Upload className="h-4 w-4" />
                 {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
               </Button>
             </div>
