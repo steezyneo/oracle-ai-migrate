@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,8 +75,17 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
 
   const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('Folder upload triggered:', event.target.files);
-    // Use webkitdirectory to get files from the selected folder
-    processFiles(event.target.files);
+    if (event.target.files && event.target.files.length > 0) {
+      // Confirm we're processing files from a folder
+      console.log('Processing folder with files:', event.target.files.length);
+      processFiles(event.target.files);
+    } else {
+      toast({
+        title: 'No Folder Selected',
+        description: 'Please select a folder containing files to upload.',
+        variant: 'destructive'
+      });
+    }
     // Reset the input field to allow uploading the same folder again
     event.target.value = '';
   };
@@ -339,12 +347,12 @@ END`;
                 <Folder className="h-4 w-4 mr-2" />
                 Browse Folder
               </Button>
-              <Input
+              <input
                 id="folder-upload"
                 type="file"
-                // Setting these attributes to true rather than string values
-                webkitdirectory={true}
-                directory={true}
+                // Fix the directory attributes to use string values instead of boolean
+                webkitdirectory=""
+                directory=""
                 multiple
                 className="hidden"
                 onChange={handleFolderUpload}
