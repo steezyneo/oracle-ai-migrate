@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,6 +76,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
 
   const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('Folder upload triggered:', event.target.files);
+    // Use webkitdirectory to get files from the selected folder
     processFiles(event.target.files);
     // Reset the input field to allow uploading the same folder again
     event.target.value = '';
@@ -335,11 +337,12 @@ END`;
               </Label>
               <Button variant="outline" onClick={handleFolderSelect}>
                 <Folder className="h-4 w-4 mr-2" />
-                Select Folder
+                Browse Folder
               </Button>
               <Input
                 id="folder-upload"
                 type="file"
+                // Setting these attributes to true rather than string values
                 webkitdirectory={true}
                 directory={true}
                 multiple
