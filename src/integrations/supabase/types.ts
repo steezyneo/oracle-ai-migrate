@@ -36,6 +36,107 @@ export type Database = {
         }
         Relationships: []
       }
+      migration_files: {
+        Row: {
+          conversion_status: string
+          converted_content: string | null
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          migration_id: string
+          original_content: string | null
+          updated_at: string
+        }
+        Insert: {
+          conversion_status?: string
+          converted_content?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id?: string
+          migration_id: string
+          original_content?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conversion_status?: string
+          converted_content?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          migration_id?: string
+          original_content?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_files_migration_id_fkey"
+            columns: ["migration_id"]
+            isOneToOne: false
+            referencedRelation: "migrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migrations: {
+        Row: {
+          created_at: string
+          folder_structure: Json | null
+          id: string
+          project_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_structure?: Json | null
+          id?: string
+          project_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          folder_structure?: Json | null
+          id?: string
+          project_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

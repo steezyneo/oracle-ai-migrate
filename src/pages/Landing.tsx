@@ -2,14 +2,29 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Database, Code, FileCheck, ArrowRight, Shield, Zap, BarChart3 } from 'lucide-react';
+import { Database, Code, FileCheck, ArrowRight, Shield, Zap, BarChart3, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import UserDropdown from '@/components/UserDropdown';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   const handleStartMigration = () => {
-    navigate('/migration');
+    if (user) {
+      navigate('/migration');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleStartNewMigration = () => {
+    if (user) {
+      navigate('/migration');
+    } else {
+      navigate('/auth');
+    }
   };
 
   return (
@@ -17,9 +32,33 @@ const Landing = () => {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-center">
-            <Database className="h-8 w-8 text-primary mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">Sybase to Oracle Migration Tool</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Database className="h-8 w-8 text-primary mr-3" />
+              <h1 className="text-2xl font-bold text-gray-900">Sybase to Oracle Migration Tool</h1>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {!loading && (
+                <>
+                  <Button 
+                    onClick={handleStartNewMigration}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Start New Migration
+                  </Button>
+                  
+                  {user ? (
+                    <UserDropdown />
+                  ) : (
+                    <Button variant="outline" onClick={() => navigate('/auth')}>
+                      Sign In
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
