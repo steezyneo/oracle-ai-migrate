@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,10 +7,20 @@ import { Check, AlertTriangle, X, Download, Upload, Database, History } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportViewerProps {
   report: ConversionReport;
   onBack: () => void;
+}
+
+interface DeploymentLog {
+  id: string;
+  created_at: string;
+  status: string;
+  lines_of_sql: number;
+  file_count: number;
+  error_message: string | null;
 }
 
 const ReportViewer: React.FC<ReportViewerProps> = ({
@@ -20,7 +29,75 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 }) => {
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deploymentLogs, setDeploymentLogs] = useState<{timestamp: string, message: string}[]>([]);
+  const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
+  
+  // Fetch deployment logs from Supabase on component mount
+  useEffect(() => {
+    fetchDeploymentLogs();
+    
+    // Set up real-time subscription for deployment logs
+    const channel = supabase
+      .channel('deployment-logs-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'deployment_logs'
+        },
+        () => {
+          fetchDeploymentLogs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchDeploymentLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('deployment_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching deployment logs:', error);
+        return;
+      }
+
+      setDeploymentLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching deployment logs:', error);
+    }
+  };
+
+  const saveDeploymentLog = async (status: string, linesOfSql: number, fileCount: number, errorMessage?: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('deployment_logs')
+        .insert({
+          status,
+          lines_of_sql: linesOfSql,
+          file_count: fileCount,
+          error_message: errorMessage || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving deployment log:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error saving deployment log:', error);
+      return null;
+    }
+  };
   
   const handleDownload = () => {
     // Create a blob with the report content
@@ -47,14 +124,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const handleDeploy = async () => {
     setIsDeploying(true);
     
-    // Add deployment start log
-    const startLog = {
-      timestamp: new Date().toISOString(),
-      message: "Starting database deployment..."
-    };
-    setDeploymentLogs(prev => [...prev, startLog]);
-    
     try {
+      // Calculate lines of SQL and file count from the report
+      const linesOfSql = report.summary.split('\n').length;
+      const fileCount = report.filesProcessed;
+      
       // Simulate deployment using the mock function from databaseUtils
       const result = await deployToOracle(
         { 
@@ -68,14 +142,13 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         report.summary
       );
       
-      // Add result log
-      const resultLog = {
-        timestamp: new Date().toISOString(),
-        message: result.success ? 
-          "Database updated successfully" : 
-          `Deployment error: ${result.message}`
-      };
-      setDeploymentLogs(prev => [...prev, resultLog]);
+      // Save deployment log to Supabase
+      const logEntry = await saveDeploymentLog(
+        result.success ? 'Success' : 'Failed',
+        linesOfSql,
+        fileCount,
+        result.success ? undefined : result.message
+      );
       
       // Show toast notification
       toast({
@@ -83,13 +156,21 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         description: result.message,
         variant: result.success ? 'default' : 'destructive',
       });
+
+      if (logEntry) {
+        console.log('Deployment log saved:', logEntry);
+      }
+      
     } catch (error) {
-      // Add error log
-      const errorLog = {
-        timestamp: new Date().toISOString(),
-        message: `Deployment error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-      setDeploymentLogs(prev => [...prev, errorLog]);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Save error log to Supabase
+      await saveDeploymentLog(
+        'Failed',
+        report.summary.split('\n').length,
+        report.filesProcessed,
+        errorMessage
+      );
       
       toast({
         title: 'Deployment Failed',
@@ -109,7 +190,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             <div>
               <CardTitle className="text-2xl">Migration Report</CardTitle>
               <CardDescription>
-                Generated on {new Date(report.timestamp).toLocaleString()}
+                Generated on {new Date(report.timestamp).toLocaleString()} | Report ID: {report.timestamp.split('T')[0]}-{Date.now().toString().slice(-6)}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-base font-normal px-3 py-1">
@@ -190,23 +271,45 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
               </Button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
-              <ScrollArea className="h-[200px] p-4">
+              <ScrollArea className="h-[300px] p-4">
                 {deploymentLogs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                     <Database className="h-16 w-16 mb-2 opacity-20" />
                     <p>No deployment logs yet. Click "Deploy to Oracle" to update the database.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {deploymentLogs.map((log, index) => (
-                      <div key={index} className="flex items-start gap-3 p-2 border-b border-gray-200 dark:border-gray-800">
-                        <History className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(log.timestamp).toLocaleString()}
+                  <div className="space-y-3">
+                    {deploymentLogs.map((log) => (
+                      <div key={log.id} className="border rounded-lg p-4 bg-white dark:bg-slate-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={log.status === 'Success' ? 'default' : 'destructive'}>
+                              {log.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              ID: {log.id.slice(0, 8)}
+                            </span>
                           </div>
-                          <div className="text-sm">{log.message}</div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString()}
+                          </span>
                         </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Files: </span>
+                            <span>{log.file_count}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Lines of SQL: </span>
+                            <span>{log.lines_of_sql}</span>
+                          </div>
+                        </div>
+                        {log.error_message && (
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-300">
+                            <span className="font-medium">Error: </span>
+                            <span>{log.error_message}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

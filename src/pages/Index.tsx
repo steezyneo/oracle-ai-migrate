@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import ConversionResults from '@/components/ConversionResults';
 import AIModelSelector from '@/components/AIModelSelector';
 import ReportViewer from '@/components/ReportViewer';
 import ConnectionForm from '@/components/ConnectionForm';
+import HomeButton from '@/components/HomeButton';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { Database as DatabaseIcon, Code, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
@@ -62,6 +62,13 @@ const Index = () => {
   };
   
   const handleStartOver = () => {
+    setCurrentStep('connection');
+    setFiles([]);
+    setResults([]);
+    setReport(null);
+  };
+
+  const handleGoHome = () => {
     setCurrentStep('connection');
     setFiles([]);
     setResults([]);
@@ -327,15 +334,16 @@ const Index = () => {
       case 'upload':
         return (
           <div className="w-full max-w-4xl mx-auto">
-            <div className="mb-4">
+            <div className="mb-4 flex justify-between items-center">
               <Button 
                 variant="outline" 
                 onClick={handleGoBack}
-                className="flex items-center gap-2 mb-4"
+                className="flex items-center gap-2"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back to Connection
               </Button>
+              <HomeButton onClick={handleGoHome} />
             </div>
             <div>
               <CodeUploader onComplete={handleUploadComplete} />
@@ -346,15 +354,16 @@ const Index = () => {
       case 'review':
         return (
           <div className="w-full">
-            <div className="mb-4">
+            <div className="mb-4 flex justify-between items-center">
               <Button 
                 variant="outline" 
                 onClick={handleGoBack}
-                className="flex items-center gap-2 mb-4"
+                className="flex items-center gap-2"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back to Upload
               </Button>
+              <HomeButton onClick={handleGoHome} />
             </div>
             <ConversionResults 
               results={results}
@@ -368,16 +377,23 @@ const Index = () => {
         );
         
       case 'report':
-        return report ? (
-          <ReportViewer 
-            report={report}
-            onBack={() => setCurrentStep('review')}
-          />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Generating report...
-            </p>
+        return (
+          <div className="w-full">
+            <div className="mb-4 flex justify-end">
+              <HomeButton onClick={handleGoHome} />
+            </div>
+            {report ? (
+              <ReportViewer 
+                report={report}
+                onBack={() => setCurrentStep('review')}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Generating report...
+                </p>
+              </div>
+            )}
           </div>
         );
         
