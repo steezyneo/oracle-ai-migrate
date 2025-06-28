@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Folder, FileText } from 'lucide-react';
+import { Upload, Folder, FileText, File } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileStructure {
@@ -22,16 +22,27 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const singleFileInputRef = useRef<HTMLInputElement>(null);
+  const multipleFileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = async (files: FileList | null) => {
+  const handleFileSelect = async (files: FileList | null, uploadType: 'single' | 'multiple' | 'folder' = 'folder') => {
     if (!files || files.length === 0) return;
 
     setIsProcessing(true);
     
     try {
       const fileStructure: FileStructure[] = [];
-      const projectName = extractProjectName(files);
+      let projectName = '';
+      
+      if (uploadType === 'folder') {
+        projectName = extractProjectName(files);
+      } else if (uploadType === 'single') {
+        projectName = `Single_File_${new Date().toISOString().split('T')[0]}`;
+      } else {
+        projectName = `Multiple_Files_${new Date().toISOString().split('T')[0]}`;
+      }
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -50,14 +61,14 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
       onFolderUpload(fileStructure, projectName);
       
       toast({
-        title: "Folder Uploaded",
-        description: `Successfully uploaded ${files.length} files`,
+        title: "Files Uploaded",
+        description: `Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
       });
     } catch (error) {
       console.error('Error processing files:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to process the uploaded folder",
+        description: "Failed to process the uploaded files",
         variant: "destructive",
       });
     } finally {
@@ -109,8 +120,20 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
     if (files.length > 0) {
       const fileList = new DataTransfer();
       files.forEach(file => fileList.items.add(file));
-      handleFileSelect(fileList.files);
+      handleFileSelect(fileList.files, files.length === 1 ? 'single' : 'multiple');
     }
+  };
+
+  const handleSingleFileUpload = () => {
+    singleFileInputRef.current?.click();
+  };
+
+  const handleMultipleFileUpload = () => {
+    multipleFileInputRef.current?.click();
+  };
+
+  const handleFolderUpload = () => {
+    folderInputRef.current?.click();
   };
 
   return (
@@ -118,10 +141,10 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Upload Code Folder
+          Upload Code Files
         </CardTitle>
         <CardDescription>
-          Select a folder containing your Sybase code files to begin migration
+          Select files or folder containing your Sybase code files to begin migration
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -142,30 +165,70 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
             
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {isProcessing ? 'Processing Files...' : 'Drop folder here or click to browse'}
+                {isProcessing ? 'Processing Files...' : 'Drop files here or choose upload option'}
               </h3>
               <p className="text-gray-600 mb-4">
-                Upload a folder containing .sql, .proc, .trig files and more
+                Upload .sql, .proc, .trig files and more
               </p>
             </div>
 
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isProcessing}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              {isProcessing ? 'Processing...' : 'Choose Folder'}
-            </Button>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Button
+                onClick={handleSingleFileUpload}
+                disabled={isProcessing}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <File className="h-4 w-4" />
+                {isProcessing ? 'Processing...' : 'Single File'}
+              </Button>
+              
+              <Button
+                onClick={handleMultipleFileUpload}
+                disabled={isProcessing}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {isProcessing ? 'Processing...' : 'Multiple Files'}
+              </Button>
+              
+              <Button
+                onClick={handleFolderUpload}
+                disabled={isProcessing}
+                className="flex items-center gap-2"
+              >
+                <Folder className="h-4 w-4" />
+                {isProcessing ? 'Processing...' : 'Choose Folder'}
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Hidden file inputs */}
         <input
-          ref={fileInputRef}
+          ref={singleFileInputRef}
+          type="file"
+          onChange={(e) => handleFileSelect(e.target.files, 'single')}
+          className="hidden"
+          accept=".sql,.txt,.tab,.prc,.trg"
+        />
+        
+        <input
+          ref={multipleFileInputRef}
+          type="file"
+          multiple
+          onChange={(e) => handleFileSelect(e.target.files, 'multiple')}
+          className="hidden"
+          accept=".sql,.txt,.tab,.prc,.trg"
+        />
+        
+        <input
+          ref={folderInputRef}
           type="file"
           webkitdirectory=""
           multiple
-          onChange={(e) => handleFileSelect(e.target.files)}
+          onChange={(e) => handleFileSelect(e.target.files, 'folder')}
           className="hidden"
         />
       </CardContent>

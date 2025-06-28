@@ -11,7 +11,10 @@ import {
   GitBranch,
   Check,
   X,
-  Play
+  Play,
+  ChevronDown,
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +33,7 @@ interface FileTreeViewProps {
   files: FileItem[];
   onFileSelect: (file: FileItem) => void;
   onConvertFile: (fileId: string) => void;
+  onConvertAllByType: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
   selectedFile: FileItem | null;
 }
 
@@ -37,6 +41,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   files,
   onFileSelect,
   onConvertFile,
+  onConvertAllByType,
   selectedFile
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -68,9 +73,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     }
   };
 
-  const getSectionIcon = (type: string, isExpanded: boolean) => {
-    const IconComponent = isExpanded ? FolderOpen : Folder;
-    
+  const getSectionIcon = (type: string) => {
     switch (type) {
       case 'tables':
         return <Database className="h-4 w-4 text-blue-600" />;
@@ -79,24 +82,50 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       case 'triggers':
         return <GitBranch className="h-4 w-4 text-orange-600" />;
       default:
-        return <IconComponent className="h-4 w-4 text-gray-600" />;
+        return <FileText className="h-4 w-4 text-gray-600" />;
     }
+  };
+
+  const getPendingFilesCount = (sectionFiles: FileItem[]) => {
+    return sectionFiles.filter(f => f.conversionStatus === 'pending').length;
   };
 
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
     const isExpanded = expandedSections.has(sectionKey);
+    const pendingCount = getPendingFilesCount(sectionFiles);
+    const typeKey = sectionKey === 'tables' ? 'table' : 
+                   sectionKey === 'procedures' ? 'procedure' : 
+                   sectionKey === 'triggers' ? 'trigger' : 'other';
     
     return (
       <div key={sectionKey} className="mb-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => toggleSection(sectionKey)}
-          className="w-full justify-start p-2 h-auto font-medium"
-        >
-          {getSectionIcon(sectionKey, isExpanded)}
-          <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
-        </Button>
+        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleSection(sectionKey)}
+            className="flex-1 justify-start p-0 h-auto font-medium"
+          >
+            {isExpanded ? 
+              <ChevronDown className="h-4 w-4 mr-2" /> : 
+              <ChevronRight className="h-4 w-4 mr-2" />
+            }
+            {getSectionIcon(sectionKey)}
+            <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
+          </Button>
+          
+          {pendingCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
+              className="text-xs px-2 py-1 h-6 ml-2"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Convert All ({pendingCount})
+            </Button>
+          )}
+        </div>
         
         {isExpanded && (
           <div className="ml-4 space-y-1">

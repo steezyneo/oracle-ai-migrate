@@ -377,6 +377,35 @@ const Dashboard = () => {
     navigate('/history');
   };
 
+  const handleConvertAllByType = async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
+    const filesToConvert = files.filter(f => f.type === type && f.conversionStatus === 'pending');
+    
+    if (filesToConvert.length === 0) {
+      toast({
+        title: "No files to convert",
+        description: `All ${type} files have already been processed.`,
+      });
+      return;
+    }
+
+    toast({
+      title: "Converting files",
+      description: `Converting ${filesToConvert.length} ${type} files...`,
+    });
+
+    // Convert files one by one with a small delay
+    for (const file of filesToConvert) {
+      await handleConvertFile(file.id);
+      // Small delay to show progress
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    toast({
+      title: "Conversion completed",
+      description: `Successfully processed ${filesToConvert.length} ${type} files.`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -423,27 +452,27 @@ const Dashboard = () => {
                 files={files}
                 onFileSelect={handleFileSelect}
                 onConvertFile={handleConvertFile}
+                onConvertAllByType={handleConvertAllByType}
                 selectedFile={selectedFile}
               />
-              
-              <div className="mt-6">
-                <Button 
-                  onClick={handleCompleteMigration}
-                  className="w-full"
-                  disabled={files.length === 0 || files.every(f => f.conversionStatus === 'pending')}
-                >
-                  Complete Migration
-                </Button>
-              </div>
             </div>
             
             <div className="lg:col-span-2">
               {selectedFile ? (
-                <ConversionViewer
-                  file={selectedFile}
-                  onFixWithAI={handleFixWithAI}
-                  onManualEdit={handleManualEdit}
-                />
+                <div className="space-y-6">
+                  <ConversionViewer
+                    file={selectedFile}
+                    onFixWithAI={handleFixWithAI}
+                    onManualEdit={handleManualEdit}
+                  />
+                  
+                  {selectedFile.conversionStatus === 'success' && (
+                    <ConversionActions
+                      hasConvertedFiles={files.some(f => f.conversionStatus === 'success')}
+                      onCompleteMigration={handleCompleteMigration}
+                    />
+                  )}
+                </div>
               ) : (
                 <Card className="h-full flex items-center justify-center">
                   <CardContent className="text-center">
