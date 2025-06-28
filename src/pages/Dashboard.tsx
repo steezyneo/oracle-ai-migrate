@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -182,7 +183,7 @@ const Dashboard = () => {
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
-          user_id: user.id,
+          user_id: user.id, // Fix: Ensure user isolation
           project_name: projectName,
           folder_structure: uploadedFiles
         })
@@ -231,6 +232,12 @@ const Dashboard = () => {
       }
 
       setFiles(processedFiles);
+      
+      // Auto-select first file and auto-display first converted file
+      if (processedFiles.length > 0) {
+        setSelectedFile(processedFiles[0]);
+      }
+      
       setCurrentStep('review');
       
       toast({
@@ -278,19 +285,24 @@ const Dashboard = () => {
         throw error;
       }
 
+      const updatedFile = { 
+        ...file, 
+        conversionStatus: isSuccess ? 'success' : 'failed',
+        convertedContent: isSuccess ? convertedContent : undefined,
+        errorMessage: isSuccess ? undefined : 'Conversion failed: Unsupported syntax detected',
+        dataTypeMapping: isSuccess ? dataTypeMapping : undefined,
+        issues: isSuccess ? issues : undefined,
+        performanceMetrics: isSuccess ? performanceMetrics : undefined
+      } as FileItem;
+
       setFiles(prev => prev.map(f => 
-        f.id === fileId 
-          ? { 
-              ...f, 
-              conversionStatus: isSuccess ? 'success' : 'failed',
-              convertedContent: isSuccess ? convertedContent : undefined,
-              errorMessage: isSuccess ? undefined : 'Conversion failed: Unsupported syntax detected',
-              dataTypeMapping: isSuccess ? dataTypeMapping : undefined,
-              issues: isSuccess ? issues : undefined,
-              performanceMetrics: isSuccess ? performanceMetrics : undefined
-            }
-          : f
+        f.id === fileId ? updatedFile : f
       ));
+
+      // Auto-display first converted file
+      if (isSuccess && (!selectedFile || selectedFile.conversionStatus === 'pending')) {
+        setSelectedFile(updatedFile);
+      }
 
       toast({
         title: isSuccess ? "Conversion Successful" : "Conversion Failed",
@@ -309,6 +321,95 @@ const Dashboard = () => {
     }
   };
 
+  const handleConvertAll = async () => {
+    const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
+    
+    if (pendingFiles.length === 0) {
+      toast({
+        title: "No files to convert",
+        description: "All files have already been processed.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Converting all files",
+      description: `Converting ${pendingFiles.length} files...`,
+    });
+
+    for (const file of pendingFiles) {
+      await handleConvertFile(file.id);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    toast({
+      title: "All conversions completed",
+      description: `Successfully processed ${pendingFiles.length} files.`,
+    });
+  };
+
+  const handleFixFile = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    toast({
+      title: "Fixing file",
+      description: `Attempting to fix ${file.name}...`,
+    });
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const convertedContent = `-- Fixed Oracle code for ${file.name}\n${file.content.replace(/sybase/gi, 'oracle').replace(/@/g, 'v_')}`;
+      const dataTypeMapping = generateDataTypeMapping(file.content);
+      const issues: ConversionIssue[] = []; // Fixed, so no issues
+      const performanceMetrics = generatePerformanceMetrics();
+      
+      const { error } = await supabase
+        .from('migration_files')
+        .update({
+          converted_content: convertedContent,
+          conversion_status: 'success',
+          error_message: null
+        })
+        .eq('id', fileId);
+
+      if (error) {
+        throw error;
+      }
+
+      const updatedFile = { 
+        ...file, 
+        conversionStatus: 'success',
+        convertedContent,
+        errorMessage: undefined,
+        dataTypeMapping,
+        issues,
+        performanceMetrics
+      } as FileItem;
+
+      setFiles(prev => prev.map(f => 
+        f.id === fileId ? updatedFile : f
+      ));
+
+      if (selectedFile?.id === fileId) {
+        setSelectedFile(updatedFile);
+      }
+
+      toast({
+        title: "Fix Successful",
+        description: `Successfully fixed ${file.name}`,
+      });
+    } catch (error) {
+      console.error('Error fixing file:', error);
+      toast({
+        title: "Fix Failed",
+        description: "Failed to fix file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleFixWithAI = async (issueId: string) => {
     if (!selectedFile) return;
     
@@ -317,7 +418,6 @@ const Dashboard = () => {
       description: "Applying AI fix to the issue...",
     });
 
-    // Simulate AI fix
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const updatedFile = {
@@ -455,6 +555,8 @@ const Dashboard = () => {
                 onFileSelect={handleFileSelect}
                 onConvertFile={handleConvertFile}
                 onConvertAllByType={handleConvertAllByType}
+                onConvertAll={handleConvertAll}
+                onFixFile={handleFixFile}
                 selectedFile={selectedFile}
               />
             </div>

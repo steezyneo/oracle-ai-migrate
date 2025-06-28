@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -56,11 +56,20 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   onManualEdit,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(file.convertedContent || '');
+  const [editedContent, setEditedContent] = useState('');
+
+  // Update editedContent when file.convertedContent changes
+  useEffect(() => {
+    setEditedContent(file.convertedContent || '');
+  }, [file.convertedContent]);
 
   const handleSaveEdit = () => {
     onManualEdit(editedContent);
     setIsEditing(false);
+  };
+
+  const handleFixWithAI = (issueId: string) => {
+    onFixWithAI(issueId);
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -238,7 +247,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                       
                       <Button
                         size="sm"
-                        onClick={() => onFixWithAI(issue.id)}
+                        onClick={() => handleFixWithAI(issue.id)}
                         className="ml-4"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />

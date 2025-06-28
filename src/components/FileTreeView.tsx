@@ -14,7 +14,8 @@ import {
   Play,
   ChevronDown,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,8 @@ interface FileTreeViewProps {
   onFileSelect: (file: FileItem) => void;
   onConvertFile: (fileId: string) => void;
   onConvertAllByType: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
+  onConvertAll: () => void;
+  onFixFile: (fileId: string) => void;
   selectedFile: FileItem | null;
 }
 
@@ -42,6 +45,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onFileSelect,
   onConvertFile,
   onConvertAllByType,
+  onConvertAll,
+  onFixFile,
   selectedFile
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -88,6 +93,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   const getPendingFilesCount = (sectionFiles: FileItem[]) => {
     return sectionFiles.filter(f => f.conversionStatus === 'pending').length;
+  };
+
+  const getTotalPendingFiles = () => {
+    return files.filter(f => f.conversionStatus === 'pending').length;
   };
 
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
@@ -164,6 +173,20 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                       Convert
                     </Button>
                   )}
+                  {file.conversionStatus === 'failed' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFixFile(file.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6 text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Fix
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -177,11 +200,23 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const procedures = getFilesByType('procedure');
   const triggers = getFilesByType('trigger');
   const others = getFilesByType('other');
+  const totalPending = getTotalPendingFiles();
 
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Project Structure</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Project Structure</CardTitle>
+          {totalPending > 0 && (
+            <Button
+              onClick={onConvertAll}
+              className="text-xs px-3 py-1 h-7"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Convert All ({totalPending})
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4">

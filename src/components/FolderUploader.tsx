@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Folder, FileText, File } from 'lucide-react';
+import { Upload, Folder, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileStructure {
@@ -11,7 +11,7 @@ interface FileStructure {
   type: 'file' | 'folder';
   content?: string;
   children?: FileStructure[];
-  [key: string]: any; // Add index signature to make it compatible with Json type
+  [key: string]: any;
 }
 
 interface FolderUploaderProps {
@@ -22,12 +22,10 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const singleFileInputRef = useRef<HTMLInputElement>(null);
-  const multipleFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = async (files: FileList | null, uploadType: 'single' | 'multiple' | 'folder' = 'folder') => {
+  const handleFileSelect = async (files: FileList | null, uploadType: 'files' | 'folder' = 'files') => {
     if (!files || files.length === 0) return;
 
     setIsProcessing(true);
@@ -38,10 +36,8 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
       
       if (uploadType === 'folder') {
         projectName = extractProjectName(files);
-      } else if (uploadType === 'single') {
-        projectName = `Single_File_${new Date().toISOString().split('T')[0]}`;
       } else {
-        projectName = `Multiple_Files_${new Date().toISOString().split('T')[0]}`;
+        projectName = `Files_${new Date().toISOString().split('T')[0]}`;
       }
       
       for (let i = 0; i < files.length; i++) {
@@ -120,16 +116,12 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
     if (files.length > 0) {
       const fileList = new DataTransfer();
       files.forEach(file => fileList.items.add(file));
-      handleFileSelect(fileList.files, files.length === 1 ? 'single' : 'multiple');
+      handleFileSelect(fileList.files, 'files');
     }
   };
 
-  const handleSingleFileUpload = () => {
-    singleFileInputRef.current?.click();
-  };
-
-  const handleMultipleFileUpload = () => {
-    multipleFileInputRef.current?.click();
+  const handleFilesUpload = () => {
+    fileInputRef.current?.click();
   };
 
   const handleFolderUpload = () => {
@@ -174,28 +166,18 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
 
             <div className="flex flex-wrap gap-3 justify-center">
               <Button
-                onClick={handleSingleFileUpload}
+                onClick={handleFilesUpload}
                 disabled={isProcessing}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <File className="h-4 w-4" />
-                {isProcessing ? 'Processing...' : 'Single File'}
-              </Button>
-              
-              <Button
-                onClick={handleMultipleFileUpload}
-                disabled={isProcessing}
-                variant="outline"
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                {isProcessing ? 'Processing...' : 'Multiple Files'}
+                {isProcessing ? 'Processing...' : 'Upload Files'}
               </Button>
               
               <Button
                 onClick={handleFolderUpload}
                 disabled={isProcessing}
+                variant="outline"
                 className="flex items-center gap-2"
               >
                 <Folder className="h-4 w-4" />
@@ -205,20 +187,11 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
           </div>
         </div>
 
-        {/* Hidden file inputs */}
         <input
-          ref={singleFileInputRef}
-          type="file"
-          onChange={(e) => handleFileSelect(e.target.files, 'single')}
-          className="hidden"
-          accept=".sql,.txt,.tab,.prc,.trg"
-        />
-        
-        <input
-          ref={multipleFileInputRef}
+          ref={fileInputRef}
           type="file"
           multiple
-          onChange={(e) => handleFileSelect(e.target.files, 'multiple')}
+          onChange={(e) => handleFileSelect(e.target.files, 'files')}
           className="hidden"
           accept=".sql,.txt,.tab,.prc,.trg"
         />
