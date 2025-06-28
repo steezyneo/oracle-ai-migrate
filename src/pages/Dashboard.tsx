@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import UserDropdown from '@/components/UserDropdown';
 import FolderUploader from '@/components/FolderUploader';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import ConversionActions from '@/components/ConversionActions';
 import MigrationReport from '@/components/MigrationReport';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
