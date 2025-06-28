@@ -1,20 +1,30 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { History, Plus, Database, FileText, RefreshCw, Download, Upload } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Database, FileText, Upload, History, RefreshCw, Download, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import UserDropdown from '@/components/UserDropdown';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { convertSybaseToOracle } from '@/utils/conversionUtils';
+import { supabase } from '@/integrations/supabase/client';
+
 import FolderUploader from '@/components/FolderUploader';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
-import ConversionActions from '@/components/ConversionActions';
-import MigrationReport from '@/components/MigrationReport';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import ReportViewer from '@/components/ReportViewer';
+import UserDropdown from '@/components/UserDropdown';
+import HomeButton from '@/components/HomeButton';
+
+interface FileStructure {
+  name: string;
+  path: string;
+  type: 'file' | 'folder';
+  content?: string;
+  children?: FileStructure[];
+  [key: string]: any;
+}
 
 interface FileItem {
   id: string;
@@ -25,230 +35,112 @@ interface FileItem {
   conversionStatus: 'pending' | 'success' | 'failed';
   convertedContent?: string;
   errorMessage?: string;
-  dataTypeMapping?: DataTypeMapping[];
-  issues?: ConversionIssue[];
-  performanceMetrics?: PerformanceMetrics;
+  dataTypeMapping?: any[];
+  issues?: any[];
+  performanceMetrics?: any;
 }
 
-interface DataTypeMapping {
-  sybaseType: string;
-  oracleType: string;
-  description: string;
-}
-
-interface ConversionIssue {
+interface ConversionResult {
   id: string;
-  severity: 'error' | 'warning' | 'info';
-  description: string;
-  lineNumber?: number;
-  suggestedFix?: string;
-  originalCode?: string;
+  originalFile: FileItem;
+  convertedCode: string;
+  issues: any[];
+  performance: any;
+  status: 'success' | 'warning' | 'error';
 }
 
-interface PerformanceMetrics {
-  originalComplexity: number;
-  convertedComplexity: number;
-  improvementPercentage: number;
-  recommendations: string[];
-}
-
-interface FileStructure {
-  name: string;
-  path: string;
-  type: 'file' | 'folder';
-  content?: string;
-  children?: FileStructure[];
-  [key: string]: any; // Add index signature to make it compatible with Json type
+interface ConversionReport {
+  timestamp: string;
+  filesProcessed: number;
+  successCount: number;
+  warningCount: number;
+  errorCount: number;
+  results: ConversionResult[];
+  summary: string;
 }
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<'upload' | 'review' | 'report'>('upload');
+  
+  // Get the initial tab from location state, default to 'upload'
+  const initialTab = location.state?.activeTab || 'upload';
+  
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
-  const [migrationReport, setMigrationReport] = useState<any>(null);
+  const [report, setReport] = useState<ConversionReport | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
+      return;
     }
-  }, [user, loading, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Database className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+    if (user && !currentMigrationId) {
+      startNewMigration();
+    }
+  }, [user, loading, navigate, currentMigrationId]);
 
-  if (!user || !profile) {
-    return null;
-  }
-
-  const determineFileType = (fileName: string, content: string): 'table' | 'procedure' | 'trigger' | 'other' => {
-    const lowerName = fileName.toLowerCase();
-    const lowerContent = content.toLowerCase();
-    
-    if (lowerName.includes('table') || lowerContent.includes('create table')) {
-      return 'table';
-    }
-    if (lowerName.includes('proc') || lowerName.includes('procedure') || lowerContent.includes('create procedure')) {
-      return 'procedure';
-    }
-    if (lowerName.includes('trig') || lowerName.includes('trigger') || lowerContent.includes('create trigger')) {
-      return 'trigger';
-    }
-    return 'other';
-  };
-
-  const generateDataTypeMapping = (content: string): DataTypeMapping[] => {
-    const mappings: DataTypeMapping[] = [];
-    
-    // Common Sybase to Oracle mappings
-    if (content.toLowerCase().includes('int')) {
-      mappings.push({
-        sybaseType: 'INT',
-        oracleType: 'NUMBER(10)',
-        description: 'Integer values converted to NUMBER with precision 10'
-      });
-    }
-    
-    if (content.toLowerCase().includes('varchar')) {
-      mappings.push({
-        sybaseType: 'VARCHAR',
-        oracleType: 'VARCHAR2',
-        description: 'Variable character strings'
-      });
-    }
-    
-    if (content.toLowerCase().includes('datetime')) {
-      mappings.push({
-        sybaseType: 'DATETIME',
-        oracleType: 'TIMESTAMP',
-        description: 'Date and time values with higher precision'
-      });
-    }
-    
-    return mappings;
-  };
-
-  const generateConversionIssues = (content: string): ConversionIssue[] => {
-    const issues: ConversionIssue[] = [];
-    
-    if (content.includes('@')) {
-      issues.push({
-        id: crypto.randomUUID(),
-        severity: 'error',
-        description: 'Sybase variable notation (@) needs conversion',
-        suggestedFix: 'Replace @ variables with Oracle PL/SQL variable syntax',
-        originalCode: '@variable_name'
-      });
-    }
-    
-    if (content.toLowerCase().includes('getdate()')) {
-      issues.push({
-        id: crypto.randomUUID(),
-        severity: 'warning',
-        description: 'Sybase GETDATE() function needs replacement',
-        suggestedFix: 'Use SYSDATE in Oracle',
-        originalCode: 'GETDATE()'
-      });
-    }
-    
-    return issues;
-  };
-
-  const generatePerformanceMetrics = (): PerformanceMetrics => {
-    return {
-      originalComplexity: Math.floor(Math.random() * 100) + 50,
-      convertedComplexity: Math.floor(Math.random() * 50) + 20,
-      improvementPercentage: Math.floor(Math.random() * 40) + 15,
-      recommendations: [
-        'Consider using bind variables for better performance',
-        'Index optimization recommended for large tables',
-        'Review query execution plans'
-      ]
-    };
-  };
-
-  const handleFolderUpload = async (uploadedFiles: FileStructure[], projectName: string) => {
+  const startNewMigration = async () => {
     try {
-      const { data: migration, error: migrationError } = await supabase
+      const { data, error } = await supabase
         .from('migrations')
-        .insert({
-          user_id: user.id, // Fix: Ensure user isolation
-          project_name: projectName,
-          folder_structure: uploadedFiles
-        })
+        .insert({ user_id: user?.id })
         .select()
         .single();
 
-      if (migrationError) {
-        throw migrationError;
+      if (error) {
+        console.error('Error starting new migration:', error);
+      } else {
+        setCurrentMigrationId(data.id);
+      }
+    } catch (error) {
+      console.error('Error starting new migration:', error);
+    }
+  };
+
+  const handleFolderUpload = async (fileStructure: FileItem[], projectName: string) => {
+    setFiles(fileStructure);
+    setActiveTab('conversion');
+
+    try {
+      if (!currentMigrationId) {
+        console.error('No migration ID available');
+        toast({
+          title: "Upload Failed",
+          description: "No migration ID available",
+          variant: "destructive",
+        });
+        return;
       }
 
-      setCurrentMigrationId(migration.id);
-
-      const processedFiles: FileItem[] = [];
-      
-      for (const file of uploadedFiles) {
-        if (file.type === 'file' && file.content) {
-          const fileType = determineFileType(file.name, file.content);
-          
-          const { data: fileRecord, error: fileError } = await supabase
-            .from('migration_files')
-            .insert({
-              migration_id: migration.id,
-              file_name: file.name,
-              file_path: file.path,
-              file_type: fileType,
-              original_content: file.content,
-              conversion_status: 'pending'
-            })
-            .select()
-            .single();
-
-          if (fileError) {
-            console.error('Error creating file record:', fileError);
-            continue;
-          }
-
-          processedFiles.push({
-            id: fileRecord.id,
-            name: file.name,
-            path: file.path,
-            type: fileType,
-            content: file.content,
-            conversionStatus: 'pending'
-          });
-        }
+      // Save files to Supabase
+      for (const file of fileStructure) {
+        await supabase.from('migration_files').insert({
+          migration_id: currentMigrationId,
+          file_name: file.name,
+          file_path: file.path,
+          file_type: file.type,
+          file_content: file.content,
+          conversion_status: 'pending',
+        });
       }
 
-      setFiles(processedFiles);
-      
-      // Auto-select first file and auto-display first converted file
-      if (processedFiles.length > 0) {
-        setSelectedFile(processedFiles[0]);
-      }
-      
-      setCurrentStep('review');
-      
       toast({
-        title: "Project Created",
-        description: `Successfully created project "${projectName}" with ${processedFiles.length} files`,
+        title: "Files Uploaded",
+        description: `Successfully uploaded ${fileStructure.length} file${fileStructure.length > 1 ? 's' : ''}`,
       });
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error('Error saving files to Supabase:', error);
       toast({
-        title: "Error",
-        description: "Failed to create project. Please try again.",
+        title: "Upload Failed",
+        description: "Failed to save the uploaded files",
         variant: "destructive",
       });
     }
@@ -259,345 +151,442 @@ const Dashboard = () => {
   };
 
   const handleConvertFile = async (fileId: string) => {
-    const file = files.find(f => f.id === fileId);
-    if (!file) return;
-
+    setIsConverting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const convertedContent = `-- Converted Oracle code for ${file.name}\n${file.content.replace(/sybase/gi, 'oracle')}`;
-      const isSuccess = Math.random() > 0.2;
-      
-      const dataTypeMapping = generateDataTypeMapping(file.content);
-      const issues = generateConversionIssues(file.content);
-      const performanceMetrics = generatePerformanceMetrics();
-      
-      const { error } = await supabase
+      const fileToConvert = files.find(file => file.id === fileId);
+      if (!fileToConvert) {
+        console.error('File not found');
+        return;
+      }
+
+      const conversionResult = await convertSybaseToOracle(fileToConvert);
+
+      // Update the file in the state
+      setFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.id === fileId
+            ? { ...file, 
+                conversionStatus: conversionResult.status,
+                convertedContent: conversionResult.convertedCode,
+                issues: conversionResult.issues,
+                dataTypeMapping: [], // You might want to populate this
+                performanceMetrics: conversionResult.performance
+              }
+            : file
+        )
+      );
+
+      // Update the file in Supabase
+      await supabase
         .from('migration_files')
         .update({
-          converted_content: isSuccess ? convertedContent : null,
-          conversion_status: isSuccess ? 'success' : 'failed',
-          error_message: isSuccess ? null : 'Conversion failed: Unsupported syntax detected'
+          conversion_status: conversionResult.status,
+          converted_content: conversionResult.convertedCode,
+          error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
         })
-        .eq('id', fileId);
-
-      if (error) {
-        throw error;
-      }
-
-      const updatedFile = { 
-        ...file, 
-        conversionStatus: isSuccess ? 'success' : 'failed',
-        convertedContent: isSuccess ? convertedContent : undefined,
-        errorMessage: isSuccess ? undefined : 'Conversion failed: Unsupported syntax detected',
-        dataTypeMapping: isSuccess ? dataTypeMapping : undefined,
-        issues: isSuccess ? issues : undefined,
-        performanceMetrics: isSuccess ? performanceMetrics : undefined
-      } as FileItem;
-
-      setFiles(prev => prev.map(f => 
-        f.id === fileId ? updatedFile : f
-      ));
-
-      // Auto-display first converted file
-      if (isSuccess && (!selectedFile || selectedFile.conversionStatus === 'pending')) {
-        setSelectedFile(updatedFile);
-      }
+        .eq('file_name', fileToConvert.name);
 
       toast({
-        title: isSuccess ? "Conversion Successful" : "Conversion Failed",
-        description: isSuccess 
-          ? `Successfully converted ${file.name}` 
-          : `Failed to convert ${file.name}`,
-        variant: isSuccess ? "default" : "destructive",
+        title: "File Converted",
+        description: `Successfully converted ${fileToConvert.name}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error converting file:', error);
       toast({
-        title: "Error",
-        description: "Failed to convert file. Please try again.",
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert the file",
         variant: "destructive",
       });
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const handleConvertAllByType = async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
+    setIsConverting(true);
+    try {
+      const filesToConvert = files.filter(file => file.type === type && file.conversionStatus === 'pending');
+      if (filesToConvert.length === 0) {
+        toast({
+          title: "No Files to Convert",
+          description: `No ${type} files with pending status found.`,
+        });
+        return;
+      }
+
+      for (const file of filesToConvert) {
+        const conversionResult = await convertSybaseToOracle(file);
+
+        // Update the file in the state
+        setFiles(prevFiles =>
+          prevFiles.map(f =>
+            f.id === file.id
+              ? { ...f, 
+                  conversionStatus: conversionResult.status,
+                  convertedContent: conversionResult.convertedCode,
+                  issues: conversionResult.issues,
+                  dataTypeMapping: [], // You might want to populate this
+                  performanceMetrics: conversionResult.performance
+                }
+              : f
+          )
+        );
+
+        // Update the file in Supabase
+        await supabase
+          .from('migration_files')
+          .update({
+            conversion_status: conversionResult.status,
+            converted_content: conversionResult.convertedCode,
+            error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
+          })
+          .eq('file_name', file.name);
+      }
+
+      toast({
+        title: "Files Converted",
+        description: `Successfully converted all ${type} files`,
+      });
+    } catch (error: any) {
+      console.error('Error converting files:', error);
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert the files",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(false);
     }
   };
 
   const handleConvertAll = async () => {
-    const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
-    
-    if (pendingFiles.length === 0) {
+    setIsConverting(true);
+    try {
+      const filesToConvert = files.filter(file => file.conversionStatus === 'pending');
+      if (filesToConvert.length === 0) {
+        toast({
+          title: "No Files to Convert",
+          description: "No files with pending status found.",
+        });
+        return;
+      }
+
+      for (const file of filesToConvert) {
+        const conversionResult = await convertSybaseToOracle(file);
+
+        // Update the file in the state
+        setFiles(prevFiles =>
+          prevFiles.map(f =>
+            f.id === file.id
+              ? { ...f, 
+                  conversionStatus: conversionResult.status,
+                  convertedContent: conversionResult.convertedCode,
+                  issues: conversionResult.issues,
+                  dataTypeMapping: [], // You might want to populate this
+                  performanceMetrics: conversionResult.performance
+                }
+              : f
+          )
+        );
+
+        // Update the file in Supabase
+        await supabase
+          .from('migration_files')
+          .update({
+            conversion_status: conversionResult.status,
+            converted_content: conversionResult.convertedCode,
+            error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
+          })
+          .eq('file_name', file.name);
+      }
+
       toast({
-        title: "No files to convert",
-        description: "All files have already been processed.",
+        title: "Files Converted",
+        description: "Successfully converted all files",
       });
-      return;
+    } catch (error: any) {
+      console.error('Error converting files:', error);
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert the files",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(false);
     }
-
-    toast({
-      title: "Converting all files",
-      description: `Converting ${pendingFiles.length} files...`,
-    });
-
-    for (const file of pendingFiles) {
-      await handleConvertFile(file.id);
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    toast({
-      title: "All conversions completed",
-      description: `Successfully processed ${pendingFiles.length} files.`,
-    });
   };
 
   const handleFixFile = async (fileId: string) => {
-    const file = files.find(f => f.id === fileId);
-    if (!file) return;
-
-    toast({
-      title: "Fixing file",
-      description: `Attempting to fix ${file.name}...`,
-    });
-
+    setIsConverting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const convertedContent = `-- Fixed Oracle code for ${file.name}\n${file.content.replace(/sybase/gi, 'oracle').replace(/@/g, 'v_')}`;
-      const dataTypeMapping = generateDataTypeMapping(file.content);
-      const issues: ConversionIssue[] = []; // Fixed, so no issues
-      const performanceMetrics = generatePerformanceMetrics();
-      
-      const { error } = await supabase
+      const fileToFix = files.find(file => file.id === fileId);
+      if (!fileToFix) {
+        console.error('File not found');
+        return;
+      }
+
+      // Simulate AI-based fix (replace with actual AI call)
+      const fixedContent = fileToFix.convertedContent || fileToFix.content;
+
+      // Update the file in the state
+      setFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.id === fileId
+            ? { ...file, convertedContent: fixedContent, conversionStatus: 'success' }
+            : file
+        )
+      );
+
+      // Update the file in Supabase
+      await supabase
         .from('migration_files')
         .update({
-          converted_content: convertedContent,
+          converted_content: fixedContent,
           conversion_status: 'success',
-          error_message: null
+          error_message: null,
         })
-        .eq('id', fileId);
-
-      if (error) {
-        throw error;
-      }
-
-      const updatedFile = { 
-        ...file, 
-        conversionStatus: 'success',
-        convertedContent,
-        errorMessage: undefined,
-        dataTypeMapping,
-        issues,
-        performanceMetrics
-      } as FileItem;
-
-      setFiles(prev => prev.map(f => 
-        f.id === fileId ? updatedFile : f
-      ));
-
-      if (selectedFile?.id === fileId) {
-        setSelectedFile(updatedFile);
-      }
+        .eq('file_name', fileToFix.name);
 
       toast({
-        title: "Fix Successful",
-        description: `Successfully fixed ${file.name}`,
+        title: "File Fixed",
+        description: `Successfully fixed ${fileToFix.name}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fixing file:', error);
       toast({
         title: "Fix Failed",
-        description: "Failed to fix file. Please try again.",
+        description: error.message || "Failed to fix the file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const handleFixWithAI = async (issueId: string) => {
+    // Placeholder for AI-based fix
+    console.log(`Attempting to fix issue with AI: ${issueId}`);
+  };
+
+  const handleManualEdit = (newContent: string) => {
+    setFiles(prevFiles =>
+      prevFiles.map(file =>
+        file.id === selectedFile?.id
+          ? { ...file, convertedContent: newContent }
+          : file
+      )
+    );
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      const conversionResults = files.map(file => ({
+        id: file.id,
+        originalFile: {
+          name: file.name,
+          path: file.path,
+          type: file.type,
+          content: file.content,
+        },
+        convertedCode: file.convertedContent || '',
+        issues: file.issues || [],
+        performance: file.performanceMetrics || {},
+        status: file.conversionStatus,
+      }));
+
+      const reportSummary = generateConversionReport(conversionResults);
+
+      const newReport: ConversionReport = {
+        timestamp: new Date().toISOString(),
+        filesProcessed: files.length,
+        successCount: files.filter(f => f.conversionStatus === 'success').length,
+        warningCount: files.filter(f => f.conversionStatus === 'warning').length,
+        errorCount: files.filter(f => f.conversionStatus === 'failed').length,
+        results: conversionResults,
+        summary: reportSummary,
+      };
+
+      setReport(newReport);
+      setShowReport(true);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: "Failed to generate the conversion report",
         variant: "destructive",
       });
     }
   };
 
-  const handleFixWithAI = async (issueId: string) => {
-    if (!selectedFile) return;
-    
-    toast({
-      title: "AI Fix in Progress",
-      description: "Applying AI fix to the issue...",
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const updatedFile = {
-      ...selectedFile,
-      convertedContent: selectedFile.convertedContent?.replace(/@/g, 'v_'),
-      issues: selectedFile.issues?.filter(issue => issue.id !== issueId)
-    };
-    
-    setSelectedFile(updatedFile);
-    setFiles(prev => prev.map(f => f.id === selectedFile.id ? updatedFile : f));
-    
-    toast({
-      title: "AI Fix Applied",
-      description: "The issue has been resolved automatically.",
-    });
+  const handleGoToHistory = () => {
+    // Pass current tab state to history page
+    navigate('/history', { state: { returnTab: activeTab } });
   };
 
-  const handleManualEdit = (newContent: string) => {
-    if (!selectedFile) return;
-    
-    const updatedFile = {
-      ...selectedFile,
-      convertedContent: newContent
-    };
-    
-    setSelectedFile(updatedFile);
-    setFiles(prev => prev.map(f => f.id === selectedFile.id ? updatedFile : f));
+  const handleGoHome = () => {
+    navigate('/');
   };
 
-  const handleCompleteMigration = async () => {
-    const report = {
-      id: crypto.randomUUID(),
-      migrationId: currentMigrationId,
-      timestamp: new Date().toISOString(),
-      totalFiles: files.length,
-      successfulFiles: files.filter(f => f.conversionStatus === 'success').length,
-      failedFiles: files.filter(f => f.conversionStatus === 'failed').length,
-      files: files
-    };
-    
-    setMigrationReport(report);
-    setCurrentStep('report');
-    
-    toast({
-      title: "Migration Completed",
-      description: "Migration report has been generated successfully.",
-    });
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Database className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleStartNewMigration = () => {
-    setCurrentStep('upload');
-    setFiles([]);
-    setSelectedFile(null);
-    setCurrentMigrationId(null);
-    setMigrationReport(null);
-  };
+  if (!user || !profile) {
+    return null;
+  }
 
-  const handleViewHistory = () => {
-    navigate('/history');
-  };
-
-  const handleConvertAllByType = async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
-    const filesToConvert = files.filter(f => f.type === type && f.conversionStatus === 'pending');
-    
-    if (filesToConvert.length === 0) {
-      toast({
-        title: "No files to convert",
-        description: `All ${type} files have already been processed.`,
-      });
-      return;
-    }
-
-    toast({
-      title: "Converting files",
-      description: `Converting ${filesToConvert.length} ${type} files...`,
-    });
-
-    // Convert files one by one with a small delay
-    for (const file of filesToConvert) {
-      await handleConvertFile(file.id);
-      // Small delay to show progress
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    toast({
-      title: "Conversion completed",
-      description: `Successfully processed ${filesToConvert.length} ${type} files.`,
-    });
-  };
+  if (showReport && report) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <HomeButton onClick={handleGoHome} />
+                <div className="flex items-center">
+                  <Database className="h-8 w-8 text-primary mr-3" />
+                  <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
+                </div>
+              </div>
+              <UserDropdown />
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <ReportViewer 
+            report={report} 
+            onBack={() => setShowReport(false)} 
+          />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <HomeButton onClick={handleGoHome} />
               <div className="flex items-center">
                 <Database className="h-8 w-8 text-primary mr-3" />
-                <h1 className="text-2xl font-bold text-gray-900">Migration Dashboard</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Sybase to Oracle Migration</h1>
               </div>
-              
+            </div>
+            
+            <div className="flex items-center gap-4">
               <Button 
-                onClick={handleStartNewMigration}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Start New Migration
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={handleViewHistory}
+                variant="outline" 
+                onClick={handleGoToHistory}
                 className="flex items-center gap-2"
               >
                 <History className="h-4 w-4" />
                 History
               </Button>
+              <UserDropdown />
             </div>
-            
-            <UserDropdown />
           </div>
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {currentStep === 'upload' ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion')}>
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Upload Code
+            </TabsTrigger>
+            <TabsTrigger value="conversion" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Conversion
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload">
             <FolderUploader onFolderUpload={handleFolderUpload} />
-          </div>
-        ) : currentStep === 'review' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <FileTreeView
-                files={files}
-                onFileSelect={handleFileSelect}
-                onConvertFile={handleConvertFile}
-                onConvertAllByType={handleConvertAllByType}
-                onConvertAll={handleConvertAll}
-                onFixFile={handleFixFile}
-                selectedFile={selectedFile}
-              />
-            </div>
-            
-            <div className="lg:col-span-2">
-              {selectedFile ? (
-                <div className="space-y-6">
-                  <ConversionViewer
-                    file={selectedFile}
-                    onFixWithAI={handleFixWithAI}
-                    onManualEdit={handleManualEdit}
+          </TabsContent>
+
+          <TabsContent value="conversion">
+            {files.length === 0 ? (
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>No Files Uploaded</CardTitle>
+                  <CardDescription>
+                    Please upload your Sybase code files first to begin the conversion process.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => setActiveTab('upload')}>
+                    Upload Files
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-12 gap-6">
+                {/* File Tree */}
+                <div className="col-span-4">
+                  <FileTreeView
+                    files={files}
+                    onFileSelect={handleFileSelect}
+                    onConvertFile={handleConvertFile}
+                    onConvertAllByType={handleConvertAllByType}
+                    onConvertAll={handleConvertAll}
+                    onFixFile={handleFixFile}
+                    selectedFile={selectedFile}
                   />
-                  
-                  {selectedFile.conversionStatus === 'success' && (
-                    <ConversionActions
-                      hasConvertedFiles={files.some(f => f.conversionStatus === 'success')}
-                      onCompleteMigration={handleCompleteMigration}
-                    />
+                </div>
+
+                {/* Conversion Viewer */}
+                <div className="col-span-8">
+                  {selectedFile ? (
+                    <div className="space-y-4">
+                      <ConversionViewer
+                        file={selectedFile}
+                        onFixWithAI={handleFixWithAI}
+                        onManualEdit={handleManualEdit}
+                      />
+                      
+                      {/* Complete Migration Button */}
+                      {files.some(f => f.conversionStatus === 'success') && (
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleGenerateReport}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Complete Migration
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Card className="h-full flex items-center justify-center">
+                      <CardContent className="text-center">
+                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          Select a file to view conversion
+                        </h3>
+                        <p className="text-gray-600">
+                          Choose a file from the project structure to see its conversion details
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
-              ) : (
-                <Card className="h-full flex items-center justify-center">
-                  <CardContent className="text-center">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Select a file to view
-                    </h3>
-                    <p className="text-gray-600">
-                      Choose a file from the project structure to view its content and conversion status
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        ) : (
-          <MigrationReport 
-            report={migrationReport}
-            onBack={() => setCurrentStep('review')}
-          />
-        )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

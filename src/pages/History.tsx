@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Database, FileText, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Database, FileText, Calendar, User, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import UserDropdown from '@/components/UserDropdown';
+import HomeButton from '@/components/HomeButton';
 import { format } from 'date-fns';
 
 interface Migration {
@@ -32,10 +32,14 @@ interface DeploymentLog {
 const History = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [migrations, setMigrations] = useState<Migration[]>([]);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
   const [activeTab, setActiveTab] = useState<'migrations' | 'deployments'>('migrations');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Get the return tab from location state
+  const returnTab = location.state?.returnTab || 'upload';
 
   useEffect(() => {
     if (!loading && !user) {
@@ -106,6 +110,15 @@ const History = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    // Navigate back to dashboard with the remembered tab
+    navigate('/migration', { state: { activeTab: returnTab } });
+  };
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,9 +141,10 @@ const History = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <HomeButton onClick={handleGoHome} />
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/migration')}
+                onClick={handleBackToDashboard}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />

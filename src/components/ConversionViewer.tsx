@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -57,6 +56,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [isFixing, setIsFixing] = useState<string | null>(null);
 
   // Update editedContent when file.convertedContent changes
   useEffect(() => {
@@ -68,8 +68,27 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     setIsEditing(false);
   };
 
-  const handleFixWithAI = (issueId: string) => {
-    onFixWithAI(issueId);
+  const handleFixWithAI = async (issueId: string) => {
+    setIsFixing(issueId);
+    
+    // Simulate AI fix processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Apply the fix to the converted content
+    const issue = file.issues?.find(i => i.id === issueId);
+    if (issue && issue.originalCode && issue.suggestedFix && file.convertedContent) {
+      const fixedContent = file.convertedContent.replace(
+        new RegExp(issue.originalCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+        issue.suggestedFix
+      );
+      
+      // Update the content through the parent component
+      onManualEdit(fixedContent);
+    }
+    
+    // Call the original fix function
+    await onFixWithAI(issueId);
+    setIsFixing(null);
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -248,10 +267,11 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                       <Button
                         size="sm"
                         onClick={() => handleFixWithAI(issue.id)}
+                        disabled={isFixing === issue.id}
                         className="ml-4"
                       >
-                        <RefreshCw className="h-4 w-4 mr-1" />
-                        Fix with AI
+                        <RefreshCw className={`h-4 w-4 mr-1 ${isFixing === issue.id ? 'animate-spin' : ''}`} />
+                        {isFixing === issue.id ? 'Fixing...' : 'Fix with AI'}
                       </Button>
                     </div>
                   </Alert>
