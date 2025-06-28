@@ -60,7 +60,7 @@ const Landing = () => {
               Transform your legacy Sybase applications to modern Oracle infrastructure 
               with intelligent code conversion, automated testing, and seamless deployment.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Button 
                 onClick={handleGetStarted}
                 size="lg" 
@@ -68,14 +68,6 @@ const Landing = () => {
               >
                 Start Migration
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="text-lg px-8 py-4"
-                onClick={() => navigate('/history')}
-              >
-                View Examples
               </Button>
             </div>
           </div>

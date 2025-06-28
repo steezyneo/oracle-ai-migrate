@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,6 +86,13 @@ const Dashboard = () => {
       startNewMigration();
     }
   }, [user, loading, navigate, currentMigrationId]);
+
+  // Auto-select first file when files change
+  useEffect(() => {
+    if (files.length > 0 && !selectedFile) {
+      setSelectedFile(files[0]);
+    }
+  }, [files, selectedFile]);
 
   const startNewMigration = async () => {
     try {
@@ -217,6 +223,17 @@ const Dashboard = () => {
         )
       );
 
+      // Update selectedFile if it's the one being converted
+      if (selectedFile?.id === fileId) {
+        setSelectedFile(prev => prev ? {
+          ...prev,
+          conversionStatus: mappedStatus,
+          convertedContent: conversionResult.convertedCode,
+          issues: conversionResult.issues,
+          performanceMetrics: conversionResult.performance
+        } : null);
+      }
+
       // Update the file in Supabase
       await supabase
         .from('migration_files')
@@ -226,20 +243,6 @@ const Dashboard = () => {
           error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
         })
         .eq('file_name', fileToConvert.name);
-
-      // Auto-select the first converted file if none is selected
-      if (!selectedFile) {
-        const updatedFile = files.find(f => f.id === fileId);
-        if (updatedFile) {
-          setSelectedFile({
-            ...updatedFile,
-            conversionStatus: mappedStatus,
-            convertedContent: conversionResult.convertedCode,
-            issues: conversionResult.issues,
-            performanceMetrics: conversionResult.performance
-          });
-        }
-      }
 
       toast({
         title: "File Converted",
@@ -300,11 +303,6 @@ const Dashboard = () => {
           .eq('file_name', file.name);
       }
 
-      // Auto-select the first converted file if none is selected
-      if (!selectedFile && filesToConvert.length > 0) {
-        setSelectedFile(filesToConvert[0]);
-      }
-
       toast({
         title: "Files Converted",
         description: `Successfully converted all ${type} files`,
@@ -362,11 +360,6 @@ const Dashboard = () => {
             error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
           })
           .eq('file_name', file.name);
-      }
-
-      // Auto-select the first converted file if none is selected
-      if (!selectedFile && filesToConvert.length > 0) {
-        setSelectedFile(filesToConvert[0]);
       }
 
       toast({
@@ -439,16 +432,18 @@ const Dashboard = () => {
 
   const handleManualEdit = (newContent: string) => {
     if (selectedFile) {
+      const updatedFile = { ...selectedFile, convertedContent: newContent };
+      
       setFiles(prevFiles =>
         prevFiles.map(file =>
           file.id === selectedFile.id
-            ? { ...file, convertedContent: newContent }
+            ? updatedFile
             : file
         )
       );
       
       // Update the selectedFile as well
-      setSelectedFile(prev => prev ? { ...prev, convertedContent: newContent } : null);
+      setSelectedFile(updatedFile);
     }
   };
 

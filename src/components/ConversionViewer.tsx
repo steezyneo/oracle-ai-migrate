@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -317,7 +318,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 <div>
                   <h4 className="text-sm font-medium mb-2">Recommendations</h4>
                   <ul className="space-y-2">
-                    {file.performanceMetrics.recommendations.map((rec, index) => (
+                    {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{rec}</span>
