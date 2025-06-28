@@ -11,6 +11,7 @@ interface FileStructure {
   type: 'file' | 'folder';
   content?: string;
   children?: FileStructure[];
+  [key: string]: any; // Add index signature to make it compatible with Json type
 }
 
 interface FolderUploaderProps {

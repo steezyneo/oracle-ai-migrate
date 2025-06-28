@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Plus, Database } from 'lucide-react';
+import { History, Plus, Database, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserDropdown from '@/components/UserDropdown';
@@ -28,6 +27,7 @@ interface FileStructure {
   type: 'file' | 'folder';
   content?: string;
   children?: FileStructure[];
+  [key: string]: any; // Add index signature to make it compatible with Json type
 }
 
 const Dashboard = () => {
