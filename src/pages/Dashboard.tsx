@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Plus, Database, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { History, Plus, Database, FileText, RefreshCw, Download, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import UserDropdown from '@/components/UserDropdown';
 import FolderUploader from '@/components/FolderUploader';
 import FileTreeView from '@/components/FileTreeView';
+import ConversionViewer from '@/components/ConversionViewer';
+import MigrationReport from '@/components/MigrationReport';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +22,31 @@ interface FileItem {
   conversionStatus: 'pending' | 'success' | 'failed';
   convertedContent?: string;
   errorMessage?: string;
+  dataTypeMapping?: DataTypeMapping[];
+  issues?: ConversionIssue[];
+  performanceMetrics?: PerformanceMetrics;
+}
+
+interface DataTypeMapping {
+  sybaseType: string;
+  oracleType: string;
+  description: string;
+}
+
+interface ConversionIssue {
+  id: string;
+  severity: 'error' | 'warning' | 'info';
+  description: string;
+  lineNumber?: number;
+  suggestedFix?: string;
+  originalCode?: string;
+}
+
+interface PerformanceMetrics {
+  originalComplexity: number;
+  convertedComplexity: number;
+  improvementPercentage: number;
+  recommendations: string[];
 }
 
 interface FileStructure {
@@ -34,10 +62,11 @@ const Dashboard = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<'upload' | 'review'>('upload');
+  const [currentStep, setCurrentStep] = useState<'upload' | 'review' | 'report'>('upload');
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
+  const [migrationReport, setMigrationReport] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -76,9 +105,78 @@ const Dashboard = () => {
     return 'other';
   };
 
+  const generateDataTypeMapping = (content: string): DataTypeMapping[] => {
+    const mappings: DataTypeMapping[] = [];
+    
+    // Common Sybase to Oracle mappings
+    if (content.toLowerCase().includes('int')) {
+      mappings.push({
+        sybaseType: 'INT',
+        oracleType: 'NUMBER(10)',
+        description: 'Integer values converted to NUMBER with precision 10'
+      });
+    }
+    
+    if (content.toLowerCase().includes('varchar')) {
+      mappings.push({
+        sybaseType: 'VARCHAR',
+        oracleType: 'VARCHAR2',
+        description: 'Variable character strings'
+      });
+    }
+    
+    if (content.toLowerCase().includes('datetime')) {
+      mappings.push({
+        sybaseType: 'DATETIME',
+        oracleType: 'TIMESTAMP',
+        description: 'Date and time values with higher precision'
+      });
+    }
+    
+    return mappings;
+  };
+
+  const generateConversionIssues = (content: string): ConversionIssue[] => {
+    const issues: ConversionIssue[] = [];
+    
+    if (content.includes('@')) {
+      issues.push({
+        id: crypto.randomUUID(),
+        severity: 'error',
+        description: 'Sybase variable notation (@) needs conversion',
+        suggestedFix: 'Replace @ variables with Oracle PL/SQL variable syntax',
+        originalCode: '@variable_name'
+      });
+    }
+    
+    if (content.toLowerCase().includes('getdate()')) {
+      issues.push({
+        id: crypto.randomUUID(),
+        severity: 'warning',
+        description: 'Sybase GETDATE() function needs replacement',
+        suggestedFix: 'Use SYSDATE in Oracle',
+        originalCode: 'GETDATE()'
+      });
+    }
+    
+    return issues;
+  };
+
+  const generatePerformanceMetrics = (): PerformanceMetrics => {
+    return {
+      originalComplexity: Math.floor(Math.random() * 100) + 50,
+      convertedComplexity: Math.floor(Math.random() * 50) + 20,
+      improvementPercentage: Math.floor(Math.random() * 40) + 15,
+      recommendations: [
+        'Consider using bind variables for better performance',
+        'Index optimization recommended for large tables',
+        'Review query execution plans'
+      ]
+    };
+  };
+
   const handleFolderUpload = async (uploadedFiles: FileStructure[], projectName: string) => {
     try {
-      // Create migration record
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
@@ -95,7 +193,6 @@ const Dashboard = () => {
 
       setCurrentMigrationId(migration.id);
 
-      // Process files and create file records
       const processedFiles: FileItem[] = [];
       
       for (const file of uploadedFiles) {
@@ -157,12 +254,14 @@ const Dashboard = () => {
     if (!file) return;
 
     try {
-      // Simulate conversion process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock conversion result
       const convertedContent = `-- Converted Oracle code for ${file.name}\n${file.content.replace(/sybase/gi, 'oracle')}`;
-      const isSuccess = Math.random() > 0.2; // 80% success rate for demo
+      const isSuccess = Math.random() > 0.2;
+      
+      const dataTypeMapping = generateDataTypeMapping(file.content);
+      const issues = generateConversionIssues(file.content);
+      const performanceMetrics = generatePerformanceMetrics();
       
       const { error } = await supabase
         .from('migration_files')
@@ -177,14 +276,16 @@ const Dashboard = () => {
         throw error;
       }
 
-      // Update local state
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
               ...f, 
               conversionStatus: isSuccess ? 'success' : 'failed',
               convertedContent: isSuccess ? convertedContent : undefined,
-              errorMessage: isSuccess ? undefined : 'Conversion failed: Unsupported syntax detected'
+              errorMessage: isSuccess ? undefined : 'Conversion failed: Unsupported syntax detected',
+              dataTypeMapping: isSuccess ? dataTypeMapping : undefined,
+              issues: isSuccess ? issues : undefined,
+              performanceMetrics: isSuccess ? performanceMetrics : undefined
             }
           : f
       ));
@@ -206,11 +307,70 @@ const Dashboard = () => {
     }
   };
 
+  const handleFixWithAI = async (issueId: string) => {
+    if (!selectedFile) return;
+    
+    toast({
+      title: "AI Fix in Progress",
+      description: "Applying AI fix to the issue...",
+    });
+
+    // Simulate AI fix
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const updatedFile = {
+      ...selectedFile,
+      convertedContent: selectedFile.convertedContent?.replace(/@/g, 'v_'),
+      issues: selectedFile.issues?.filter(issue => issue.id !== issueId)
+    };
+    
+    setSelectedFile(updatedFile);
+    setFiles(prev => prev.map(f => f.id === selectedFile.id ? updatedFile : f));
+    
+    toast({
+      title: "AI Fix Applied",
+      description: "The issue has been resolved automatically.",
+    });
+  };
+
+  const handleManualEdit = (newContent: string) => {
+    if (!selectedFile) return;
+    
+    const updatedFile = {
+      ...selectedFile,
+      convertedContent: newContent
+    };
+    
+    setSelectedFile(updatedFile);
+    setFiles(prev => prev.map(f => f.id === selectedFile.id ? updatedFile : f));
+  };
+
+  const handleCompleteMigration = async () => {
+    const report = {
+      id: crypto.randomUUID(),
+      migrationId: currentMigrationId,
+      timestamp: new Date().toISOString(),
+      totalFiles: files.length,
+      successfulFiles: files.filter(f => f.conversionStatus === 'success').length,
+      failedFiles: files.filter(f => f.conversionStatus === 'failed').length,
+      files: files
+    };
+    
+    setMigrationReport(report);
+    setCurrentStep('report');
+    
+    toast({
+      title: "Migration Completed",
+      description: "Migration report has been generated successfully.",
+    });
+  };
+
   const handleStartNewMigration = () => {
     setCurrentStep('upload');
     setFiles([]);
     setSelectedFile(null);
     setCurrentMigrationId(null);
+    setMigrationReport(null);
   };
 
   const handleViewHistory = () => {
@@ -219,7 +379,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -252,15 +411,13 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {currentStep === 'upload' ? (
           <div className="flex items-center justify-center min-h-[60vh]">
             <FolderUploader onFolderUpload={handleFolderUpload} />
           </div>
-        ) : (
+        ) : currentStep === 'review' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* File Tree */}
             <div className="lg:col-span-1">
               <FileTreeView
                 files={files}
@@ -268,68 +425,25 @@ const Dashboard = () => {
                 onConvertFile={handleConvertFile}
                 selectedFile={selectedFile}
               />
+              
+              <div className="mt-6">
+                <Button 
+                  onClick={handleCompleteMigration}
+                  className="w-full"
+                  disabled={files.length === 0 || files.every(f => f.conversionStatus === 'pending')}
+                >
+                  Complete Migration
+                </Button>
+              </div>
             </div>
             
-            {/* File Content Viewer */}
             <div className="lg:col-span-2">
               {selectedFile ? (
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{selectedFile.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          selectedFile.conversionStatus === 'success' 
-                            ? 'bg-green-100 text-green-800'
-                            : selectedFile.conversionStatus === 'failed'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {selectedFile.conversionStatus}
-                        </span>
-                        {selectedFile.conversionStatus === 'pending' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleConvertFile(selectedFile.id)}
-                          >
-                            Convert
-                          </Button>
-                        )}
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Original Content */}
-                      <div>
-                        <h3 className="font-semibold mb-2">Original Sybase Code:</h3>
-                        <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64">
-                          {selectedFile.content}
-                        </pre>
-                      </div>
-                      
-                      {/* Converted Content */}
-                      {selectedFile.convertedContent && (
-                        <div>
-                          <h3 className="font-semibold mb-2 text-green-700">Converted Oracle Code:</h3>
-                          <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64">
-                            {selectedFile.convertedContent}
-                          </pre>
-                        </div>
-                      )}
-                      
-                      {/* Error Message */}
-                      {selectedFile.errorMessage && (
-                        <div>
-                          <h3 className="font-semibold mb-2 text-red-700">Error:</h3>
-                          <div className="bg-red-50 p-4 rounded text-sm text-red-700">
-                            {selectedFile.errorMessage}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ConversionViewer
+                  file={selectedFile}
+                  onFixWithAI={handleFixWithAI}
+                  onManualEdit={handleManualEdit}
+                />
               ) : (
                 <Card className="h-full flex items-center justify-center">
                   <CardContent className="text-center">
@@ -345,6 +459,11 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+        ) : (
+          <MigrationReport 
+            report={migrationReport}
+            onBack={() => setCurrentStep('review')}
+          />
         )}
       </main>
     </div>
