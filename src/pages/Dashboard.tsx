@@ -10,14 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 
-import FolderUploader from '@/components/FolderUploader';
+import CodeUploader from '@/components/CodeUploader';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import ReportViewer from '@/components/ReportViewer';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
 import Help from '@/components/Help';
-import ConversionHistory from '@/components/ConversionHistory';
 
 interface FileStructure {
   name: string;
@@ -69,7 +68,7 @@ const Dashboard = () => {
   
   const initialTab = location.state?.activeTab || 'upload';
   
-  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'history'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [isConverting, setIsConverting] = useState(false);
@@ -96,66 +95,13 @@ const Dashboard = () => {
     }
   }, [files, selectedFile]);
 
-  const handleFolderUpload = async (uploadedFiles: any[], projectName: string) => {
-    const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
-      id: `${Date.now()}-${Math.random()}`,
-      name: file.name,
-      path: file.path,
-      type: getFileType(file.name),
-      content: file.content,
-      conversionStatus: 'pending' as const
-    }));
-
-    setFiles(convertedFiles);
-    setActiveTab('conversion');
-
-    try {
-      if (!currentMigrationId) {
-        await startNewMigration(projectName);
-      }
-
-      if (currentMigrationId) {
-        for (const file of convertedFiles) {
-          await supabase.from('migration_files').insert({
-            migration_id: currentMigrationId,
-            file_name: file.name,
-            file_path: file.path,
-            file_type: file.type,
-            original_content: file.content,
-            conversion_status: 'pending',
-          });
-        }
-
-        toast({
-          title: "Files Uploaded",
-          description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error saving files to Supabase:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to save the uploaded files",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getFileType = (fileName: string): 'table' | 'procedure' | 'trigger' | 'other' => {
-    const ext = fileName.toLowerCase();
-    if (ext.includes('table') || ext.includes('.tab')) return 'table';
-    if (ext.includes('proc') || ext.includes('.prc')) return 'procedure';
-    if (ext.includes('trig') || ext.includes('.trg')) return 'trigger';
-    return 'other';
-  };
-
-  const startNewMigration = async (projectName?: string) => {
+  const startNewMigration = async () => {
     try {
       const { data, error } = await supabase
         .from('migrations')
         .insert({ 
           user_id: user?.id,
-          project_name: projectName || `Migration_${new Date().toISOString().split('T')[0]}`
+          project_name: `Migration_${new Date().toISOString().split('T')[0]}`
         })
         .select()
         .single();
@@ -615,8 +561,8 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'history')}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto mb-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion')}>
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Upload Code
@@ -625,14 +571,10 @@ const Dashboard = () => {
               <FileText className="h-4 w-4" />
               Conversion
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              History
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
-            <FolderUploader onFolderUpload={handleFolderUpload} />
+            <CodeUploader onComplete={handleCodeUpload} />
           </TabsContent>
 
           <TabsContent value="conversion">
@@ -655,11 +597,11 @@ const Dashboard = () => {
                 <div className="col-span-4">
                   <FileTreeView
                     files={files}
-                    onFileSelect={setSelectedFile}
-                    onConvertFile={() => {}}
-                    onConvertAllByType={() => {}}
-                    onConvertAll={() => {}}
-                    onFixFile={() => {}}
+                    onFileSelect={handleFileSelect}
+                    onConvertFile={handleConvertFile}
+                    onConvertAllByType={handleConvertAllByType}
+                    onConvertAll={handleConvertAll}
+                    onFixFile={handleFixFile}
                     selectedFile={selectedFile}
                   />
                 </div>
@@ -669,9 +611,21 @@ const Dashboard = () => {
                     <div className="space-y-4">
                       <ConversionViewer
                         file={selectedFile}
-                        onFixWithAI={() => {}}
-                        onManualEdit={() => {}}
+                        onFixWithAI={handleFixWithAI}
+                        onManualEdit={handleManualEdit}
                       />
+                      
+                      {files.some(f => f.conversionStatus === 'success') && (
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleGenerateReport}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Complete Migration
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <Card className="h-full flex items-center justify-center">
@@ -689,10 +643,6 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="history">
-            <ConversionHistory onBack={() => setActiveTab('upload')} />
           </TabsContent>
         </Tabs>
       </main>
