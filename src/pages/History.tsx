@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
-import MigrationDetailView from '@/components/MigrationDetailView';
 import { format } from 'date-fns';
 
 interface Migration {
@@ -29,7 +27,6 @@ interface DeploymentLog {
   lines_of_sql: number;
   file_count: number;
   error_message: string | null;
-  migration_id: string | null;
 }
 
 const History = () => {
@@ -39,7 +36,6 @@ const History = () => {
   const [migrations, setMigrations] = useState<Migration[]>([]);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
   const [activeTab, setActiveTab] = useState<'migrations' | 'deployments'>('migrations');
-  const [selectedMigrationId, setSelectedMigrationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Get the return tab from location state
@@ -94,11 +90,10 @@ const History = () => {
         setMigrations(processedMigrations);
       }
 
-      // Fetch deployment logs for the current user
+      // Fetch deployment logs
       const { data: logsData, error: logsError } = await supabase
         .from('deployment_logs')
         .select('*')
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -116,19 +111,12 @@ const History = () => {
   };
 
   const handleBackToDashboard = () => {
+    // Navigate back to dashboard with the remembered tab
     navigate('/migration', { state: { activeTab: returnTab } });
   };
 
   const handleGoHome = () => {
     navigate('/');
-  };
-
-  const handleMigrationClick = (migrationId: string) => {
-    setSelectedMigrationId(migrationId);
-  };
-
-  const handleBackToHistory = () => {
-    setSelectedMigrationId(null);
   };
 
   if (loading || isLoading) {
@@ -144,34 +132,6 @@ const History = () => {
 
   if (!user || !profile) {
     return null;
-  }
-
-  // Show migration detail view if a migration is selected
-  if (selectedMigrationId) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <HomeButton onClick={handleGoHome} />
-                <div className="flex items-center">
-                  <Database className="h-8 w-8 text-primary mr-3" />
-                  <h1 className="text-2xl font-bold text-gray-900">Migration Details</h1>
-                </div>
-              </div>
-              <UserDropdown />
-            </div>
-          </div>
-        </header>
-        <main className="container mx-auto px-4 py-8">
-          <MigrationDetailView 
-            migrationId={selectedMigrationId} 
-            onBack={handleBackToHistory}
-          />
-        </main>
-      </div>
-    );
   }
 
   return (
@@ -258,16 +218,12 @@ const History = () => {
                         <TableHead>Failed</TableHead>
                         <TableHead>Pending</TableHead>
                         <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {migrations.map((migration) => (
-                        <TableRow key={migration.id} className="cursor-pointer hover:bg-gray-50">
-                          <TableCell 
-                            className="font-medium"
-                            onClick={() => handleMigrationClick(migration.id)}
-                          >
+                        <TableRow key={migration.id}>
+                          <TableCell className="font-medium">
                             {migration.project_name}
                           </TableCell>
                           <TableCell>{migration.file_count}</TableCell>
@@ -288,14 +244,6 @@ const History = () => {
                           </TableCell>
                           <TableCell>
                             {format(new Date(migration.created_at), 'MMM dd, yyyy HH:mm')}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleMigrationClick(migration.id)}
-                            >
-                              View Details
-                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -332,7 +280,6 @@ const History = () => {
                         <TableHead>SQL Lines</TableHead>
                         <TableHead>Error</TableHead>
                         <TableHead>Deployed</TableHead>
-                        <TableHead>Migration</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -360,19 +307,6 @@ const History = () => {
                           </TableCell>
                           <TableCell>
                             {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm')}
-                          </TableCell>
-                          <TableCell>
-                            {log.migration_id ? (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleMigrationClick(log.migration_id!)}
-                              >
-                                View Migration
-                              </Button>
-                            ) : (
-                              <span className="text-gray-400">N/A</span>
-                            )}
                           </TableCell>
                         </TableRow>
                       ))}

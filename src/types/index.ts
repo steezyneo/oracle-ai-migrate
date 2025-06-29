@@ -35,7 +35,6 @@ export interface ConversionIssue {
   severity: 'info' | 'warning' | 'error';
   suggestedFix?: string;
   originalCode?: string;
-  category?: string;
 }
 
 export interface PerformanceMetrics {

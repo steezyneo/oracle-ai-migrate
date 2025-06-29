@@ -5,7 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
-import { ConversionIssue } from '@/types';
+
+interface ConversionIssue {
+  id: string;
+  severity: 'error' | 'warning' | 'info';
+  description: string;
+  lineNumber?: number;
+  suggestedFix?: string;
+  originalCode?: string;
+  category: string;
+}
 
 interface ConversionIssuesPanelProps {
   issues: ConversionIssue[];
@@ -130,11 +139,9 @@ const ConversionIssuesPanel: React.FC<ConversionIssuesPanelProps> = ({
                     <span className="uppercase text-xs font-semibold">
                       {issue.severity}
                     </span>
-                    {issue.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {issue.category}
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {issue.category}
+                    </Badge>
                     {issue.lineNumber && (
                       <span className="text-sm text-gray-500">
                         Line {issue.lineNumber}

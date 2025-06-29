@@ -16,9 +16,7 @@ export type Database = {
           file_count: number
           id: string
           lines_of_sql: number
-          migration_id: string | null
           status: string
-          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -26,9 +24,7 @@ export type Database = {
           file_count?: number
           id?: string
           lines_of_sql?: number
-          migration_id?: string | null
           status: string
-          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -36,9 +32,7 @@ export type Database = {
           file_count?: number
           id?: string
           lines_of_sql?: number
-          migration_id?: string | null
           status?: string
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -47,51 +41,39 @@ export type Database = {
           conversion_status: string
           converted_content: string | null
           created_at: string
-          data_type_mapping: Json | null
           error_message: string | null
           file_name: string
           file_path: string
           file_type: string
           id: string
-          issues: Json | null
           migration_id: string
           original_content: string | null
-          performance_metrics: Json | null
-          syntax_differences: Json | null
           updated_at: string
         }
         Insert: {
           conversion_status?: string
           converted_content?: string | null
           created_at?: string
-          data_type_mapping?: Json | null
           error_message?: string | null
           file_name: string
           file_path: string
           file_type: string
           id?: string
-          issues?: Json | null
           migration_id: string
           original_content?: string | null
-          performance_metrics?: Json | null
-          syntax_differences?: Json | null
           updated_at?: string
         }
         Update: {
           conversion_status?: string
           converted_content?: string | null
           created_at?: string
-          data_type_mapping?: Json | null
           error_message?: string | null
           file_name?: string
           file_path?: string
           file_type?: string
           id?: string
-          issues?: Json | null
           migration_id?: string
           original_content?: string | null
-          performance_metrics?: Json | null
-          syntax_differences?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -103,30 +85,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      migration_reports: {
-        Row: {
-          created_at: string
-          efficiency_metrics: Json | null
-          id: string
-          migration_id: string
-          report_content: string
-        }
-        Insert: {
-          created_at?: string
-          efficiency_metrics?: Json | null
-          id?: string
-          migration_id: string
-          report_content: string
-        }
-        Update: {
-          created_at?: string
-          efficiency_metrics?: Json | null
-          id?: string
-          migration_id?: string
-          report_content?: string
-        }
-        Relationships: []
       }
       migrations: {
         Row: {
