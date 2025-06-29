@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import CodeUploader from '@/components/CodeUploader';
 import FileTreeView from '@/components/FileTreeView';
@@ -60,6 +61,9 @@ interface ConversionReport {
   results: ConversionResult[];
   summary: string;
 }
+
+const GEMINI_API_KEY = "AIzaSyAiU5Dt6ZEEYsYCh4Z02GNm1XWXup6xcBg";
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -413,7 +417,64 @@ const Dashboard = () => {
   };
 
   const handleFixWithAI = async (issueId: string) => {
-    console.log(`Attempting to fix issue with AI: ${issueId}`);
+    if (!selectedFile) return;
+    const fileIdx = files.findIndex(f => f.id === selectedFile.id);
+    if (fileIdx === -1) return;
+    const issue = selectedFile.issues?.find(i => i.id === issueId);
+    if (!issue || !selectedFile.convertedContent) return;
+
+    try {
+      // Prepare prompt for Gemini
+      const prompt = `You are an expert in Sybase to Oracle code migration.\n\nHere is the original Sybase code:\n${selectedFile.content}\n\nHere is the current Oracle code (with issues):\n${selectedFile.convertedContent}\n\nHere is the issue to fix: ${issue.description}${issue.originalCode ? `\nOriginal code: ${issue.originalCode}` : ''}${issue.suggestedFix ? `\nSuggested fix: ${issue.suggestedFix}` : ''}\n\nPlease provide the fixed Oracle code, with the issue resolved, and only output the code.`;
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const fixedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+
+      // Remove the fixed issue from the issues array
+      const updatedIssues = selectedFile.issues?.filter(i => i.id !== issueId) || [];
+
+      // Update the file in state
+      setFiles(prevFiles => prevFiles.map((f, idx) =>
+        idx === fileIdx
+          ? {
+              ...f,
+              convertedContent: fixedCode,
+              issues: updatedIssues
+            }
+          : f
+      ));
+      setSelectedFile(prev => prev && prev.id === selectedFile.id
+        ? { ...prev, convertedContent: fixedCode, issues: updatedIssues }
+        : prev
+      );
+      toast({
+        title: "AI Fix Applied",
+        description: `The issue has been fixed using Gemini AI.`
+      });
+    } catch (error) {
+      toast({
+        title: "AI Fix Failed",
+        description: `Failed to fix the issue with Gemini AI.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDismissIssue = (issueId: string) => {
+    if (!selectedFile) return;
+    const fileIdx = files.findIndex(f => f.id === selectedFile.id);
+    if (fileIdx === -1) return;
+    const updatedIssues = selectedFile.issues?.filter(i => i.id !== issueId) || [];
+    setFiles(prevFiles => prevFiles.map((f, idx) =>
+      idx === fileIdx
+        ? { ...f, issues: updatedIssues }
+        : f
+    ));
+    setSelectedFile(prev => prev && prev.id === selectedFile.id
+      ? { ...prev, issues: updatedIssues }
+      : prev
+    );
   };
 
   const handleManualEdit = (newContent: string) => {
@@ -620,6 +681,7 @@ const Dashboard = () => {
                         file={selectedFile}
                         onFixWithAI={handleFixWithAI}
                         onManualEdit={handleManualEdit}
+                        onDismissIssue={handleDismissIssue}
                       />
                       
                       {files.some(f => f.conversionStatus === 'success') && (
