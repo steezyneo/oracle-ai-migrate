@@ -3,19 +3,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, Upload, History, RefreshCw, Download, Home } from 'lucide-react';
+import { Database, FileText, Upload, History, RefreshCw, Download, Home, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 
-import FolderUploader from '@/components/FolderUploader';
+import CodeUploader from '@/components/CodeUploader';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import ReportViewer from '@/components/ReportViewer';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
+import Help from '@/components/Help';
 
 interface FileStructure {
   name: string;
@@ -65,7 +66,6 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  // Get the initial tab from location state, default to 'upload'
   const initialTab = location.state?.activeTab || 'upload';
   
   const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
@@ -75,6 +75,7 @@ const Dashboard = () => {
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -87,10 +88,10 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate, currentMigrationId]);
 
-  // Auto-select first file when files change
   useEffect(() => {
     if (files.length > 0 && !selectedFile) {
-      setSelectedFile(files[0]);
+      const firstConvertedFile = files.find(f => f.convertedContent);
+      setSelectedFile(firstConvertedFile || files[0]);
     }
   }, [files, selectedFile]);
 
@@ -120,14 +121,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleFolderUpload = async (fileStructure: FileStructure[], projectName: string) => {
-    // Convert FileStructure to FileItem
-    const convertedFiles: FileItem[] = fileStructure.map(file => ({
-      id: crypto.randomUUID(),
+  const handleCodeUpload = async (uploadedFiles: any[]) => {
+    const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
+      id: file.id,
       name: file.name,
-      path: file.path,
-      type: determineFileType(file.name),
-      content: file.content || '',
+      path: file.name,
+      type: file.type,
+      content: file.content,
       conversionStatus: 'pending' as const
     }));
 
@@ -145,14 +145,13 @@ const Dashboard = () => {
         return;
       }
 
-      // Save files to Supabase
       for (const file of convertedFiles) {
         await supabase.from('migration_files').insert({
           migration_id: currentMigrationId,
           file_name: file.name,
           file_path: file.path,
           file_type: file.type,
-          file_content: file.content,
+          original_content: file.content,
           conversion_status: 'pending',
         });
       }
@@ -169,14 +168,6 @@ const Dashboard = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const determineFileType = (fileName: string): 'table' | 'procedure' | 'trigger' | 'other' => {
-    const ext = fileName.toLowerCase();
-    if (ext.includes('table') || ext.includes('.tab')) return 'table';
-    if (ext.includes('proc') || ext.includes('.prc')) return 'procedure';
-    if (ext.includes('trig') || ext.includes('.trg')) return 'trigger';
-    return 'other';
   };
 
   const handleFileSelect = (file: FileItem) => {
@@ -207,7 +198,6 @@ const Dashboard = () => {
       const conversionResult = await convertSybaseToOracle(fileToConvert);
       const mappedStatus = mapConversionStatus(conversionResult.status);
 
-      // Update the file in the state
       setFiles(prevFiles =>
         prevFiles.map(file =>
           file.id === fileId
@@ -216,14 +206,13 @@ const Dashboard = () => {
                 conversionStatus: mappedStatus,
                 convertedContent: conversionResult.convertedCode,
                 issues: conversionResult.issues,
-                dataTypeMapping: [], // You might want to populate this
+                dataTypeMapping: [],
                 performanceMetrics: conversionResult.performance
               }
             : file
         )
       );
 
-      // Update selectedFile if it's the one being converted
       if (selectedFile?.id === fileId) {
         setSelectedFile(prev => prev ? {
           ...prev,
@@ -234,7 +223,6 @@ const Dashboard = () => {
         } : null);
       }
 
-      // Update the file in Supabase
       await supabase
         .from('migration_files')
         .update({
@@ -276,7 +264,6 @@ const Dashboard = () => {
         const conversionResult = await convertSybaseToOracle(file);
         const mappedStatus = mapConversionStatus(conversionResult.status);
 
-        // Update the file in the state
         setFiles(prevFiles =>
           prevFiles.map(f =>
             f.id === file.id
@@ -285,14 +272,13 @@ const Dashboard = () => {
                   conversionStatus: mappedStatus,
                   convertedContent: conversionResult.convertedCode,
                   issues: conversionResult.issues,
-                  dataTypeMapping: [], // You might want to populate this
+                  dataTypeMapping: [],
                   performanceMetrics: conversionResult.performance
                 }
               : f
           )
         );
 
-        // Update the file in Supabase
         await supabase
           .from('migration_files')
           .update({
@@ -335,7 +321,6 @@ const Dashboard = () => {
         const conversionResult = await convertSybaseToOracle(file);
         const mappedStatus = mapConversionStatus(conversionResult.status);
 
-        // Update the file in the state
         setFiles(prevFiles =>
           prevFiles.map(f =>
             f.id === file.id
@@ -344,14 +329,13 @@ const Dashboard = () => {
                   conversionStatus: mappedStatus,
                   convertedContent: conversionResult.convertedCode,
                   issues: conversionResult.issues,
-                  dataTypeMapping: [], // You might want to populate this
+                  dataTypeMapping: [],
                   performanceMetrics: conversionResult.performance
                 }
               : f
           )
         );
 
-        // Update the file in Supabase
         await supabase
           .from('migration_files')
           .update({
@@ -387,10 +371,8 @@ const Dashboard = () => {
         return;
       }
 
-      // Simulate AI-based fix (replace with actual AI call)
       const fixedContent = fileToFix.convertedContent || fileToFix.content;
 
-      // Update the file in the state
       setFiles(prevFiles =>
         prevFiles.map(file =>
           file.id === fileId
@@ -399,7 +381,6 @@ const Dashboard = () => {
         )
       );
 
-      // Update the file in Supabase
       await supabase
         .from('migration_files')
         .update({
@@ -426,7 +407,6 @@ const Dashboard = () => {
   };
 
   const handleFixWithAI = async (issueId: string) => {
-    // Placeholder for AI-based fix
     console.log(`Attempting to fix issue with AI: ${issueId}`);
   };
 
@@ -442,7 +422,6 @@ const Dashboard = () => {
         )
       );
       
-      // Update the selectedFile as well
       setSelectedFile(updatedFile);
     }
   };
@@ -465,7 +444,7 @@ const Dashboard = () => {
         timestamp: new Date().toISOString(),
         filesProcessed: files.length,
         successCount: files.filter(f => f.conversionStatus === 'success').length,
-        warningCount: 0, // No warning status in FileItem
+        warningCount: 0,
         errorCount: files.filter(f => f.conversionStatus === 'failed').length,
         results: conversionResults,
         summary: reportSummary,
@@ -484,7 +463,6 @@ const Dashboard = () => {
   };
 
   const handleGoToHistory = () => {
-    // Pass current tab state to history page
     navigate('/history', { state: { returnTab: activeTab } });
   };
 
@@ -520,7 +498,17 @@ const Dashboard = () => {
                   <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
                 </div>
               </div>
-              <UserDropdown />
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleGoToHistory}
+                  className="flex items-center gap-2"
+                >
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+                <UserDropdown />
+              </div>
             </div>
           </div>
         </header>
@@ -557,6 +545,14 @@ const Dashboard = () => {
                 <History className="h-4 w-4" />
                 History
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHelp(true)}
+                className="flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Help
+              </Button>
               <UserDropdown />
             </div>
           </div>
@@ -578,7 +574,7 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="upload">
-            <FolderUploader onFolderUpload={handleFolderUpload} />
+            <CodeUploader onComplete={handleCodeUpload} />
           </TabsContent>
 
           <TabsContent value="conversion">
@@ -598,7 +594,6 @@ const Dashboard = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-12 gap-6">
-                {/* File Tree */}
                 <div className="col-span-4">
                   <FileTreeView
                     files={files}
@@ -611,7 +606,6 @@ const Dashboard = () => {
                   />
                 </div>
 
-                {/* Conversion Viewer */}
                 <div className="col-span-8">
                   {selectedFile ? (
                     <div className="space-y-4">
@@ -621,7 +615,6 @@ const Dashboard = () => {
                         onManualEdit={handleManualEdit}
                       />
                       
-                      {/* Complete Migration Button */}
                       {files.some(f => f.conversionStatus === 'success') && (
                         <div className="flex justify-end">
                           <Button 
@@ -653,6 +646,11 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <Help onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

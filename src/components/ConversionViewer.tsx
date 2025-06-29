@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
-import { RefreshCw, Edit, Save, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Edit, Save } from 'lucide-react';
+import ConversionIssuesPanel from './ConversionIssuesPanel';
+import FileDownloader from './FileDownloader';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -21,6 +21,7 @@ interface ConversionIssue {
   lineNumber?: number;
   suggestedFix?: string;
   originalCode?: string;
+  category: string;
 }
 
 interface PerformanceMetrics {
@@ -59,7 +60,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const [editedContent, setEditedContent] = useState('');
   const [isFixing, setIsFixing] = useState<string | null>(null);
 
-  // Update editedContent when file.convertedContent changes
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
@@ -72,10 +72,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const handleFixWithAI = async (issueId: string) => {
     setIsFixing(issueId);
     
-    // Simulate AI fix processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Apply the fix to the converted content
     const issue = file.issues?.find(i => i.id === issueId);
     if (issue && issue.originalCode && issue.suggestedFix && file.convertedContent) {
       const fixedContent = file.convertedContent.replace(
@@ -83,39 +81,18 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         issue.suggestedFix
       );
       
-      // Update the content through the parent component
       onManualEdit(fixedContent);
     }
     
-    // Call the original fix function
     await onFixWithAI(issueId);
     setIsFixing(null);
   };
 
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'error':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'info':
-        return <Info className="h-4 w-4 text-blue-500" />;
-      default:
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-    }
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'error':
-        return 'destructive';
-      case 'warning':
-        return 'default';
-      case 'info':
-        return 'secondary';
-      default:
-        return 'default';
-    }
+  const handleDismissIssue = (issueId: string) => {
+    // Filter out the dismissed issue
+    const updatedIssues = file.issues?.filter(issue => issue.id !== issueId) || [];
+    // You might want to update the parent component state here
+    console.log('Dismissed issue:', issueId);
   };
 
   return (
@@ -131,6 +108,13 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               {file.conversionStatus}
             </Badge>
             <Badge variant="outline">{file.type}</Badge>
+            {file.convertedContent && (
+              <FileDownloader
+                fileName={file.name}
+                content={file.convertedContent}
+                fileType={file.type}
+              />
+            )}
           </div>
         </CardTitle>
       </CardHeader>
@@ -235,56 +219,12 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="issues" className="space-y-4">
-            {file.issues && file.issues.length > 0 ? (
-              <div className="space-y-3">
-                <h3 className="text-lg font-medium">Conversion Issues</h3>
-                {file.issues.map((issue) => (
-                  <Alert key={issue.id} variant={getSeverityColor(issue.severity) as any}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <AlertTitle className="flex items-center gap-2">
-                          {getSeverityIcon(issue.severity)}
-                          {issue.severity.toUpperCase()}
-                          {issue.lineNumber && <span className="text-sm">- Line {issue.lineNumber}</span>}
-                        </AlertTitle>
-                        <AlertDescription className="mt-2">
-                          {issue.description}
-                          
-                          {issue.originalCode && issue.suggestedFix && (
-                            <div className="mt-3 p-3 bg-gray-100 rounded">
-                              <p className="text-sm font-medium mb-1">Original:</p>
-                              <code className="text-xs bg-red-100 px-2 py-1 rounded">
-                                {issue.originalCode}
-                              </code>
-                              <p className="text-sm font-medium mb-1 mt-2">Suggested Fix:</p>
-                              <code className="text-xs bg-green-100 px-2 py-1 rounded">
-                                {issue.suggestedFix}
-                              </code>
-                            </div>
-                          )}
-                        </AlertDescription>
-                      </div>
-                      
-                      <Button
-                        size="sm"
-                        onClick={() => handleFixWithAI(issue.id)}
-                        disabled={isFixing === issue.id}
-                        className="ml-4"
-                      >
-                        <RefreshCw className={`h-4 w-4 mr-1 ${isFixing === issue.id ? 'animate-spin' : ''}`} />
-                        {isFixing === issue.id ? 'Fixing...' : 'Fix with AI'}
-                      </Button>
-                    </div>
-                  </Alert>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                <p className="text-green-600 font-medium">No issues found!</p>
-                <p className="text-gray-500 text-sm">The conversion completed successfully.</p>
-              </div>
-            )}
+            <ConversionIssuesPanel
+              issues={file.issues || []}
+              onFixWithAI={handleFixWithAI}
+              onDismissIssue={handleDismissIssue}
+              isFixing={isFixing}
+            />
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-4">
@@ -320,7 +260,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   <ul className="space-y-2">
                     {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{rec}</span>
                       </li>
                     ))}

@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UploadCloud, File, Trash2, Plus, Folder } from 'lucide-react';
+import { UploadCloud, File, Trash2, Plus, Folder, Info, Download } from 'lucide-react';
 import { CodeFile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
@@ -20,9 +20,10 @@ interface CodeUploaderProps {
 const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const { toast } = useToast();
   const [files, setFiles] = useState<CodeFile[]>([]);
-  const [activeTab, setActiveTab] = useState<'tables' | 'procedures' | 'triggers' | 'other'>('tables');
+  const [activeTab, setActiveTab] = useState<'upload' | 'manual' | 'mapping' | 'syntax'>('upload');
   const [manualContent, setManualContent] = useState<string>('');
   const [manualFileName, setManualFileName] = useState<string>('');
+  const [templateType, setTemplateType] = useState<'table' | 'procedure' | 'trigger'>('table');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +33,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     
     console.log('Processing files:', uploadedFiles.length);
     
-    // Convert FileList to array and process each file
     Array.from(uploadedFiles).forEach(file => {
       const reader = new FileReader();
       
@@ -70,14 +70,12 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     processFiles(event.target.files);
-    // Reset the input field to allow uploading the same file again
     event.target.value = '';
   };
 
   const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('Folder upload triggered:', event.target.files);
     if (event.target.files && event.target.files.length > 0) {
-      // Confirm we're processing files from a folder
       console.log('Processing folder with files:', event.target.files.length);
       processFiles(event.target.files);
     } else {
@@ -87,7 +85,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
         variant: 'destructive'
       });
     }
-    // Reset the input field to allow uploading the same folder again
     event.target.value = '';
   };
   
@@ -119,7 +116,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   };
   
   const handleDropAreaClick = () => {
-    // Trigger the hidden file input's click event
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -128,7 +124,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const handleFolderSelect = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    // Trigger the hidden folder input's click event
     if (folderInputRef.current) {
       folderInputRef.current.click();
     }
@@ -138,7 +133,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     fileName = fileName.toLowerCase();
     content = content.toLowerCase();
     
-    // Check file extension first
     if (fileName.includes('table') || fileName.includes('tbl') || fileName.endsWith('.tab')) {
       return 'table';
     } else if (fileName.includes('proc') || fileName.includes('sp_') || fileName.endsWith('.prc')) {
@@ -147,23 +141,19 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       return 'trigger';
     }
     
-    // If extension doesn't clearly indicate, analyze content
     if (fileName.endsWith('.sql')) {
-      // Check for table creation patterns
       if (content.includes('create table') || 
           content.includes('alter table') || 
           content.match(/\bcreate\s+.*\s+table\b/i)) {
         return 'table';
       }
       
-      // Check for procedure patterns
       if (content.includes('create procedure') || 
           content.includes('create or replace procedure') || 
           content.includes('create proc')) {
         return 'procedure';
       }
       
-      // Check for trigger patterns
       if (content.includes('create trigger') || 
           content.includes('create or replace trigger') || 
           content.match(/\btrigger\s+on\b/i)) {
@@ -171,7 +161,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       }
     }
     
-    // Default fallback if no clear indication
     return 'other';
   };
   
@@ -207,13 +196,12 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       id: crypto.randomUUID(),
       name: manualFileName,
       content: manualContent,
-      type: determineFileType(manualFileName, manualContent),
+      type: templateType,
       status: 'pending'
     };
     
     setFiles(prevFiles => [...prevFiles, newFile]);
     
-    // Reset form
     setManualContent('');
     setManualFileName('');
     
@@ -298,16 +286,41 @@ END`;
   
   const addTemplateCode = (type: 'table' | 'procedure' | 'trigger') => {
     const template = getCodeTemplate(type);
-    const fileName = type === 'table' ? 'example_table.tab' : 
-                    type === 'procedure' ? 'example_procedure.prc' : 
-                    'example_trigger.trg';
+    const fileName = type === 'table' ? 'example_table.sql' : 
+                    type === 'procedure' ? 'example_procedure.sql' : 
+                    'example_trigger.sql';
     
     setManualFileName(fileName);
     setManualContent(template);
+    setTemplateType(type);
   };
+
+  const dataTypeMappings = [
+    { tsql: 'INT', plsql: 'NUMBER(10)', usage: 'Primary keys, counters', notes: 'Oracle NUMBER is more flexible' },
+    { tsql: 'VARCHAR(n)', plsql: 'VARCHAR2(n)', usage: 'Variable length strings', notes: 'VARCHAR2 recommended in Oracle' },
+    { tsql: 'CHAR(n)', plsql: 'CHAR(n)', usage: 'Fixed length strings', notes: 'Same in both databases' },
+    { tsql: 'TEXT', plsql: 'CLOB', usage: 'Large text data', notes: 'CLOB for large character data' },
+    { tsql: 'DATETIME', plsql: 'DATE', usage: 'Date and time', notes: 'Oracle DATE includes time' },
+    { tsql: 'BIT', plsql: 'NUMBER(1)', usage: 'Boolean values', notes: 'Use CHECK constraint (0,1)' },
+    { tsql: 'FLOAT', plsql: 'BINARY_FLOAT', usage: 'Floating point', notes: 'Oracle has BINARY_FLOAT/DOUBLE' },
+    { tsql: 'DECIMAL(p,s)', plsql: 'NUMBER(p,s)', usage: 'Precise decimal', notes: 'NUMBER is Oracle standard' },
+    { tsql: 'IDENTITY', plsql: 'SEQUENCE + TRIGGER', usage: 'Auto-increment', notes: 'Oracle 12c+ has IDENTITY' },
+    { tsql: 'UNIQUEIDENTIFIER', plsql: 'RAW(16)', usage: 'GUID/UUID', notes: 'Use SYS_GUID() function' }
+  ];
+
+  const syntaxDifferences = [
+    { category: 'Variables', tsql: 'DECLARE @var INT', plsql: 'DECLARE var NUMBER;', example: '@customer_id vs customer_id' },
+    { category: 'String Concat', tsql: 'str1 + str2', plsql: 'str1 || str2', example: "'Hello' + 'World' vs 'Hello' || 'World'" },
+    { category: 'IF Statement', tsql: 'IF condition BEGIN...END', plsql: 'IF condition THEN...END IF;', example: 'IF @count > 0 vs IF count > 0 THEN' },
+    { category: 'Error Handling', tsql: 'TRY...CATCH', plsql: 'EXCEPTION WHEN', example: 'BEGIN TRY vs EXCEPTION WHEN OTHERS' },
+    { category: 'Loops', tsql: 'WHILE condition BEGIN...END', plsql: 'WHILE condition LOOP...END LOOP;', example: 'WHILE @i < 10 vs WHILE i < 10 LOOP' },
+    { category: 'Functions', tsql: 'GETDATE(), LEN()', plsql: 'SYSDATE, LENGTH()', example: 'GETDATE() vs SYSDATE' },
+    { category: 'NULL Check', tsql: 'ISNULL(col, default)', plsql: 'NVL(col, default)', example: 'ISNULL(name, "Unknown") vs NVL(name, "Unknown")' },
+    { category: 'Top Records', tsql: 'SELECT TOP n', plsql: 'WHERE ROWNUM <= n', example: 'SELECT TOP 10 vs WHERE ROWNUM <= 10' }
+  ];
   
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Upload Sybase Code</CardTitle>
@@ -317,106 +330,174 @@ END`;
         </CardHeader>
         
         <CardContent>
-          <div 
-            className={`mb-8 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-              ${isDragging ? 'border-primary bg-primary/10' : 'bg-muted/30'}`}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleDropAreaClick}
-          >
-            <div className="mb-4 flex justify-center">
-              <UploadCloud className={`h-12 w-12 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
-            </div>
-            <h3 className="mb-2 text-lg font-medium">Upload Files</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Drag and drop files or click to browse
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Label htmlFor="file-upload" className="cursor-pointer">
-                <Button variant="secondary">Select Files</Button>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  accept=".sql,.txt,.tab,.prc,.trg"
-                  ref={fileInputRef}
-                />
-              </Label>
-              <Button 
-                variant="outline" 
-                onClick={handleFolderSelect}
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="upload">Upload Files</TabsTrigger>
+              <TabsTrigger value="manual">Manual Input</TabsTrigger>
+              <TabsTrigger value="mapping">Data Type Mapping</TabsTrigger>
+              <TabsTrigger value="syntax">Syntax Differences</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="upload" className="space-y-6">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+                  ${isDragging ? 'border-primary bg-primary/10' : 'bg-muted/30'}`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleDropAreaClick}
               >
-                <Folder className="h-4 w-4 mr-2" />
-                Browse Folder
-              </Button>
-              <input
-                id="folder-upload"
-                type="file"
-                webkitdirectory=""
-                directory=""
-                multiple
-                className="hidden"
-                onChange={handleFolderUpload}
-                ref={folderInputRef}
-              />
-            </div>
-          </div>
-          
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-4">Or Paste Code Directly</h3>
-            <div className="grid gap-4">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <Label htmlFor="manual-filename" className="mb-2">Filename</Label>
-                  <Input
-                    id="manual-filename"
-                    value={manualFileName}
-                    onChange={(e) => setManualFileName(e.target.value)}
-                    placeholder="e.g., customers_table.sql"
+                <div className="mb-4 flex justify-center">
+                  <UploadCloud className={`h-12 w-12 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                </div>
+                <h3 className="mb-2 text-lg font-medium">Upload Files</h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Drag and drop files or click to browse
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Label htmlFor="file-upload" className="cursor-pointer">
+                    <Button variant="secondary">Select Files</Button>
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      accept=".sql,.txt,.tab,.prc,.trg"
+                      ref={fileInputRef}
+                    />
+                  </Label>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleFolderSelect}
+                  >
+                    <Folder className="h-4 w-4 mr-2" />
+                    Browse Folder
+                  </Button>
+                  <input
+                    id="folder-upload"
+                    type="file"
+                    webkitdirectory=""
+                    directory=""
+                    multiple
+                    className="hidden"
+                    onChange={handleFolderUpload}
+                    ref={folderInputRef}
                   />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Template
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => addTemplateCode('table')}>
-                      Table Template
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addTemplateCode('procedure')}>
-                      Procedure Template
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addTemplateCode('trigger')}>
-                      Trigger Template
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
+            </TabsContent>
+
+            <TabsContent value="manual" className="space-y-6">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="manual-filename" className="mb-2">Filename</Label>
+                    <Input
+                      id="manual-filename"
+                      value={manualFileName}
+                      onChange={(e) => setManualFileName(e.target.value)}
+                      placeholder="e.g., customers_table.sql"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="template-type" className="mb-2">Template Type</Label>
+                    <Select value={templateType} onValueChange={(value: 'table' | 'procedure' | 'trigger') => setTemplateType(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select template type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="table">Table</SelectItem>
+                        <SelectItem value="procedure">Procedure</SelectItem>
+                        <SelectItem value="trigger">Trigger</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => addTemplateCode('table')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Table Template
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => addTemplateCode('procedure')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Procedure Template
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => addTemplateCode('trigger')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Trigger Template
+                  </Button>
+                </div>
+                
+                <div>
+                  <Label htmlFor="manual-content" className="mb-2">Code Content</Label>
+                  <Textarea
+                    id="manual-content"
+                    value={manualContent}
+                    onChange={(e) => setManualContent(e.target.value)}
+                    placeholder="Paste your Sybase code here..."
+                    className="font-mono min-h-[300px]"
+                  />
+                </div>
+                <Button onClick={handleManualSubmit}>Add File</Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="mapping" className="space-y-4">
               <div>
-                <Label htmlFor="manual-content" className="mb-2">Code Content</Label>
-                <Textarea
-                  id="manual-content"
-                  value={manualContent}
-                  onChange={(e) => setManualContent(e.target.value)}
-                  placeholder="Paste your Sybase code here..."
-                  className="font-mono min-h-[200px]"
-                />
+                <h3 className="text-lg font-semibold mb-4">T-SQL to PL/SQL Data Type Mapping</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="grid grid-cols-4 gap-4 p-3 bg-gray-50 font-semibold text-sm">
+                    <div>T-SQL (Sybase)</div>
+                    <div>PL/SQL (Oracle)</div>
+                    <div>Usage in Code</div>
+                    <div>Notes</div>
+                  </div>
+                  <ScrollArea className="max-h-96">
+                    {dataTypeMappings.map((mapping, index) => (
+                      <div key={index} className="grid grid-cols-4 gap-4 p-3 border-t text-sm">
+                        <div className="font-mono bg-red-50 px-2 py-1 rounded">{mapping.tsql}</div>
+                        <div className="font-mono bg-green-50 px-2 py-1 rounded">{mapping.plsql}</div>
+                        <div className="text-gray-600">{mapping.usage}</div>
+                        <div className="text-gray-500 text-xs">{mapping.notes}</div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
               </div>
-              <Button onClick={handleManualSubmit}>Add File</Button>
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="syntax" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Syntax Differences</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="grid grid-cols-4 gap-4 p-3 bg-gray-50 font-semibold text-sm">
+                    <div>Category</div>
+                    <div>T-SQL Syntax</div>
+                    <div>PL/SQL Syntax</div>
+                    <div>Example</div>
+                  </div>
+                  <ScrollArea className="max-h-96">
+                    {syntaxDifferences.map((diff, index) => (
+                      <div key={index} className="grid grid-cols-4 gap-4 p-3 border-t text-sm">
+                        <div className="font-semibold text-blue-600">{diff.category}</div>
+                        <div className="font-mono bg-red-50 px-2 py-1 rounded text-xs">{diff.tsql}</div>
+                        <div className="font-mono bg-green-50 px-2 py-1 rounded text-xs">{diff.plsql}</div>
+                        <div className="text-gray-600 text-xs">{diff.example}</div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
           
           {files.length > 0 && (
-            <div>
+            <div className="mt-8">
               <h3 className="text-lg font-medium mb-4">Uploaded Files</h3>
-              <Tabs defaultValue="tables" onValueChange={(value) => setActiveTab(value as any)}>
+              <Tabs defaultValue="tables">
                 <TabsList className="grid grid-cols-4 mb-4">
                   <TabsTrigger value="tables">
                     Tables
@@ -478,7 +559,7 @@ END`;
                                 <File className="h-5 w-5 mr-3 text-muted-foreground" />
                                 <span className="font-medium truncate max-w-[300px]">{file.name}</span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex items-center gap-2">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm">

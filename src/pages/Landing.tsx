@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight } from 'lucide-react';
+import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -13,6 +13,14 @@ const Landing = () => {
   const handleGetStarted = () => {
     if (user) {
       navigate('/migration');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleGoToHistory = () => {
+    if (user) {
+      navigate('/history');
     } else {
       navigate('/auth');
     }
@@ -30,9 +38,15 @@ const Landing = () => {
             </div>
             <div className="flex items-center space-x-4">
               {user ? (
-                <Button onClick={() => navigate('/migration')}>
-                  Go to Dashboard
-                </Button>
+                <>
+                  <Button variant="ghost" onClick={handleGoToHistory}>
+                    <History className="h-4 w-4 mr-2" />
+                    History
+                  </Button>
+                  <Button onClick={() => navigate('/migration')}>
+                    Go to Dashboard
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button variant="ghost" onClick={() => navigate('/auth')}>
