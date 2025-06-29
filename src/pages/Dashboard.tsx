@@ -53,13 +53,13 @@ const Dashboard = () => {
       setProjectName(name);
       setUploadedFiles(files);
 
-      // Save migration to database
+      // Save migration to database - convert FileStructure to Json
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
           user_id: user?.id,
           project_name: name,
-          folder_structure: files
+          folder_structure: files as any // Cast to any to match Json type
         })
         .select()
         .single();
@@ -127,6 +127,15 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  const handleConnectionComplete = (sybaseConn: any, oracleConn: any) => {
+    console.log('Connections saved:', { sybaseConn, oracleConn });
+    toast({
+      title: 'Connections Saved',
+      description: 'Database connections have been configured successfully.',
+    });
+    setActiveTab('upload');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -189,12 +198,12 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="connection">
-              <ConnectionForm />
+              <ConnectionForm onComplete={handleConnectionComplete} />
             </TabsContent>
 
             <TabsContent value="results">
               {migrationId ? (
-                <ConversionResults migrationId={migrationId} />
+                <ConversionResults />
               ) : (
                 <div className="text-center py-12">
                   <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
