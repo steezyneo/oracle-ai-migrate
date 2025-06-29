@@ -19,7 +19,7 @@ interface MigrationFile {
   converted_content: string;
   conversion_status: string;
   data_type_mapping: any;
-  issues: any[];
+  issues: any;
   performance_metrics: any;
   syntax_differences: any;
   error_message: string;
@@ -100,7 +100,20 @@ const MigrationDetailView: React.FC<MigrationDetailViewProps> = ({ migrationId, 
         id: migrationData.id,
         project_name: migrationData.project_name,
         created_at: migrationData.created_at,
-        files: migrationData.migration_files || [],
+        // Convert the database files to proper format
+        files: (migrationData.migration_files || []).map((file: any) => ({
+          id: file.id,
+          file_name: file.file_name,
+          file_type: file.file_type,
+          original_content: file.original_content,
+          converted_content: file.converted_content,
+          conversion_status: file.conversion_status,
+          data_type_mapping: file.data_type_mapping || {},
+          issues: Array.isArray(file.issues) ? file.issues : [],
+          performance_metrics: file.performance_metrics || {},
+          syntax_differences: file.syntax_differences || {},
+          error_message: file.error_message || '',
+        })),
         report: reportData || undefined,
       };
 
@@ -281,7 +294,7 @@ const MigrationDetailView: React.FC<MigrationDetailViewProps> = ({ migrationId, 
                   </TabsContent>
 
                   <TabsContent value="mapping">
-                    {selectedFile.data_type_mapping ? (
+                    {selectedFile.data_type_mapping && Object.keys(selectedFile.data_type_mapping).length > 0 ? (
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -310,7 +323,7 @@ const MigrationDetailView: React.FC<MigrationDetailViewProps> = ({ migrationId, 
                   </TabsContent>
 
                   <TabsContent value="syntax">
-                    {selectedFile.syntax_differences ? (
+                    {selectedFile.syntax_differences && Object.keys(selectedFile.syntax_differences).length > 0 ? (
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -378,7 +391,7 @@ const MigrationDetailView: React.FC<MigrationDetailViewProps> = ({ migrationId, 
                   </TabsContent>
 
                   <TabsContent value="performance">
-                    {selectedFile.performance_metrics ? (
+                    {selectedFile.performance_metrics && Object.keys(selectedFile.performance_metrics).length > 0 ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4">
                           <div className="p-4 bg-gray-50 rounded-lg">

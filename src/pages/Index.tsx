@@ -41,6 +41,8 @@ const Index = () => {
     connectionString: '',
   });
   
+  const [projectName, setProjectName] = useState<string>('');
+
   const handleConnectionComplete = (sybaseConn: DatabaseConnection, oracleConn: DatabaseConnection) => {
     setSybaseConnection(sybaseConn);
     setOracleConnection(oracleConn);
@@ -346,7 +348,11 @@ const Index = () => {
               <HomeButton onClick={handleGoHome} />
             </div>
             <div>
-              <CodeUploader onComplete={handleUploadComplete} />
+              <CodeUploader 
+                onFilesUploaded={handleUploadComplete}
+                projectName={projectName}
+                setProjectName={setProjectName}
+              />
             </div>
           </div>
         );
