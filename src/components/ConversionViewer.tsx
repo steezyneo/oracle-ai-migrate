@@ -49,12 +49,14 @@ interface ConversionViewerProps {
   file: FileItem;
   onFixWithAI: (issueId: string) => void;
   onManualEdit: (newContent: string) => void;
+  onDismissIssue: (issueId: string) => void;
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
   onFixWithAI,
   onManualEdit,
+  onDismissIssue,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
@@ -86,13 +88,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     
     await onFixWithAI(issueId);
     setIsFixing(null);
-  };
-
-  const handleDismissIssue = (issueId: string) => {
-    // Filter out the dismissed issue
-    const updatedIssues = file.issues?.filter(issue => issue.id !== issueId) || [];
-    // You might want to update the parent component state here
-    console.log('Dismissed issue:', issueId);
   };
 
   return (
@@ -222,7 +217,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             <ConversionIssuesPanel
               issues={file.issues || []}
               onFixWithAI={handleFixWithAI}
-              onDismissIssue={handleDismissIssue}
+              onDismissIssue={onDismissIssue}
               isFixing={isFixing}
             />
           </TabsContent>
