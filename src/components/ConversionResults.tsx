@@ -341,7 +341,10 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                     
                     <TabsContent value="issues">
                       <ConversionIssuesPanel
-                        issues={selectedResult.issues}
+                        issues={selectedResult.issues.map(issue => ({
+                          ...issue,
+                          category: issue.category || 'General'
+                        }))}
                         onFixWithAI={handleFixWithAI}
                         onDismissIssue={handleDismissIssue}
                         isFixing={fixingIssueId}
