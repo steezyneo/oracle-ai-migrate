@@ -426,7 +426,7 @@ const Dashboard = () => {
     try {
       // Prepare prompt for Gemini
       const prompt = `You are an expert in Sybase to Oracle code migration.\n\nHere is the original Sybase code:\n${selectedFile.content}\n\nHere is the current Oracle code (with issues):\n${selectedFile.convertedContent}\n\nHere is the issue to fix: ${issue.description}${issue.originalCode ? `\nOriginal code: ${issue.originalCode}` : ''}${issue.suggestedFix ? `\nSuggested fix: ${issue.suggestedFix}` : ''}\n\nPlease provide the fixed Oracle code, with the issue resolved, and only output the code.`;
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const fixedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();

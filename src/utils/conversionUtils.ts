@@ -16,7 +16,7 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   
   // Use Gemini for the entire conversion
   const prompt = `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const convertedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
