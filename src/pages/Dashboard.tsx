@@ -76,7 +76,11 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [isConverting, setIsConverting] = useState(false);
+  const [convertingFileId, setConvertingFileId] = useState<string | null>(null);
+  const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
+  const [isFixing, setIsFixing] = useState<string | null>(null);
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [showReport, setShowReport] = useState(false);
@@ -197,179 +201,110 @@ const Dashboard = () => {
   };
 
   const handleConvertFile = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    setConvertingFileId(fileId);
     setIsConverting(true);
+    
     try {
-      const fileToConvert = files.find(file => file.id === fileId);
-      if (!fileToConvert) {
-        console.error('File not found');
-        return;
-      }
-
-      const conversionResult = await convertSybaseToOracle(fileToConvert);
-      const mappedStatus = mapConversionStatus(conversionResult.status);
-
-      setFiles(prevFiles =>
-        prevFiles.map(file =>
-          file.id === fileId
-            ? {
-                ...file,
-                conversionStatus: mappedStatus,
-                convertedContent: conversionResult.convertedCode,
-                issues: conversionResult.issues,
-                dataTypeMapping: conversionResult.dataTypeMapping,
-                performanceMetrics: conversionResult.performance
-              }
-            : file
-        )
-      );
-
-      if (selectedFile?.id === fileId) {
-        setSelectedFile(prev => prev ? {
-          ...prev,
-          conversionStatus: mappedStatus,
-          convertedContent: conversionResult.convertedCode,
-          issues: conversionResult.issues,
-          performanceMetrics: conversionResult.performance
-        } : null);
-      }
-
-      await supabase
-        .from('migration_files')
-        .update({
-          conversion_status: mappedStatus,
-          converted_content: conversionResult.convertedCode,
-          error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
-        })
-        .eq('file_name', fileToConvert.name);
-
-      toast({
-        title: "File Converted",
-        description: `Successfully converted ${fileToConvert.name}`,
-      });
-    } catch (error: any) {
-      console.error('Error converting file:', error);
-      toast({
-        title: "Conversion Failed",
-        description: error.message || "Failed to convert the file",
-        variant: "destructive",
-      });
+      const result = await convertSybaseToOracle(file, selectedAiModel);
+      setConversionResults(prev => [...prev, result]);
+      
+      // Update file with conversion results
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { 
+              ...f, 
+              conversionStatus: result.status === 'error' ? 'failed' : 'success',
+              convertedContent: result.convertedCode,
+              dataTypeMapping: result.dataTypeMapping,
+              issues: result.issues,
+              performanceMetrics: result.performance
+            }
+          : f
+      ));
+    } catch (error) {
+      console.error('Conversion failed:', error);
+      setFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
+      ));
     } finally {
+      setConvertingFileId(null);
       setIsConverting(false);
     }
   };
 
   const handleConvertAllByType = async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
+    const typeFiles = files.filter(f => f.type === type && f.conversionStatus === 'pending');
+    if (typeFiles.length === 0) return;
+
     setIsConverting(true);
-    try {
-      const filesToConvert = files.filter(file => file.type === type && file.conversionStatus === 'pending');
-      if (filesToConvert.length === 0) {
-        toast({
-          title: "No Files to Convert",
-          description: `No ${type} files with pending status found.`,
-        });
-        return;
+    
+    for (const file of typeFiles) {
+      setConvertingFileId(file.id);
+      try {
+        const result = await convertSybaseToOracle(file, selectedAiModel);
+        setConversionResults(prev => [...prev, result]);
+        
+        setFiles(prev => prev.map(f => 
+          f.id === file.id 
+            ? { 
+                ...f, 
+                conversionStatus: result.status === 'error' ? 'failed' : 'success',
+                convertedContent: result.convertedCode,
+                dataTypeMapping: result.dataTypeMapping,
+                issues: result.issues,
+                performanceMetrics: result.performance
+              }
+            : f
+        ));
+      } catch (error) {
+        console.error(`Conversion failed for ${file.name}:`, error);
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+        ));
       }
-
-      for (const file of filesToConvert) {
-        const conversionResult = await convertSybaseToOracle(file);
-        const mappedStatus = mapConversionStatus(conversionResult.status);
-
-        setFiles(prevFiles =>
-          prevFiles.map(f =>
-            f.id === file.id
-              ? {
-                  ...f,
-                  conversionStatus: mappedStatus,
-                  convertedContent: conversionResult.convertedCode,
-                  issues: conversionResult.issues,
-                  dataTypeMapping: conversionResult.dataTypeMapping,
-                  performanceMetrics: conversionResult.performance
-                }
-              : f
-          )
-        );
-
-        await supabase
-          .from('migration_files')
-          .update({
-            conversion_status: mappedStatus,
-            converted_content: conversionResult.convertedCode,
-            error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
-          })
-          .eq('file_name', file.name);
-      }
-
-      toast({
-        title: "Files Converted",
-        description: `Successfully converted all ${type} files`,
-      });
-    } catch (error: any) {
-      console.error('Error converting files:', error);
-      toast({
-        title: "Conversion Failed",
-        description: error.message || "Failed to convert the files",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConverting(false);
     }
+    
+    setConvertingFileId(null);
+    setIsConverting(false);
   };
 
   const handleConvertAll = async () => {
+    const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
+    if (pendingFiles.length === 0) return;
+
     setIsConverting(true);
-    try {
-      const filesToConvert = files.filter(file => file.conversionStatus === 'pending');
-      if (filesToConvert.length === 0) {
-        toast({
-          title: "No Files to Convert",
-          description: "No files with pending status found.",
-        });
-        return;
+    
+    for (const file of pendingFiles) {
+      setConvertingFileId(file.id);
+      try {
+        const result = await convertSybaseToOracle(file, selectedAiModel);
+        setConversionResults(prev => [...prev, result]);
+        
+        setFiles(prev => prev.map(f => 
+          f.id === file.id 
+            ? { 
+                ...f, 
+                conversionStatus: result.status === 'error' ? 'failed' : 'success',
+                convertedContent: result.convertedCode,
+                dataTypeMapping: result.dataTypeMapping,
+                issues: result.issues,
+                performanceMetrics: result.performance
+              }
+            : f
+        ));
+      } catch (error) {
+        console.error(`Conversion failed for ${file.name}:`, error);
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+        ));
       }
-
-      for (const file of filesToConvert) {
-        const conversionResult = await convertSybaseToOracle(file);
-        const mappedStatus = mapConversionStatus(conversionResult.status);
-
-        setFiles(prevFiles =>
-          prevFiles.map(f =>
-            f.id === file.id
-              ? {
-                  ...f,
-                  conversionStatus: mappedStatus,
-                  convertedContent: conversionResult.convertedCode,
-                  issues: conversionResult.issues,
-                  dataTypeMapping: conversionResult.dataTypeMapping,
-                  performanceMetrics: conversionResult.performance
-                }
-              : f
-          )
-        );
-
-        await supabase
-          .from('migration_files')
-          .update({
-            conversion_status: mappedStatus,
-            converted_content: conversionResult.convertedCode,
-            error_message: conversionResult.issues.length > 0 ? conversionResult.issues[0].description : null,
-          })
-          .eq('file_name', file.name);
-      }
-
-      toast({
-        title: "Files Converted",
-        description: "Successfully converted all files",
-      });
-    } catch (error: any) {
-      console.error('Error converting files:', error);
-      toast({
-        title: "Conversion Failed",
-        description: error.message || "Failed to convert the files",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConverting(false);
     }
+    
+    setConvertingFileId(null);
+    setIsConverting(false);
   };
 
   const handleFixFile = async (fileId: string) => {
@@ -413,51 +348,6 @@ const Dashboard = () => {
       });
     } finally {
       setIsConverting(false);
-    }
-  };
-
-  const handleFixWithAI = async (issueId: string) => {
-    if (!selectedFile) return;
-    const fileIdx = files.findIndex(f => f.id === selectedFile.id);
-    if (fileIdx === -1) return;
-    const issue = selectedFile.issues?.find(i => i.id === issueId);
-    if (!issue || !selectedFile.convertedContent) return;
-
-    try {
-      // Prepare prompt for Gemini
-      const prompt = `You are an expert in Sybase to Oracle code migration.\n\nHere is the original Sybase code:\n${selectedFile.content}\n\nHere is the current Oracle code (with issues):\n${selectedFile.convertedContent}\n\nHere is the issue to fix: ${issue.description}${issue.originalCode ? `\nOriginal code: ${issue.originalCode}` : ''}${issue.suggestedFix ? `\nSuggested fix: ${issue.suggestedFix}` : ''}\n\nPlease provide the fixed Oracle code, with the issue resolved, and only output the code.`;
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const fixedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
-
-      // Remove the fixed issue from the issues array
-      const updatedIssues = selectedFile.issues?.filter(i => i.id !== issueId) || [];
-
-      // Update the file in state
-      setFiles(prevFiles => prevFiles.map((f, idx) =>
-        idx === fileIdx
-          ? {
-              ...f,
-              convertedContent: fixedCode,
-              issues: updatedIssues
-            }
-          : f
-      ));
-      setSelectedFile(prev => prev && prev.id === selectedFile.id
-        ? { ...prev, convertedContent: fixedCode, issues: updatedIssues }
-        : prev
-      );
-      toast({
-        title: "AI Fix Applied",
-        description: `The issue has been fixed using Gemini AI.`
-      });
-    } catch (error) {
-      toast({
-        title: "AI Fix Failed",
-        description: `Failed to fix the issue with Gemini AI.`,
-        variant: "destructive"
-      });
     }
   };
 
@@ -665,12 +555,14 @@ const Dashboard = () => {
                 <div className="col-span-4">
                   <FileTreeView
                     files={files}
-                    onFileSelect={handleFileSelect}
+                    onFileSelect={setSelectedFile}
                     onConvertFile={handleConvertFile}
                     onConvertAllByType={handleConvertAllByType}
                     onConvertAll={handleConvertAll}
                     onFixFile={handleFixFile}
                     selectedFile={selectedFile}
+                    isConverting={isConverting}
+                    convertingFileId={convertingFileId}
                   />
                 </div>
 
@@ -679,7 +571,6 @@ const Dashboard = () => {
                     <div className="space-y-4">
                       <ConversionViewer
                         file={selectedFile}
-                        onFixWithAI={handleFixWithAI}
                         onManualEdit={handleManualEdit}
                         onDismissIssue={handleDismissIssue}
                       />

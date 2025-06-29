@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,16 +17,12 @@ interface ConversionIssue {
 
 interface ConversionIssuesPanelProps {
   issues: ConversionIssue[];
-  onFixWithAI: (issueId: string) => Promise<void>;
   onDismissIssue: (issueId: string) => void;
-  isFixing?: string | null;
 }
 
 const ConversionIssuesPanel: React.FC<ConversionIssuesPanelProps> = ({
   issues,
-  onFixWithAI,
-  onDismissIssue,
-  isFixing
+  onDismissIssue
 }) => {
   const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
 
@@ -177,15 +172,6 @@ const ConversionIssuesPanel: React.FC<ConversionIssuesPanelProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-2 ml-4">
-                  <Button
-                    size="sm"
-                    onClick={() => onFixWithAI(issue.id)}
-                    disabled={isFixing === issue.id}
-                    className="whitespace-nowrap"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-1 ${isFixing === issue.id ? 'animate-spin' : ''}`} />
-                    {isFixing === issue.id ? 'Fixing...' : 'Fix with AI'}
-                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"

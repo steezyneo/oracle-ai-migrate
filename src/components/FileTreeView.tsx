@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +14,8 @@ import {
   ChevronDown,
   ChevronRight,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +38,8 @@ interface FileTreeViewProps {
   onConvertAll: () => void;
   onFixFile: (fileId: string) => void;
   selectedFile: FileItem | null;
+  isConverting?: boolean;
+  convertingFileId?: string | null;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -47,7 +49,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onConvertAllByType,
   onConvertAll,
   onFixFile,
-  selectedFile
+  selectedFile,
+  isConverting = false,
+  convertingFileId = null
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['tables', 'procedures', 'triggers'])
@@ -67,7 +71,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return files.filter(file => file.type === type);
   };
 
-  const getStatusIcon = (status: 'pending' | 'success' | 'failed') => {
+  const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
+    if (convertingFileId === fileId) {
+      return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
+    }
+    
     switch (status) {
       case 'success':
         return <Check className="h-4 w-4 text-green-600" />;
@@ -159,7 +167,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {getStatusIcon(file.conversionStatus)}
+                  {getStatusIcon(file.conversionStatus, file.id)}
                   {file.conversionStatus === 'pending' && (
                     <Button
                       size="sm"

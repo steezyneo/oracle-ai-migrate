@@ -29,6 +29,15 @@ interface PerformanceMetrics {
   convertedComplexity: number;
   improvementPercentage: number;
   recommendations: string[];
+  performanceScore?: number;
+  codeQuality?: {
+    totalLines: number;
+    codeLines: number;
+    commentRatio: number;
+    complexityLevel: 'Low' | 'Medium' | 'High';
+  };
+  maintainabilityIndex?: number;
+  conversionTimeMs?: number;
 }
 
 interface FileItem {
@@ -47,20 +56,17 @@ interface FileItem {
 
 interface ConversionViewerProps {
   file: FileItem;
-  onFixWithAI: (issueId: string) => void;
   onManualEdit: (newContent: string) => void;
   onDismissIssue: (issueId: string) => void;
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
-  onFixWithAI,
   onManualEdit,
   onDismissIssue,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-  const [isFixing, setIsFixing] = useState<string | null>(null);
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
@@ -69,25 +75,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const handleSaveEdit = () => {
     onManualEdit(editedContent);
     setIsEditing(false);
-  };
-
-  const handleFixWithAI = async (issueId: string) => {
-    setIsFixing(issueId);
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const issue = file.issues?.find(i => i.id === issueId);
-    if (issue && issue.originalCode && issue.suggestedFix && file.convertedContent) {
-      const fixedContent = file.convertedContent.replace(
-        new RegExp(issue.originalCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
-        issue.suggestedFix
-      );
-      
-      onManualEdit(fixedContent);
-    }
-    
-    await onFixWithAI(issueId);
-    setIsFixing(null);
   };
 
   return (
@@ -183,28 +170,32 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             {file.dataTypeMapping && file.dataTypeMapping.length > 0 ? (
               <div className="space-y-3">
                 <h3 className="text-lg font-medium">Data Type Mappings</h3>
-                {file.dataTypeMapping.map((mapping, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <h4 className="font-medium text-red-600">Sybase</h4>
-                        <code className="bg-red-50 px-2 py-1 rounded text-sm">
-                          {mapping.sybaseType}
-                        </code>
+                <div className="grid gap-3">
+                  {file.dataTypeMapping.map((mapping, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <h4 className="font-medium text-red-600 mb-2">Sybase Type</h4>
+                          <code className="bg-red-50 px-3 py-2 rounded text-sm font-mono block">
+                            {mapping.sybaseType}
+                          </code>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-green-600 mb-2">Oracle Type</h4>
+                          <code className="bg-green-50 px-3 py-2 rounded text-sm font-mono block">
+                            {mapping.oracleType}
+                          </code>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-700 mb-2">Description</h4>
+                          <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                            {mapping.description || 'Standard type conversion'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-green-600">Oracle</h4>
-                        <code className="bg-green-50 px-2 py-1 rounded text-sm">
-                          {mapping.oracleType}
-                        </code>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Description</h4>
-                        <p className="text-sm text-gray-600">{mapping.description}</p>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -216,50 +207,137 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <TabsContent value="issues" className="space-y-4">
             <ConversionIssuesPanel
               issues={file.issues || []}
-              onFixWithAI={handleFixWithAI}
               onDismissIssue={onDismissIssue}
-              isFixing={isFixing}
             />
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-4">
             {file.performanceMetrics ? (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Performance Analysis</h3>
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>
                 
-                <div className="grid grid-cols-3 gap-4">
+                {/* Performance Score */}
+                <Card className="p-6">
+                  <div className="text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Overall Performance Score</h4>
+                    <div className="text-4xl font-bold text-blue-600 mb-2">
+                      {file.performanceMetrics.performanceScore || 0}/100
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${file.performanceMetrics.performanceScore || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Complexity Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600">Original Complexity</h4>
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Original Complexity</h4>
                     <p className="text-2xl font-bold text-red-600">
-                      {file.performanceMetrics.originalComplexity}
+                      {file.performanceMetrics.originalComplexity || 0}
                     </p>
+                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
                   </Card>
                   
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600">Converted Complexity</h4>
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Converted Complexity</h4>
                     <p className="text-2xl font-bold text-green-600">
-                      {file.performanceMetrics.convertedComplexity}
+                      {file.performanceMetrics.convertedComplexity || 0}
                     </p>
+                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
                   </Card>
                   
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600">Improvement</h4>
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Improvement</h4>
                     <p className="text-2xl font-bold text-blue-600">
-                      {file.performanceMetrics.improvementPercentage}%
+                      {file.performanceMetrics.improvementPercentage || 0}%
                     </p>
+                    <p className="text-xs text-gray-500">Performance Gain</p>
                   </Card>
                 </div>
+
+                {/* Code Quality Metrics */}
+                {file.performanceMetrics.codeQuality && (
+                  <Card className="p-6">
+                    <h4 className="text-lg font-medium mb-4">Code Quality Metrics</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.totalLines}</p>
+                        <p className="text-sm text-gray-600">Total Lines</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.codeLines}</p>
+                        <p className="text-sm text-gray-600">Code Lines</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.commentRatio}%</p>
+                        <p className="text-sm text-gray-600">Comment Ratio</p>
+                      </div>
+                      <div className="text-center">
+                        <Badge variant={
+                          file.performanceMetrics.codeQuality.complexityLevel === 'Low' ? 'default' :
+                          file.performanceMetrics.codeQuality.complexityLevel === 'Medium' ? 'secondary' : 'destructive'
+                        }>
+                          {file.performanceMetrics.codeQuality.complexityLevel}
+                        </Badge>
+                        <p className="text-sm text-gray-600 mt-1">Complexity</p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Maintainability Index */}
+                {file.performanceMetrics.maintainabilityIndex && (
+                  <Card className="p-6">
+                    <h4 className="text-lg font-medium mb-4">Maintainability Index</h4>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-purple-600 mb-2">
+                        {file.performanceMetrics.maintainabilityIndex}/100
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                          style={{ width: `${file.performanceMetrics.maintainabilityIndex}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {file.performanceMetrics.maintainabilityIndex >= 80 ? 'Excellent' :
+                         file.performanceMetrics.maintainabilityIndex >= 60 ? 'Good' :
+                         file.performanceMetrics.maintainabilityIndex >= 40 ? 'Fair' : 'Poor'} Maintainability
+                      </p>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Conversion Time */}
+                {file.performanceMetrics.conversionTimeMs && (
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {file.performanceMetrics.conversionTimeMs}ms
+                      </p>
+                    </div>
+                  </Card>
+                )}
                 
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Recommendations</h4>
-                  <ul className="space-y-2">
-                    {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="text-sm">{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {/* Recommendations */}
+                {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (
+                  <Card className="p-6">
+                    <h4 className="text-lg font-medium mb-4">Performance Recommendations</h4>
+                    <ul className="space-y-3">
+                      {file.performanceMetrics.recommendations.map((rec, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm text-gray-700">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">

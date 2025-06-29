@@ -1,4 +1,3 @@
-
 export type DatabaseType = 'sybase' | 'oracle';
 
 export interface DatabaseConnection {
@@ -24,6 +23,7 @@ export interface ConversionResult {
   originalFile: CodeFile;
   convertedCode: string;
   issues: ConversionIssue[];
+  dataTypeMapping?: DataTypeMapping[];
   performance?: PerformanceMetrics;
   status: 'success' | 'warning' | 'error';
 }
@@ -37,10 +37,26 @@ export interface ConversionIssue {
   originalCode?: string;
 }
 
+export interface DataTypeMapping {
+  sybaseType: string;
+  oracleType: string;
+  description?: string;
+}
+
 export interface PerformanceMetrics {
   originalComplexity?: number;
   convertedComplexity?: number;
   improvementPercentage?: number;
+  conversionTimeMs?: number;
+  performanceScore?: number;
+  maintainabilityIndex?: number;
+  codeQuality?: {
+    totalLines: number;
+    codeLines: number;
+    commentRatio: number;
+    complexityLevel: 'Low' | 'Medium' | 'High';
+  };
+  recommendations?: string[];
   notes?: string[];
 }
 
