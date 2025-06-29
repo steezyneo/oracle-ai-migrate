@@ -1,14 +1,14 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, HelpCircle } from 'lucide-react';
+import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, HelpCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleGetStarted = () => {
     if (user) {
@@ -37,6 +37,14 @@ const Landing = () => {
               <h1 className="text-2xl font-bold text-gray-900">Sybase to Oracle Migration</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowHelp(true)}
+                className="flex items-center space-x-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Help</span>
+              </Button>
               {user ? (
                 <>
                   <Button variant="ghost" onClick={handleGoToHistory}>
@@ -61,6 +69,185 @@ const Landing = () => {
           </div>
         </div>
       </header>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <HelpCircle className="h-6 w-6 mr-2 text-primary" />
+                Help & Documentation
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHelp(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Getting Started */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Getting Started</h3>
+                <div className="space-y-3 text-gray-600">
+                  <p>Welcome to the Sybase to Oracle Migration Platform! This tool helps you convert your Sybase SQL code to Oracle PL/SQL using advanced AI technology.</p>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Quick Start Guide:</h4>
+                    <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                      <li>Sign up or log in to your account</li>
+                      <li>Upload your Sybase SQL files (individual files or entire folders)</li>
+                      <li>Select your preferred AI model for conversion</li>
+                      <li>Review the converted Oracle code and analysis</li>
+                      <li>Download the converted files and migration report</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supported File Types */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Supported File Types</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Input Files</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-1 text-gray-600">
+                        <li>• .sql files (Sybase SQL)</li>
+                        <li>• .prc files (Stored Procedures)</li>
+                        <li>• .trg files (Triggers)</li>
+                        <li>• .fnc files (Functions)</li>
+                        <li>• .vw files (Views)</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Output Files</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-1 text-gray-600">
+                        <li>• .sql files (Oracle PL/SQL)</li>
+                        <li>• .txt files (Migration Reports)</li>
+                        <li>• .json files (Analysis Data)</li>
+                        <li>• .zip files (Bulk Downloads)</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Features */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Key Features</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">AI-Powered Conversion</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">
+                        Advanced AI models automatically convert Sybase SQL syntax to Oracle PL/SQL with high accuracy and intelligent error detection.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">Comprehensive Analysis</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">
+                        Detailed reports on data type mappings, performance improvements, and potential issues with suggested fixes.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">Security & Privacy</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">
+                        Your code is processed securely with user isolation, encrypted data handling, and comprehensive audit trails.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">Fast Processing</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">
+                        Reduce migration time from months to weeks with automated conversion and intelligent code optimization.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Common Issues */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Common Issues & Solutions</h3>
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-yellow-900 mb-2">File Upload Issues</h4>
+                    <p className="text-yellow-800">If files aren't uploading, check that they're valid SQL files and under 10MB each. For larger files, consider splitting them into smaller chunks.</p>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-green-900 mb-2">Conversion Accuracy</h4>
+                    <p className="text-green-800">While our AI provides high accuracy, always review converted code before deploying to production. Test thoroughly in a development environment first.</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Performance Optimization</h4>
+                    <p className="text-blue-800">The platform provides performance analysis and recommendations. Consider implementing suggested optimizations for better Oracle performance.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Support */}
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Need More Help?</h3>
+                <p className="text-gray-600 mb-4">
+                  If you need additional assistance or have specific questions about your migration, our support team is here to help.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    Contact Support
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    View Documentation
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="py-20 px-4">
