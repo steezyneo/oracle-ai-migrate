@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -28,39 +30,45 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   onBack,
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
-    fetchDeploymentLogs();
-    
-    // Set up real-time subscription for deployment logs
-    const channel = supabase
-      .channel('deployment-logs-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'deployment_logs'
-        },
-        () => {
-          fetchDeploymentLogs();
-        }
-      )
-      .subscribe();
+    if (user) {
+      fetchDeploymentLogs();
+      
+      // Set up real-time subscription for deployment logs
+      const channel = supabase
+        .channel('deployment-logs-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'deployment_logs'
+          },
+          () => {
+            fetchDeploymentLogs();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
 
   const fetchDeploymentLogs = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('deployment_logs')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -74,7 +82,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     }
   };
 
-  const saveDeploymentLog = async (status: string, linesOfSql: number, fileCount: number, errorMessage?: string) => {
+  const saveDeploymentLog = async (
+    status: string, 
+    linesOfSql: number, 
+    fileCount: number, 
+    errorMessage?: string,
+    migrationId?: string
+  ) => {
+    if (!user) return null;
+    
     try {
       const { data, error } = await supabase
         .from('deployment_logs')
@@ -82,7 +98,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           status,
           lines_of_sql: linesOfSql,
           file_count: fileCount,
-          error_message: errorMessage || null
+          error_message: errorMessage || null,
+          user_id: user.id,
+          migration_id: migrationId || null
         })
         .select()
         .single();
