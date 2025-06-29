@@ -18,6 +18,7 @@ import ReportViewer from '@/components/ReportViewer';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
 import Help from '@/components/Help';
+import CosmoChat from '@/components/CosmoChat';
 
 interface FileStructure {
   name: string;
@@ -611,6 +612,9 @@ const Dashboard = () => {
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
       )}
+
+      {/* Cosmo Chat */}
+      <CosmoChat />
     </div>
   );
 };

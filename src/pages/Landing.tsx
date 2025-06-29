@@ -5,6 +5,7 @@ import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, Hel
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Help from '@/components/Help';
+import CosmoChat from '@/components/CosmoChat';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -73,6 +74,9 @@ const Landing = () => {
 
       {/* Help Modal */}
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
+
+      {/* Cosmo Chat */}
+      <CosmoChat />
 
       {/* Hero Section */}
       <section className="py-20 px-4">

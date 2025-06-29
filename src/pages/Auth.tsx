@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,7 @@ import { Database, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import CosmoChat from '@/components/CosmoChat';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -179,6 +179,9 @@ const Auth = () => {
           </Button>
         </div>
       </div>
+
+      {/* Cosmo Chat */}
+      <CosmoChat />
     </div>
   );
 };
