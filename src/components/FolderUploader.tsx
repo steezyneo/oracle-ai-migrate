@@ -11,7 +11,6 @@ interface FileStructure {
   type: 'file' | 'folder';
   content?: string;
   children?: FileStructure[];
-  [key: string]: any;
 }
 
 interface FolderUploaderProps {
@@ -40,25 +39,39 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
         projectName = `Files_${new Date().toISOString().split('T')[0]}`;
       }
       
+      // Process files and filter for SQL-related files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const content = await readFileContent(file);
         
-        const fileObj: FileStructure = {
-          name: file.name,
-          path: file.webkitRelativePath || file.name,
-          type: 'file',
-          content: content
-        };
-        
-        fileStructure.push(fileObj);
+        // Only process SQL-related files
+        if (isSQLFile(file.name)) {
+          const content = await readFileContent(file);
+          
+          const fileObj: FileStructure = {
+            name: file.name,
+            path: file.webkitRelativePath || file.name,
+            type: 'file',
+            content: content
+          };
+          
+          fileStructure.push(fileObj);
+        }
+      }
+      
+      if (fileStructure.length === 0) {
+        toast({
+          title: "No SQL Files Found",
+          description: "Please upload files with extensions: .sql, .proc, .trig, .tab, .prc",
+          variant: "destructive",
+        });
+        return;
       }
       
       onFolderUpload(fileStructure, projectName);
       
       toast({
         title: "Files Uploaded",
-        description: `Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
+        description: `Successfully uploaded ${fileStructure.length} SQL file${fileStructure.length > 1 ? 's' : ''}`,
       });
     } catch (error) {
       console.error('Error processing files:', error);
@@ -70,6 +83,12 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const isSQLFile = (fileName: string): boolean => {
+    const sqlExtensions = ['.sql', '.proc', '.trig', '.tab', '.prc', '.txt'];
+    const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+    return sqlExtensions.includes(extension);
   };
 
   const extractProjectName = (files: FileList): string => {
@@ -160,7 +179,7 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
                 {isProcessing ? 'Processing Files...' : 'Drop files here or choose upload option'}
               </h3>
               <p className="text-gray-600 mb-4">
-                Upload .sql, .proc, .trig files and more
+                Upload .sql, .proc, .trig, .tab, .prc files and more
               </p>
             </div>
 
@@ -181,7 +200,7 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
                 className="flex items-center gap-2"
               >
                 <Folder className="h-4 w-4" />
-                {isProcessing ? 'Processing...' : 'Choose Folder'}
+                {isProcessing ? 'Processing...' : 'Browse Folder'}
               </Button>
             </div>
           </div>
@@ -193,13 +212,13 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
           multiple
           onChange={(e) => handleFileSelect(e.target.files, 'files')}
           className="hidden"
-          accept=".sql,.txt,.tab,.prc,.trg"
+          accept=".sql,.txt,.tab,.prc,.trg,.proc"
         />
         
         <input
           ref={folderInputRef}
           type="file"
-          webkitdirectory=""
+          {...({ webkitdirectory: "" } as any)}
           multiple
           onChange={(e) => handleFileSelect(e.target.files, 'folder')}
           className="hidden"
