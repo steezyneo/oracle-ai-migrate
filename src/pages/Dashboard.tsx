@@ -48,6 +48,7 @@ interface ConversionResult {
   issues: any[];
   performance: any;
   status: 'success' | 'warning' | 'error';
+  dataTypeMapping: any[];
 }
 
 interface ConversionReport {
@@ -128,7 +129,12 @@ const Dashboard = () => {
       path: file.name,
       type: file.type,
       content: file.content,
-      conversionStatus: 'pending' as const
+      conversionStatus: 'pending' as const,
+      dataTypeMapping: [],
+      issues: [],
+      performanceMetrics: undefined,
+      convertedContent: undefined,
+      errorMessage: undefined,
     }));
 
     setFiles(convertedFiles);
@@ -201,12 +207,12 @@ const Dashboard = () => {
       setFiles(prevFiles =>
         prevFiles.map(file =>
           file.id === fileId
-            ? { 
-                ...file, 
+            ? {
+                ...file,
                 conversionStatus: mappedStatus,
                 convertedContent: conversionResult.convertedCode,
                 issues: conversionResult.issues,
-                dataTypeMapping: [],
+                dataTypeMapping: conversionResult.dataTypeMapping,
                 performanceMetrics: conversionResult.performance
               }
             : file
@@ -267,12 +273,12 @@ const Dashboard = () => {
         setFiles(prevFiles =>
           prevFiles.map(f =>
             f.id === file.id
-              ? { 
-                  ...f, 
+              ? {
+                  ...f,
                   conversionStatus: mappedStatus,
                   convertedContent: conversionResult.convertedCode,
                   issues: conversionResult.issues,
-                  dataTypeMapping: [],
+                  dataTypeMapping: conversionResult.dataTypeMapping,
                   performanceMetrics: conversionResult.performance
                 }
               : f
@@ -324,12 +330,12 @@ const Dashboard = () => {
         setFiles(prevFiles =>
           prevFiles.map(f =>
             f.id === file.id
-              ? { 
-                  ...f, 
+              ? {
+                  ...f,
                   conversionStatus: mappedStatus,
                   convertedContent: conversionResult.convertedCode,
                   issues: conversionResult.issues,
-                  dataTypeMapping: [],
+                  dataTypeMapping: conversionResult.dataTypeMapping,
                   performanceMetrics: conversionResult.performance
                 }
               : f
@@ -436,6 +442,7 @@ const Dashboard = () => {
         performance: file.performanceMetrics || {},
         status: file.conversionStatus === 'success' ? 'success' : 
                 file.conversionStatus === 'failed' ? 'error' : 'warning',
+        dataTypeMapping: file.dataTypeMapping || [],
       }));
 
       const reportSummary = generateConversionReport(conversionResults);
