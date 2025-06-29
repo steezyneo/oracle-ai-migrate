@@ -16,6 +16,9 @@ import ConversionHistory from '@/components/ConversionHistory';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
 
+// Types
+import { ConversionResult, DatabaseConnection } from '@/types';
+
 interface FileStructure {
   name: string;
   path: string;
@@ -32,6 +35,8 @@ const Dashboard = () => {
   const [uploadedFiles, setUploadedFiles] = useState<FileStructure[]>([]);
   const [projectName, setProjectName] = useState('');
   const [migrationId, setMigrationId] = useState<string | null>(null);
+  const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
+  const [oracleConnection, setOracleConnection] = useState<DatabaseConnection | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -92,6 +97,22 @@ const Dashboard = () => {
 
       await Promise.all(filePromises);
 
+      // Create mock conversion results for demonstration
+      const mockResults: ConversionResult[] = files.map((file, index) => ({
+        id: `result-${index}`,
+        originalFile: {
+          id: `file-${index}`,
+          name: file.name,
+          content: file.content || '',
+          type: getFileType(file.name) as 'table' | 'procedure' | 'trigger' | 'other'
+        },
+        convertedCode: `-- Oracle converted code for ${file.name}\n${file.content || ''}`,
+        issues: [],
+        status: 'success' as const
+      }));
+
+      setConversionResults(mockResults);
+
       toast({
         title: 'Files Uploaded Successfully',
         description: `${files.length} files uploaded and ready for processing`,
@@ -129,11 +150,37 @@ const Dashboard = () => {
 
   const handleConnectionComplete = (sybaseConn: any, oracleConn: any) => {
     console.log('Connections saved:', { sybaseConn, oracleConn });
+    setOracleConnection(oracleConn);
     toast({
       title: 'Connections Saved',
       description: 'Database connections have been configured successfully.',
     });
     setActiveTab('upload');
+  };
+
+  const handleRequestReconversion = (fileId: string, suggestion: string) => {
+    console.log('Reconversion requested for:', fileId, suggestion);
+    toast({
+      title: 'Reconversion Requested',
+      description: 'AI is processing your request...',
+    });
+  };
+
+  const handleGenerateReport = () => {
+    console.log('Generating report...');
+    toast({
+      title: 'Report Generated',
+      description: 'Conversion report has been generated successfully.',
+    });
+  };
+
+  const handleComplete = () => {
+    console.log('Migration completed');
+    toast({
+      title: 'Migration Complete',
+      description: 'Your migration has been completed successfully.',
+    });
+    setActiveTab('history');
   };
 
   if (loading) {
@@ -202,8 +249,15 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="results">
-              {migrationId ? (
-                <ConversionResults />
+              {migrationId && conversionResults.length > 0 && oracleConnection ? (
+                <ConversionResults 
+                  results={conversionResults}
+                  oracleConnection={oracleConnection}
+                  onRequestReconversion={handleRequestReconversion}
+                  onGenerateReport={handleGenerateReport}
+                  onComplete={handleComplete}
+                  selectedAIModel="gemini"
+                />
               ) : (
                 <div className="text-center py-12">
                   <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
