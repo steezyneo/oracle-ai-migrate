@@ -7,8 +7,8 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 // Cache for converted code to avoid duplicate conversions
 const conversionCache = new Map<string, ConversionResult>();
 
-// Batch size for concurrent conversions
-const BATCH_SIZE = 3;
+// Batch size for concurrent conversions (increase for more speed, decrease if you hit API rate limits)
+const BATCH_SIZE = 10;
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
 export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
