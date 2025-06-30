@@ -368,23 +368,28 @@ END`;
                       ref={fileInputRef}
                     />
                   </Label>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleFolderSelect}
-                  >
-                    <Folder className="h-4 w-4 mr-2" />
-                    Browse Folder
-                  </Button>
-                  <input
-                    id="folder-upload"
-                    type="file"
-                    webkitdirectory=""
-                    directory=""
-                    multiple
-                    className="hidden"
-                    onChange={handleFolderUpload}
-                    ref={folderInputRef}
-                  />
+                  <Label htmlFor="folder-upload" className="cursor-pointer">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleFolderSelect}
+                      type="button"
+                    >
+                      <Folder className="h-4 w-4 mr-2" />
+                      Browse Folder
+                    </Button>
+                    <input
+                      id="folder-upload"
+                      type="file"
+                      multiple
+                      style={{ display: 'none' }}
+                      // @ts-ignore
+                      webkitdirectory=""
+                      // @ts-ignore
+                      directory=""
+                      onChange={handleFolderUpload}
+                      ref={folderInputRef}
+                    />
+                  </Label>
                 </div>
               </div>
             </TabsContent>
