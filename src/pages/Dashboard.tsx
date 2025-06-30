@@ -224,6 +224,11 @@ const Dashboard = () => {
             }
           : f
       ));
+      // Update conversion_status in the database
+      await supabase.from('migration_files').update({
+        conversion_status: result.status === 'error' ? 'failed' : 'success',
+        converted_content: result.convertedCode
+      }).eq('id', file.id);
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
@@ -259,6 +264,11 @@ const Dashboard = () => {
               }
             : f
         ));
+        // Update conversion_status in the database
+        await supabase.from('migration_files').update({
+          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
@@ -295,6 +305,11 @@ const Dashboard = () => {
               }
             : f
         ));
+        // Update conversion_status in the database
+        await supabase.from('migration_files').update({
+          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
