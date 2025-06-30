@@ -1,4 +1,4 @@
-import { ConversionResult, CodeFile, ConversionIssue } from '@/types';
+import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -208,7 +208,7 @@ const generatePerformanceMetrics = (
       totalLines: convertedComplexity.totalLines,
       codeLines: convertedComplexity.codeLines,
       commentRatio: Math.round(convertedComplexity.commentRatio * 100),
-      complexityLevel: convertedComplexity.cyclomaticComplexity > 10 ? 'High' : convertedComplexity.cyclomaticComplexity > 5 ? 'Medium' : 'Low'
+      complexityLevel: convertedComplexity.cyclomaticComplexity > 10 ? 'High' : convertedComplexity.cyclomaticComplexity > 5 ? 'Medium' : 'Low' as 'Low' | 'Medium' | 'High'
     },
     recommendations
   };
