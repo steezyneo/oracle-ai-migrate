@@ -19,9 +19,10 @@ const CHUNK_SIZE = 1024 * 1024; // 1MB chunks for large files
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
+  onReset?: () => void;
 }
 
-const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
+const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete, onReset }) => {
   const { toast } = useToast();
   const [files, setFiles] = useState<CodeFile[]>([]);
   const [activeTab, setActiveTab] = useState<'upload' | 'manual' | 'mapping' | 'syntax'>('upload');
@@ -453,6 +454,11 @@ END`;
                     ref={folderInputRef}
                   />
                 </div>
+                {onReset && (
+                  <div className="flex justify-center mt-4">
+                    <Button variant="destructive" onClick={onReset}>Reset</Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 

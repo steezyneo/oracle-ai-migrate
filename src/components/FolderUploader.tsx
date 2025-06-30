@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +15,10 @@ interface FileStructure {
 
 interface FolderUploaderProps {
   onFolderUpload: (files: FileStructure[], projectName: string) => void;
+  onReset?: () => void;
 }
 
-const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
+const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload, onReset }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,6 +184,12 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
                 {isProcessing ? 'Processing...' : 'Choose Folder'}
               </Button>
             </div>
+
+            {onReset && (
+              <div className="flex justify-center mt-4">
+                <Button variant="destructive" onClick={onReset}>Reset</Button>
+              </div>
+            )}
           </div>
         </div>
 

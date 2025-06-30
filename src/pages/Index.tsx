@@ -339,7 +339,7 @@ const Index = () => {
               </div>
             </div>
             <div>
-              <CodeUploader onComplete={handleUploadComplete} />
+              <CodeUploader onComplete={handleUploadComplete} onReset={handleStartOver} />
             </div>
           </div>
         );
