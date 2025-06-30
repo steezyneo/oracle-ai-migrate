@@ -151,7 +151,8 @@ const analyzeCodeComplexity = (code: string) => {
   const complexity = controlStructures + functions + 1;
   
   // Calculate maintainability index
-  const maintainabilityIndex = Math.max(0, 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1));
+  let maintainabilityIndex = 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1);
+  maintainabilityIndex = Math.max(0, Math.min(100, maintainabilityIndex));
   
   return {
     totalLines,
