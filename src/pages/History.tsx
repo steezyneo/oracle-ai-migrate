@@ -366,7 +366,6 @@ const History = () => {
                                 <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
                                   <td
                                     className="px-8 py-2 text-sm flex items-center gap-2 text-blue-700 cursor-pointer"
-                                    colSpan={2}
                                     style={{ maxWidth: 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                                     title={file.file_name}
                                   >
@@ -377,8 +376,6 @@ const History = () => {
                                     {/* File icon and name */}
                                     <FileText className="h-4 w-4 text-gray-500" />
                                     <span className="font-medium" onClick={() => handleViewFile({ ...file, original_content: file.original_content || '', converted_content: file.converted_content || '' })} style={{ cursor: 'pointer', textDecoration: 'underline' }}>{file.file_name}</span>
-                                    {/* Timestamp */}
-                                    <span className="ml-2 text-xs text-gray-500 font-normal">{file.created_at ? format(new Date(file.created_at), 'MMM dd, yyyy HH:mm:ss') : ''}</span>
                                     {/* File type badge */}
                                     <span className="ml-2 inline-block px-2 py-0.5 rounded bg-gray-100 text-xs text-gray-700 border border-gray-200">{file.file_type}</span>
                                     {/* Actions */}
@@ -387,6 +384,9 @@ const History = () => {
                                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDownloadSingleFile(file); }} title="Download"><Download className="h-4 w-4" /></Button>
                                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteSingleFile(file); }} title="Delete"><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                     </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-xs text-gray-500 text-left" style={{ minWidth: 160 }}>
+                                    {file.created_at ? format(new Date(file.created_at), 'MMM dd, yyyy HH:mm:ss') : ''}
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     {file.conversion_status === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />}
