@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, convertMultipleFiles, generateConversionReport } from '@/utils/conversionUtils';
@@ -74,23 +75,34 @@ export const useConversionLogic = (
       
       setConversionResults(prev => [...prev, conversionResult]);
       
+      const newStatus = mapConversionStatus(result.status);
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
               ...f, 
-              conversionStatus: mapConversionStatus(result.status),
+              conversionStatus: newStatus,
               convertedContent: result.convertedCode,
               dataTypeMapping: result.dataTypeMapping,
               issues: result.issues,
-              performanceMetrics: result.performance
+              performanceMetrics: result.performance,
+              errorMessage: newStatus === 'failed' ? 'Conversion failed' : null
             }
           : f
       ));
 
-      await supabase.from('migration_files').update({
-        conversion_status: mapConversionStatus(result.status),
-        converted_content: result.convertedCode
+      // Update database with proper JSON serialization
+      const { error } = await supabase.from('migration_files').update({
+        conversion_status: newStatus,
+        converted_content: result.convertedCode,
+        error_message: newStatus === 'failed' ? 'Conversion failed' : null,
+        data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
+        issues: JSON.parse(JSON.stringify(result.issues)),
+        performance_metrics: JSON.parse(JSON.stringify(result.performance))
       }).eq('id', file.id);
+
+      if (error) {
+        console.error('Error updating file in database:', error);
+      }
 
       toast({
         title: "Conversion Complete",
@@ -98,12 +110,25 @@ export const useConversionLogic = (
       });
     } catch (error) {
       console.error('Conversion failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Conversion failed';
+      
       setFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
+        f.id === fileId ? { 
+          ...f, 
+          conversionStatus: 'failed',
+          errorMessage: errorMessage
+        } : f
       ));
+      
+      // Update database with error
+      await supabase.from('migration_files').update({
+        conversion_status: 'failed',
+        error_message: errorMessage
+      }).eq('id', file.id);
+      
       toast({
         title: "Conversion Failed",
-        description: `Failed to convert ${file.name}`,
+        description: `Failed to convert ${file.name}: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -136,9 +161,11 @@ export const useConversionLogic = (
         }
       );
 
-      // Update files and results
-      results.forEach((result, index) => {
+      // Update files and results with proper async handling
+      for (let index = 0; index < results.length; index++) {
+        const result = results[index];
         const file = typeFiles[index];
+        
         const conversionResult: ConversionResult = {
           id: result.id,
           originalFile: {
@@ -167,12 +194,20 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database
-        supabase.from('migration_files').update({
+        // Update database with proper JSON serialization
+        const { error } = await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
+          converted_content: result.convertedCode,
+          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
+          data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
+          issues: JSON.parse(JSON.stringify(result.issues)),
+          performance_metrics: JSON.parse(JSON.stringify(result.performance))
         }).eq('id', file.id);
-      });
+
+        if (error) {
+          console.error('Error updating file in database:', error);
+        }
+      }
 
       toast({
         title: "Batch Conversion Complete",
@@ -215,9 +250,11 @@ export const useConversionLogic = (
         }
       );
 
-      // Update files and results
-      results.forEach((result, index) => {
+      // Update files and results with proper async handling
+      for (let index = 0; index < results.length; index++) {
+        const result = results[index];
         const file = pendingFiles[index];
+        
         const conversionResult: ConversionResult = {
           id: result.id,
           originalFile: {
@@ -246,12 +283,20 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database
-        supabase.from('migration_files').update({
+        // Update database with proper JSON serialization
+        const { error } = await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
+          converted_content: result.convertedCode,
+          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
+          data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
+          issues: JSON.parse(JSON.stringify(result.issues)),
+          performance_metrics: JSON.parse(JSON.stringify(result.performance))
         }).eq('id', file.id);
-      });
+
+        if (error) {
+          console.error('Error updating file in database:', error);
+        }
+      }
 
       toast({
         title: "All Files Converted",

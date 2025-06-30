@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { ConversionResult } from '@/types';
+import { ConversionResult, ConversionReport } from '@/types';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
@@ -11,6 +11,7 @@ import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import CodeUploader from '@/components/CodeUploader';
 import AIModelSelector from '@/components/AIModelSelector';
 import Help from '@/components/Help';
+import ReportViewer from '@/components/ReportViewer';
 
 interface FileItem {
   id: string;
@@ -38,6 +39,7 @@ const Dashboard = () => {
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [selectedAiModel, setSelectedAiModel] = useState('gemini-1.5-flash-latest');
   const [showHelp, setShowHelp] = useState(false);
+  const [migrationReport, setMigrationReport] = useState<ConversionReport | null>(null);
 
   const { handleCodeUpload } = useMigrationManager();
   
@@ -118,15 +120,25 @@ const Dashboard = () => {
   };
 
   const handleReportGenerated = async () => {
-    const report = await handleGenerateReport();
-    console.log('Report generated:', report);
-    
-    toast({
-      title: "Migration Complete",
-      description: "Your migration report has been generated successfully",
-    });
-    
-    setActiveTab('report');
+    try {
+      const report = await handleGenerateReport();
+      setMigrationReport(report);
+      console.log('Report generated:', report);
+      
+      toast({
+        title: "Migration Complete",
+        description: "Your migration report has been generated successfully",
+      });
+      
+      setActiveTab('report');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: "Failed to generate migration report",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -191,12 +203,19 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="report" className="space-y-6">
-            <div className="text-center py-8">
-              <h3 className="text-lg font-semibold mb-4">Migration Report</h3>
-              <p className="text-gray-600">
-                Your migration report will appear here after conversion is complete.
-              </p>
-            </div>
+            {migrationReport ? (
+              <ReportViewer 
+                report={migrationReport} 
+                onBack={() => setActiveTab('conversion')} 
+              />
+            ) : (
+              <div className="text-center py-8">
+                <h3 className="text-lg font-semibold mb-4">Migration Report</h3>
+                <p className="text-gray-600">
+                  Complete the conversion process to generate your migration report.
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

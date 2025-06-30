@@ -179,7 +179,7 @@ const History = () => {
     }
   };
 
-  // Handle file view
+  // Handle file view - updated to show both codes
   const handleViewFile = (e: React.MouseEvent, file: MigrationFile) => {
     e.stopPropagation();
     setSelectedFile(file);
@@ -691,19 +691,52 @@ const History = () => {
           </CardContent>
         </Card>
 
-        {/* Code Diff Dialog */}
+        {/* Code Diff Dialog - Updated to show proper diff */}
         <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
             <DialogHeader>
-              <DialogTitle>Code Comparison: {selectedFile?.file_name}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Code Comparison: {selectedFile?.file_name}
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedFile?.conversion_status || 'pending')}`}>
+                  {selectedFile?.conversion_status?.charAt(0).toUpperCase() + selectedFile?.conversion_status?.slice(1)}
+                </span>
+              </DialogTitle>
               <DialogClose />
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
               {selectedFile && (
-                <CodeDiffViewer
-                  originalCode={selectedFile.original_content || ''}
-                  convertedCode={selectedFile.converted_content || 'No converted code available'}
-                />
+                <div className="space-y-4">
+                  {selectedFile.converted_content ? (
+                    <CodeDiffViewer
+                      originalCode={selectedFile.original_content || 'No original code available'}
+                      convertedCode={selectedFile.converted_content}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2 text-gray-700">Original Sybase Code</h4>
+                        <div className="bg-gray-50 border rounded-md p-4 max-h-96 overflow-y-auto">
+                          <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
+                            {selectedFile.original_content || 'No original code available'}
+                          </pre>
+                        </div>
+                      </div>
+                      {selectedFile.conversion_status === 'pending' && (
+                        <div className="text-center py-4 text-gray-500">
+                          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+                          <p>This file hasn't been converted yet</p>
+                        </div>
+                      )}
+                      {selectedFile.conversion_status === 'failed' && selectedFile.error_message && (
+                        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                          <h4 className="text-sm font-medium mb-2 text-red-800">Conversion Error</h4>
+                          <p className="text-sm text-red-700">{selectedFile.error_message}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </DialogContent>
