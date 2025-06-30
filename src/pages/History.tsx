@@ -358,7 +358,7 @@ const History = () => {
                                 <FileText className="h-4 w-4 text-blue-600" />
                                 {migration.project_name}
                               </td>
-                              <td className="px-4 py-3 text-gray-700">{format(new Date(migration.created_at), 'MMM dd, yyyy')}</td>
+                              <td className="px-4 py-3 text-gray-700">{migration.created_at ? format(new Date(migration.created_at), 'MMM dd, yyyy HH:mm:ss') : ''}</td>
                               <td className="px-4 py-3 text-center">
                                 <span className="inline-block w-8 text-blue-600 bg-blue-50 rounded-full">{migration.success_count}</span>
                               </td>
@@ -369,7 +369,7 @@ const History = () => {
                                 <span className="inline-block w-8 text-orange-600 bg-orange-50 rounded-full">{migration.pending_count}</span>
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Success</span>
+                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">{migration.success_count > 0 && migration.pending_count === 0 && migration.failed_count === 0 ? 'Success' : migration.pending_count > 0 ? 'Pending' : migration.failed_count > 0 ? 'Failed' : 'Unknown'}</span>
                               </td>
                               <td className="px-4 py-3 text-center flex gap-2 justify-center">
                                 <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleRowClick(migration.id); }}><Eye className="h-4 w-4" /></Button>

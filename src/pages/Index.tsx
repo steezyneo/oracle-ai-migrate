@@ -333,7 +333,10 @@ const Index = () => {
                 <ChevronLeft className="h-4 w-4" />
                 Back to Connection
               </Button>
-              <HomeButton onClick={handleGoHome} />
+              <div className="flex gap-2">
+                <HomeButton onClick={handleGoHome} />
+                <Button variant="destructive" onClick={handleStartOver}>Reset</Button>
+              </div>
             </div>
             <div>
               <CodeUploader onComplete={handleUploadComplete} />
