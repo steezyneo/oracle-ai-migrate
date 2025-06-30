@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,7 +36,7 @@ const Dashboard = () => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
-  const [selectedAiModel, setSelectedAiModel] = useState('gemini-pro');
+  const [selectedAiModel, setSelectedAiModel] = useState('gemini-1.5-flash-latest');
   const [showHelp, setShowHelp] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
@@ -169,7 +168,7 @@ const Dashboard = () => {
           </div>
 
           <TabsContent value="upload" className="space-y-6">
-            <CodeUploader onUploadComplete={handleUploadComplete} />
+            <CodeUploader onComplete={handleUploadComplete} />
           </TabsContent>
 
           <TabsContent value="conversion" className="space-y-6">
