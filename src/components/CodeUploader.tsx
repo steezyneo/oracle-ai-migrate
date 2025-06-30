@@ -370,8 +370,7 @@ END`;
                   </Label>
                   <Label htmlFor="folder-upload" className="cursor-pointer">
                     <Button 
-                      variant="outline" 
-                      onClick={handleFolderSelect}
+                      variant="outline"
                       type="button"
                     >
                       <Folder className="h-4 w-4 mr-2" />
