@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -147,7 +146,15 @@ const History = () => {
         return;
       }
       
-      setMigrationFiles(data || []);
+      // Map the data to ensure proper typing for conversion_status
+      const typedFiles: MigrationFile[] = (data || []).map(file => ({
+        ...file,
+        conversion_status: ['pending', 'success', 'failed'].includes(file.conversion_status) 
+          ? file.conversion_status as 'pending' | 'success' | 'failed'
+          : 'pending'
+      }));
+      
+      setMigrationFiles(typedFiles);
     } catch (err) {
       console.error('Error in fetchMigrationFiles:', err);
       setMigrationFiles([]);

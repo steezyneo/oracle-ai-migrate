@@ -19,6 +19,9 @@ import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
 import Help from '@/components/Help';
 
+// Import types from the centralized types file
+import { ConversionResult, ConversionReport, CodeFile } from '@/types';
+
 interface FileStructure {
   name: string;
   path: string;
@@ -40,26 +43,6 @@ interface FileItem {
   dataTypeMapping?: any[];
   issues?: any[];
   performanceMetrics?: any;
-}
-
-interface ConversionResult {
-  id: string;
-  originalFile: FileItem;
-  convertedCode: string;
-  issues: any[];
-  performance: any;
-  status: 'success' | 'warning' | 'error';
-  dataTypeMapping: any[];
-}
-
-interface ConversionReport {
-  timestamp: string;
-  filesProcessed: number;
-  successCount: number;
-  warningCount: number;
-  errorCount: number;
-  results: ConversionResult[];
-  summary: string;
 }
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAiU5Dt6ZEEYsYCh4Z02GNm1XWXup6xcBg";
@@ -209,7 +192,25 @@ const Dashboard = () => {
     
     try {
       const result = await convertSybaseToOracle(file, selectedAiModel);
-      setConversionResults(prev => [...prev, result]);
+      
+      // Create a properly typed ConversionResult
+      const conversionResult: ConversionResult = {
+        id: result.id,
+        originalFile: {
+          id: file.id,
+          name: file.name,
+          content: file.content,
+          type: file.type,
+          status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+        },
+        convertedCode: result.convertedCode,
+        issues: result.issues,
+        dataTypeMapping: result.dataTypeMapping,
+        performance: result.performance,
+        status: result.status
+      };
+      
+      setConversionResults(prev => [...prev, conversionResult]);
       
       // Update file with conversion results
       setFiles(prev => prev.map(f => 
@@ -250,7 +251,25 @@ const Dashboard = () => {
       setConvertingFileId(file.id);
       try {
         const result = await convertSybaseToOracle(file, selectedAiModel);
-        setConversionResults(prev => [...prev, result]);
+        
+        // Create a properly typed ConversionResult
+        const conversionResult: ConversionResult = {
+          id: result.id,
+          originalFile: {
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+          },
+          convertedCode: result.convertedCode,
+          issues: result.issues,
+          dataTypeMapping: result.dataTypeMapping,
+          performance: result.performance,
+          status: result.status
+        };
+        
+        setConversionResults(prev => [...prev, conversionResult]);
         
         setFiles(prev => prev.map(f => 
           f.id === file.id 
@@ -291,7 +310,25 @@ const Dashboard = () => {
       setConvertingFileId(file.id);
       try {
         const result = await convertSybaseToOracle(file, selectedAiModel);
-        setConversionResults(prev => [...prev, result]);
+        
+        // Create a properly typed ConversionResult
+        const conversionResult: ConversionResult = {
+          id: result.id,
+          originalFile: {
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+          },
+          convertedCode: result.convertedCode,
+          issues: result.issues,
+          dataTypeMapping: result.dataTypeMapping,
+          performance: result.performance,
+          status: result.status
+        };
+        
+        setConversionResults(prev => [...prev, conversionResult]);
         
         setFiles(prev => prev.map(f => 
           f.id === file.id 
@@ -402,7 +439,14 @@ const Dashboard = () => {
     try {
       const conversionResults: ConversionResult[] = files.map(file => ({
         id: file.id,
-        originalFile: file,
+        originalFile: {
+          id: file.id,
+          name: file.name,
+          content: file.content,
+          type: file.type,
+          status: file.conversionStatus === 'success' ? 'pending' : 
+                  file.conversionStatus === 'failed' ? 'error' : 'pending'
+        },
         convertedCode: file.convertedContent || '',
         issues: file.issues || [],
         performance: file.performanceMetrics || {},
