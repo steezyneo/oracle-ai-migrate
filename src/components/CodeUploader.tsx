@@ -369,8 +369,9 @@ END`;
                     />
                   </Label>
                   <Button 
-                    variant="outline" 
-                    onClick={handleFolderSelect}
+                    variant="outline"
+                    type="button"
+                    onClick={() => folderInputRef.current && folderInputRef.current.click()}
                   >
                     <Folder className="h-4 w-4 mr-2" />
                     Browse Folder
@@ -378,10 +379,12 @@ END`;
                   <input
                     id="folder-upload"
                     type="file"
-                    webkitdirectory=""
-                    directory=""
                     multiple
-                    className="hidden"
+                    style={{ display: 'none' }}
+                    // @ts-ignore
+                    webkitdirectory
+                    // @ts-ignore
+                    directory
                     onChange={handleFolderUpload}
                     ref={folderInputRef}
                   />
