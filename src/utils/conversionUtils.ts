@@ -110,18 +110,16 @@ const splitIntoChunks = (code: string): string[] => {
 };
 
 // Helper function to process chunks in batches
-const processBatches = async <T, R>(
+export const processBatches = async <T, R>(
   items: T[],
   processor: (item: T) => Promise<R>
 ): Promise<R[]> => {
   const results: R[] = [];
-  
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const batch = items.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(batch.map(processor));
     results.push(...batchResults);
   }
-  
   return results;
 };
 

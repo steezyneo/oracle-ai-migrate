@@ -11,6 +11,8 @@ import HomeButton from '@/components/HomeButton';
 import { format } from 'date-fns';
 import CodeDiffViewer from '@/components/CodeDiffViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import JSZip from 'jszip';
+import FileDownloader from '@/components/FileDownloader';
 
 interface Migration {
   id: string;
@@ -157,6 +159,56 @@ const History = () => {
     setShowCodeDialog(true);
   };
 
+  // Download all files for a migration as a zip
+  const handleDownloadMigration = async (migrationId: string) => {
+    try {
+      // Fetch all files for the migration
+      const { data: files, error } = await supabase
+        .from('migration_files')
+        .select('*')
+        .eq('migration_id', migrationId);
+      if (error) throw error;
+      if (!files || files.length === 0) {
+        alert('No files found for this migration.');
+        return;
+      }
+      const zip = new JSZip();
+      files.forEach(file => {
+        zip.file(file.file_name, file.converted_content || file.original_content || '');
+      });
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'migration_files.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download migration files.');
+    }
+  };
+
+  // Delete a migration and its files
+  const handleDeleteMigration = async (migrationId: string) => {
+    if (!window.confirm('Are you sure you want to delete this migration and all its files?')) return;
+    try {
+      // Delete files first
+      await supabase.from('migration_files').delete().eq('migration_id', migrationId);
+      // Delete migration
+      await supabase.from('migrations').delete().eq('id', migrationId);
+      // Remove from UI
+      setMigrations(prev => prev.filter(m => m.id !== migrationId));
+      if (selectedMigrationId === migrationId) {
+        setSelectedMigrationId(null);
+        setMigrationFiles([]);
+      }
+    } catch (err) {
+      alert('Failed to delete migration.');
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -286,8 +338,8 @@ const History = () => {
                               </td>
                               <td className="px-4 py-3 text-center flex gap-2 justify-center">
                                 <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleRowClick(migration.id); }}><Eye className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost"><Download className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDownloadMigration(migration.id); }}><Download className="h-4 w-4" /></Button>
+                                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteMigration(migration.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                               </td>
                             </tr>
                             {/* Show files if this migration is selected */}
