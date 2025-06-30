@@ -346,9 +346,15 @@ const History = () => {
                             {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
                               migrationFiles.map((file) => (
                                 <tr key={file.id} className="bg-gray-50 hover:bg-blue-100 cursor-pointer">
-                                  <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2} onClick={() => handleViewFile(file)}>
+                                  <td
+                                    className="px-8 py-2 text-sm flex items-center gap-2 text-blue-700 hover:underline hover:text-blue-900 cursor-pointer"
+                                    colSpan={2}
+                                    style={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                    title={file.file_name}
+                                    onClick={() => handleViewFile(file)}
+                                  >
                                     <FileText className="h-4 w-4 text-gray-500" />
-                                    {file.file_name}
+                                    <span>{file.file_name}</span>
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     {file.conversion_status === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />}
@@ -378,11 +384,13 @@ const History = () => {
                       <DialogTitle>Code Comparison: {selectedFile?.file_name}</DialogTitle>
                       <DialogClose />
                     </DialogHeader>
-                    {selectedFile && (
+                    {selectedFile && (selectedFile.original_content || selectedFile.converted_content) ? (
                       <CodeDiffViewer
                         originalCode={selectedFile.original_content || ''}
                         convertedCode={selectedFile.converted_content || ''}
                       />
+                    ) : (
+                      <div className="text-center text-gray-500 py-8">No code content available for this file.</div>
                     )}
                   </DialogContent>
                 </Dialog>
