@@ -4,9 +4,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAjp-ksF02c3YosUv4rvULe9nrSrVkjmVY";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+// Cache for converted code to avoid duplicate conversions
+const conversionCache = new Map<string, ConversionResult>();
+
+// Batch size for concurrent conversions
+const BATCH_SIZE = 3;
+
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
 export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
   console.log(`Converting with ${aiModel} AI model`);
+  
+  // Check cache first
+  const cacheKey = `${file.content}_${aiModel}`;
+  if (conversionCache.has(cacheKey)) {
+    return conversionCache.get(cacheKey)!;
+  }
   
   const startTime = Date.now();
   
@@ -16,45 +28,101 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   // Analyze code complexity before conversion
   const originalComplexity = analyzeCodeComplexity(file.content);
   
-  // Use Gemini for the entire conversion
-  const prompt = `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
+  // Split large files into smaller chunks for parallel processing
+  const chunks = splitIntoChunks(file.content);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const convertedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
-
-  const conversionTime = Date.now() - startTime;
   
-  // Analyze converted code complexity
-  const convertedComplexity = analyzeCodeComplexity(convertedCode);
+  try {
+    // Convert chunks in parallel with batching
+    const convertedChunks = await processBatches(chunks, async (chunk) => {
+      const prompt = `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${chunk}`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+    });
+
+    // Combine converted chunks
+    const convertedCode = convertedChunks.join('\n\n');
+
+    const conversionTime = Date.now() - startTime;
+    
+    // Analyze converted code complexity
+    const convertedComplexity = analyzeCodeComplexity(convertedCode);
+    
+    // Generate quantitative performance analysis
+    const performanceMetrics = generatePerformanceMetrics(
+      originalComplexity,
+      convertedComplexity,
+      conversionTime,
+      file.content,
+      convertedCode
+    );
+
+    // Generate issues based on quantitative analysis
+    const issues: ConversionIssue[] = generateQuantitativeIssues(
+      originalComplexity,
+      convertedComplexity,
+      file.content,
+      convertedCode
+    );
+
+    const result = {
+      id: crypto.randomUUID(),
+      originalFile: file,
+      convertedCode,
+      issues,
+      dataTypeMapping,
+      performance: performanceMetrics,
+      status: issues.some(i => i.severity === 'error') ? 'error' : 
+              issues.length > 0 ? 'warning' : 'success'
+    };
+
+    // Cache the result
+    conversionCache.set(cacheKey, result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error during conversion:', error);
+    throw error;
+  }
+};
+
+// Helper function to split code into manageable chunks
+const splitIntoChunks = (code: string): string[] => {
+  const statements = code.split(/;(?=(?:[^']*'[^']*')*[^']*$)/g);
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const statement of statements) {
+    if (currentChunk.length + statement.length > 2000) {
+      chunks.push(currentChunk.trim());
+      currentChunk = statement;
+    } else {
+      currentChunk += (currentChunk ? ';' : '') + statement;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+};
+
+// Helper function to process chunks in batches
+const processBatches = async <T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>
+): Promise<R[]> => {
+  const results: R[] = [];
   
-  // Generate quantitative performance analysis
-  const performanceMetrics = generatePerformanceMetrics(
-    originalComplexity,
-    convertedComplexity,
-    conversionTime,
-    file.content,
-    convertedCode
-  );
-
-  // Generate issues based on quantitative analysis
-  const issues: ConversionIssue[] = generateQuantitativeIssues(
-    originalComplexity,
-    convertedComplexity,
-    file.content,
-    convertedCode
-  );
-
-  return {
-    id: crypto.randomUUID(),
-    originalFile: file,
-    convertedCode,
-    issues,
-    dataTypeMapping,
-    performance: performanceMetrics,
-    status: issues.some(i => i.severity === 'error') ? 'error' : 
-            issues.length > 0 ? 'warning' : 'success'
-  };
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+  
+  return results;
 };
 
 // Helper: extract data type mappings from code

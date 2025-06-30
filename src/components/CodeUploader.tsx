@@ -13,6 +13,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TOTAL_FILES = 50;
+const CHUNK_SIZE = 1024 * 1024; // 1MB chunks for large files
+
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
 }
@@ -25,20 +29,84 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const [manualFileName, setManualFileName] = useState<string>('');
   const [templateType, setTemplateType] = useState<'table' | 'procedure' | 'trigger'>('table');
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   
-  const processFiles = (uploadedFiles: FileList | null) => {
+  const processFileInChunks = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const chunks: string[] = [];
+      let offset = 0;
+      
+      const readNextChunk = () => {
+        const reader = new FileReader();
+        const blob = file.slice(offset, offset + CHUNK_SIZE);
+        
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            chunks.push(e.target.result as string);
+            offset += CHUNK_SIZE;
+            
+            if (offset < file.size) {
+              readNextChunk();
+            } else {
+              resolve(chunks.join(''));
+            }
+          }
+        };
+        
+        reader.onerror = reject;
+        reader.readAsText(blob);
+      };
+      
+      readNextChunk();
+    });
+  };
+  
+  const validateFile = (file: File): boolean => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File Too Large',
+        description: `${file.name} exceeds the maximum file size of 10MB.`,
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    if (files.length >= MAX_TOTAL_FILES) {
+      toast({
+        title: 'Too Many Files',
+        description: `Maximum of ${MAX_TOTAL_FILES} files allowed.`,
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    const extension = file.name.toLowerCase().split('.').pop();
+    if (!extension || !['sql', 'txt'].includes(extension)) {
+      toast({
+        title: 'Invalid File Type',
+        description: `${file.name} is not a supported file type. Only .sql and .txt files are allowed.`,
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  const processFiles = async (uploadedFiles: FileList | null) => {
     if (!uploadedFiles) return;
     
+    setIsProcessing(true);
     console.log('Processing files:', uploadedFiles.length);
     
-    Array.from(uploadedFiles).forEach(file => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        if (e.target && e.target.result) {
-          const content = e.target.result as string;
+    const validFiles = Array.from(uploadedFiles).filter(validateFile);
+    
+    try {
+      await Promise.all(validFiles.map(async (file) => {
+        try {
+          const content = await processFileInChunks(file);
           const newFile: CodeFile = {
             id: crypto.randomUUID(),
             name: file.name,
@@ -53,19 +121,18 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
             title: 'File Uploaded',
             description: `${file.name} has been uploaded successfully.`
           });
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          toast({
+            title: 'Upload Failed',
+            description: `Failed to read ${file.name}.`,
+            variant: 'destructive'
+          });
         }
-      };
-      
-      reader.onerror = () => {
-        toast({
-          title: 'Upload Failed',
-          description: `Failed to read ${file.name}.`,
-          variant: 'destructive'
-        });
-      };
-      
-      reader.readAsText(file);
-    });
+      }));
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
