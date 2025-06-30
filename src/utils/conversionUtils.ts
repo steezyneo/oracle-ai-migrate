@@ -151,7 +151,8 @@ const analyzeCodeComplexity = (code: string) => {
   const complexity = controlStructures + functions + 1;
   
   // Calculate maintainability index
-  // const maintainabilityIndex = Math.max(0, 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1));
+  let maintainabilityIndex = 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1);
+  maintainabilityIndex = Math.max(0, Math.min(100, maintainabilityIndex));
   
   return {
     totalLines,
@@ -161,7 +162,7 @@ const analyzeCodeComplexity = (code: string) => {
     controlStructures,
     functions,
     cyclomaticComplexity: complexity,
-    // maintainabilityIndex: Math.round(maintainabilityIndex),
+    maintainabilityIndex: Math.round(maintainabilityIndex),
     commentRatio: commentLines / totalLines,
     codeDensity: codeLines / totalLines
   };
@@ -234,27 +235,16 @@ const generateQuantitativeIssues = (
     });
   }
   
-  if (convertedComplexity.commentRatio < 0.05) {
+  if (convertedComplexity.maintainabilityIndex < 50) {
     issues.push({
       id: crypto.randomUUID(),
       lineNumber: 1,
-      description: 'Low comment ratio. Adding comments will improve code maintainability.',
-      severity: 'info',
-      originalCode: 'Low documentation',
-      suggestedFix: 'Add inline comments and documentation'
+      description: `Low maintainability index (${convertedComplexity.maintainabilityIndex}/100). Code may be difficult to maintain.`,
+      severity: 'warning',
+      originalCode: 'Low maintainability',
+      suggestedFix: 'Refactor code structure and add documentation'
     });
   }
-  
-  // if (convertedComplexity.maintainabilityIndex < 50) {
-  //   issues.push({
-  //     id: crypto.randomUUID(),
-  //     lineNumber: 1,
-  //     description: `Low maintainability index (${convertedComplexity.maintainabilityIndex}/100). Code may be difficult to maintain.`,
-  //     severity: 'warning',
-  //     originalCode: 'Low maintainability',
-  //     suggestedFix: 'Refactor code structure and add documentation'
-  //   });
-  // }
   
   return issues;
 };

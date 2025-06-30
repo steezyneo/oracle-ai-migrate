@@ -123,55 +123,55 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 
   const handleDeploy = async () => {
     setIsDeploying(true);
-    
     try {
       // Calculate lines of SQL and file count from the report
       const linesOfSql = report.summary.split('\n').length;
       const fileCount = report.filesProcessed;
-      
       // Simulate deployment using the mock function from databaseUtils
-      const result = await deployToOracle(
-        { 
-          type: 'oracle',
-          host: 'localhost',
-          port: '1521',
-          username: 'system',
-          password: 'password',
-          database: 'ORCL'
-        }, 
-        report.summary
-      );
-      
+      // We'll assume each file is deployed individually for status update
+      let allSuccess = true;
+      for (const result of report.results) {
+        // Simulate deployment for each file (replace with real logic as needed)
+        const deployResult = await deployToOracle(
+          { 
+            type: 'oracle',
+            host: 'localhost',
+            port: '1521',
+            username: 'system',
+            password: 'password',
+            database: 'ORCL'
+          },
+          result.convertedCode
+        );
+        // Update conversion_status in migration_files for this file
+        await supabase.from('migration_files').update({
+          conversion_status: deployResult.success ? 'success' : 'failed',
+        }).eq('id', result.originalFile.id);
+        if (!deployResult.success) allSuccess = false;
+      }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
-        result.success ? 'Success' : 'Failed',
+        allSuccess ? 'Success' : 'Failed',
         linesOfSql,
         fileCount,
-        result.success ? undefined : result.message
+        allSuccess ? undefined : 'One or more files failed to deploy.'
       );
-      
-      // Show toast notification
       toast({
-        title: result.success ? 'Deployment Successful' : 'Deployment Failed',
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive',
+        title: allSuccess ? 'Deployment Successful' : 'Deployment Failed',
+        description: allSuccess ? 'All files deployed successfully.' : 'Some files failed to deploy.',
+        variant: allSuccess ? 'default' : 'destructive',
       });
-
       if (logEntry) {
         console.log('Deployment log saved:', logEntry);
       }
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Save error log to Supabase
       await saveDeploymentLog(
         'Failed',
         report.summary.split('\n').length,
         report.filesProcessed,
         errorMessage
       );
-      
       toast({
         title: 'Deployment Failed',
         description: 'An unexpected error occurred during deployment.',
@@ -179,6 +179,21 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       });
     } finally {
       setIsDeploying(false);
+    }
+  };
+
+  // Delete file from database
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const { error } = await supabase.from('migration_files').delete().eq('id', fileId);
+      if (error) {
+        toast({ title: 'Delete Failed', description: 'Could not delete file from database.', variant: 'destructive' });
+      } else {
+        toast({ title: 'File Deleted', description: 'File deleted from database.' });
+        // Optionally refresh the report or file list here
+      }
+    } catch (error) {
+      toast({ title: 'Delete Failed', description: 'An error occurred while deleting the file.', variant: 'destructive' });
     }
   };
   

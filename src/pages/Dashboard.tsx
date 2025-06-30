@@ -110,7 +110,7 @@ const Dashboard = () => {
         .from('migrations')
         .insert({ 
           user_id: user?.id,
-          project_name: `Migration_${new Date().toISOString().split('T')[0]}`
+          project_name: `Migration_${new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '')}`
         })
         .select()
         .single();
@@ -224,6 +224,11 @@ const Dashboard = () => {
             }
           : f
       ));
+      // Update conversion_status in the database
+      await supabase.from('migration_files').update({
+        conversion_status: result.status === 'error' ? 'failed' : 'success',
+        converted_content: result.convertedCode
+      }).eq('id', file.id);
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
@@ -259,6 +264,11 @@ const Dashboard = () => {
               }
             : f
         ));
+        // Update conversion_status in the database
+        await supabase.from('migration_files').update({
+          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
@@ -295,6 +305,11 @@ const Dashboard = () => {
               }
             : f
         ));
+        // Update conversion_status in the database
+        await supabase.from('migration_files').update({
+          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
