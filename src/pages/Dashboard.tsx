@@ -201,7 +201,7 @@ const Dashboard = () => {
           name: file.name,
           content: file.content,
           type: file.type,
-          status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+          status: 'pending' // Always set to pending for CodeFile type
         },
         convertedCode: result.convertedCode,
         issues: result.issues,
@@ -217,7 +217,7 @@ const Dashboard = () => {
         f.id === fileId 
           ? { 
               ...f, 
-              conversionStatus: result.status === 'error' ? 'failed' : 'success',
+              conversionStatus: mapConversionStatus(result.status),
               convertedContent: result.convertedCode,
               dataTypeMapping: result.dataTypeMapping,
               issues: result.issues,
@@ -227,7 +227,7 @@ const Dashboard = () => {
       ));
       // Update conversion_status in the database
       await supabase.from('migration_files').update({
-        conversion_status: result.status === 'error' ? 'failed' : 'success',
+        conversion_status: mapConversionStatus(result.status),
         converted_content: result.convertedCode
       }).eq('id', file.id);
     } catch (error) {
@@ -260,7 +260,7 @@ const Dashboard = () => {
             name: file.name,
             content: file.content,
             type: file.type,
-            status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+            status: 'pending' // Always set to pending for CodeFile type
           },
           convertedCode: result.convertedCode,
           issues: result.issues,
@@ -275,7 +275,7 @@ const Dashboard = () => {
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: result.status === 'error' ? 'failed' : 'success',
+                conversionStatus: mapConversionStatus(result.status),
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -285,7 +285,7 @@ const Dashboard = () => {
         ));
         // Update conversion_status in the database
         await supabase.from('migration_files').update({
-          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          conversion_status: mapConversionStatus(result.status),
           converted_content: result.convertedCode
         }).eq('id', file.id);
       } catch (error) {
@@ -319,7 +319,7 @@ const Dashboard = () => {
             name: file.name,
             content: file.content,
             type: file.type,
-            status: result.status === 'error' ? 'error' : result.status === 'warning' ? 'warning' : 'pending'
+            status: 'pending' // Always set to pending for CodeFile type
           },
           convertedCode: result.convertedCode,
           issues: result.issues,
@@ -334,7 +334,7 @@ const Dashboard = () => {
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: result.status === 'error' ? 'failed' : 'success',
+                conversionStatus: mapConversionStatus(result.status),
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -344,7 +344,7 @@ const Dashboard = () => {
         ));
         // Update conversion_status in the database
         await supabase.from('migration_files').update({
-          conversion_status: result.status === 'error' ? 'failed' : 'success',
+          conversion_status: mapConversionStatus(result.status),
           converted_content: result.convertedCode
         }).eq('id', file.id);
       } catch (error) {
@@ -444,8 +444,7 @@ const Dashboard = () => {
           name: file.name,
           content: file.content,
           type: file.type,
-          status: file.conversionStatus === 'success' ? 'pending' : 
-                  file.conversionStatus === 'failed' ? 'error' : 'pending'
+          status: 'pending'
         },
         convertedCode: file.convertedContent || '',
         issues: file.issues || [],
