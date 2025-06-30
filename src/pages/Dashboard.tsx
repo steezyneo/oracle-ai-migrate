@@ -110,7 +110,7 @@ const Dashboard = () => {
         .from('migrations')
         .insert({ 
           user_id: user?.id,
-          project_name: `Migration_${new Date().toISOString().split('T')[0]}`
+          project_name: `Migration_${new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '')}`
         })
         .select()
         .single();

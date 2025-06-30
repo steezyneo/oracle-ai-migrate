@@ -157,6 +157,20 @@ const History = () => {
     setShowCodeDialog(true);
   };
 
+  // Delete file from database and update UI
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const { error } = await supabase.from('migration_files').delete().eq('id', fileId);
+      if (error) {
+        alert('Failed to delete file from database.');
+      } else {
+        setMigrationFiles(prev => prev.filter(f => f.id !== fileId));
+      }
+    } catch (error) {
+      alert('An error occurred while deleting the file.');
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -213,18 +227,10 @@ const History = () => {
               <FileText className="h-4 w-4" />
               Migration Projects ({migrations.length})
             </Button>
-            <Button
-              variant={activeTab === 'deployments' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('deployments')}
-              className="flex items-center gap-2"
-            >
-              <Database className="h-4 w-4" />
-              Deployment Logs ({deploymentLogs.length})
-            </Button>
           </div>
 
           {/* Content */}
-          {activeTab === 'migrations' ? (
+          {activeTab === 'migrations' && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -287,7 +293,7 @@ const History = () => {
                               <td className="px-4 py-3 text-center flex gap-2 justify-center">
                                 <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleRowClick(migration.id); }}><Eye className="h-4 w-4" /></Button>
                                 <Button size="icon" variant="ghost"><Download className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteFile(migration.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                               </td>
                             </tr>
                             {/* Show files if this migration is selected */}
@@ -334,69 +340,6 @@ const History = () => {
                     )}
                   </DialogContent>
                 </Dialog>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  Deployment Logs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {deploymentLogs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      No deployments yet
-                    </h3>
-                    <p className="text-gray-600">
-                      Deploy your migrated code to see logs here
-                    </p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Files</TableHead>
-                        <TableHead>SQL Lines</TableHead>
-                        <TableHead>Error</TableHead>
-                        <TableHead>Deployed</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deploymentLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              log.status === 'Success' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {log.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>{log.file_count}</TableCell>
-                          <TableCell>{log.lines_of_sql}</TableCell>
-                          <TableCell>
-                            {log.error_message ? (
-                              <span className="text-red-600 text-sm">
-                                {log.error_message.substring(0, 50)}...
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">None</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm')}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
               </CardContent>
             </Card>
           )}

@@ -235,17 +235,6 @@ const generateQuantitativeIssues = (
     });
   }
   
-  if (convertedComplexity.commentRatio < 0.05) {
-    issues.push({
-      id: crypto.randomUUID(),
-      lineNumber: 1,
-      description: 'Low comment ratio. Adding comments will improve code maintainability.',
-      severity: 'info',
-      originalCode: 'Low documentation',
-      suggestedFix: 'Add inline comments and documentation'
-    });
-  }
-  
   if (convertedComplexity.maintainabilityIndex < 50) {
     issues.push({
       id: crypto.randomUUID(),
