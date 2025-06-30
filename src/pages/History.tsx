@@ -227,6 +227,20 @@ const History = () => {
     setMigrationFiles(prev => prev.filter(f => f.id !== file.id));
   };
 
+  const handleClearAllHistory = async () => {
+    if (!window.confirm('Are you sure you want to clear all migration history? This will delete all your migrations and files.')) return;
+    // Delete all migration_files for the user
+    const { data: migrations } = await supabase.from('migrations').select('id').eq('user_id', user?.id);
+    if (migrations && migrations.length > 0) {
+      const migrationIds = migrations.map((m: any) => m.id);
+      await supabase.from('migration_files').delete().in('migration_id', migrationIds);
+      await supabase.from('migrations').delete().in('id', migrationIds);
+      setMigrations([]);
+      setMigrationFiles([]);
+      setSelectedMigrationId(null);
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -300,6 +314,9 @@ const History = () => {
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   Conversion History
+                  <Button size="sm" variant="destructive" className="ml-auto" onClick={handleClearAllHistory}>
+                    Clear All History
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -378,16 +395,13 @@ const History = () => {
                                     <span className="font-medium" onClick={() => handleViewFile({ ...file, original_content: file.original_content || '', converted_content: file.converted_content || '' })} style={{ cursor: 'pointer', textDecoration: 'underline' }}>{file.file_name}</span>
                                     {/* File type badge */}
                                     <span className="ml-2 inline-block px-2 py-0.5 rounded bg-gray-100 text-xs text-gray-700 border border-gray-200">{file.file_type}</span>
-                                    {/* Actions */}
+                                    {/* Actions: Only view and download, no delete */}
                                     <span className="ml-4 flex gap-2">
                                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleViewFile({ ...file, original_content: file.original_content || '', converted_content: file.converted_content || '' }); }} title="View"><Eye className="h-4 w-4" /></Button>
                                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDownloadSingleFile(file); }} title="Download"><Download className="h-4 w-4" /></Button>
-                                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteSingleFile(file); }} title="Delete"><Trash2 className="h-4 w-4 text-red-500" /></Button>
                                     </span>
                                   </td>
-                                  <td className="px-4 py-2 text-xs text-gray-500 text-left" style={{ minWidth: 160 }}>
-                                    {file.created_at ? format(new Date(file.created_at), 'MMM dd, yyyy HH:mm:ss') : ''}
-                                  </td>
+                                  <td className="px-4 py-2 text-xs text-gray-500 text-left" style={{ minWidth: 160 }}></td>
                                   <td className="px-4 py-2 text-center">
                                     {file.conversion_status === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />}
                                   </td>
