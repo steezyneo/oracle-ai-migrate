@@ -127,40 +127,67 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       // Calculate lines of SQL and file count from the report
       const linesOfSql = report.summary.split('\n').length;
       const fileCount = report.filesProcessed;
-      // Simulate deployment using the mock function from databaseUtils
-      // We'll assume each file is deployed individually for status update
+      
+      // Deploy each file and update status
       let allSuccess = true;
+      const deployedFiles: string[] = [];
+      
       for (const result of report.results) {
-        // Simulate deployment for each file (replace with real logic as needed)
-        const deployResult = await deployToOracle(
-          { 
-            type: 'oracle',
-            host: 'localhost',
-            port: '1521',
-            username: 'system',
-            password: 'password',
-            database: 'ORCL'
-          },
-          result.convertedCode
-        );
-        // Update conversion_status in migration_files for this file
-        await supabase.from('migration_files').update({
-          conversion_status: deployResult.success ? 'success' : 'failed',
-        }).eq('id', result.originalFile.id);
-        if (!deployResult.success) allSuccess = false;
+        try {
+          // Simulate deployment using the mock function from databaseUtils
+          const deployResult = await deployToOracle(
+            { 
+              type: 'oracle',
+              host: 'localhost',
+              port: '1521',
+              username: 'system',
+              password: 'password',
+              database: 'ORCL'
+            },
+            result.convertedCode
+          );
+          
+          // Update conversion_status in migration_files for this file
+          const { error } = await supabase.from('migration_files').update({
+            conversion_status: deployResult.success ? 'success' : 'failed',
+            error_message: deployResult.success ? null : 'Deployment failed'
+          }).eq('id', result.originalFile.id);
+          
+          if (error) {
+            console.error('Error updating file status:', error);
+          } else if (deployResult.success) {
+            deployedFiles.push(result.originalFile.name);
+          }
+          
+          if (!deployResult.success) allSuccess = false;
+        } catch (error) {
+          console.error(`Error deploying ${result.originalFile.name}:`, error);
+          allSuccess = false;
+          
+          // Update file status to failed
+          await supabase.from('migration_files').update({
+            conversion_status: 'failed',
+            error_message: `Deployment error: ${error}`
+          }).eq('id', result.originalFile.id);
+        }
       }
+      
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
         allSuccess ? 'Success' : 'Failed',
         linesOfSql,
         fileCount,
-        allSuccess ? undefined : 'One or more files failed to deploy.'
+        allSuccess ? undefined : `${deployedFiles.length}/${fileCount} files deployed successfully`
       );
+      
       toast({
-        title: allSuccess ? 'Deployment Successful' : 'Deployment Failed',
-        description: allSuccess ? 'All files deployed successfully.' : 'Some files failed to deploy.',
+        title: allSuccess ? 'Deployment Successful' : 'Partial Deployment',
+        description: allSuccess ? 
+          'All files deployed successfully.' : 
+          `${deployedFiles.length}/${fileCount} files deployed successfully`,
         variant: allSuccess ? 'default' : 'destructive',
       });
+      
       if (logEntry) {
         console.log('Deployment log saved:', logEntry);
       }

@@ -74,23 +74,34 @@ export const useConversionLogic = (
       
       setConversionResults(prev => [...prev, conversionResult]);
       
+      const newStatus = mapConversionStatus(result.status);
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
               ...f, 
-              conversionStatus: mapConversionStatus(result.status),
+              conversionStatus: newStatus,
               convertedContent: result.convertedCode,
               dataTypeMapping: result.dataTypeMapping,
               issues: result.issues,
-              performanceMetrics: result.performance
+              performanceMetrics: result.performance,
+              errorMessage: newStatus === 'failed' ? 'Conversion failed' : null
             }
           : f
       ));
 
-      await supabase.from('migration_files').update({
-        conversion_status: mapConversionStatus(result.status),
-        converted_content: result.convertedCode
+      // Update database with proper status
+      const { error } = await supabase.from('migration_files').update({
+        conversion_status: newStatus,
+        converted_content: result.convertedCode,
+        error_message: newStatus === 'failed' ? 'Conversion failed' : null,
+        data_type_mapping: result.dataTypeMapping,
+        issues: result.issues,
+        performance_metrics: result.performance
       }).eq('id', file.id);
+
+      if (error) {
+        console.error('Error updating file in database:', error);
+      }
 
       toast({
         title: "Conversion Complete",
@@ -98,12 +109,25 @@ export const useConversionLogic = (
       });
     } catch (error) {
       console.error('Conversion failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Conversion failed';
+      
       setFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
+        f.id === fileId ? { 
+          ...f, 
+          conversionStatus: 'failed',
+          errorMessage: errorMessage
+        } : f
       ));
+      
+      // Update database with error
+      await supabase.from('migration_files').update({
+        conversion_status: 'failed',
+        error_message: errorMessage
+      }).eq('id', file.id);
+      
       toast({
         title: "Conversion Failed",
-        description: `Failed to convert ${file.name}`,
+        description: `Failed to convert ${file.name}: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -168,10 +192,18 @@ export const useConversionLogic = (
         ));
 
         // Update database
-        supabase.from('migration_files').update({
+        const { error } = await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
+          converted_content: result.convertedCode,
+          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
+          data_type_mapping: result.dataTypeMapping,
+          issues: result.issues,
+          performance_metrics: result.performance
         }).eq('id', file.id);
+
+        if (error) {
+          console.error('Error updating file in database:', error);
+        }
       });
 
       toast({
@@ -247,10 +279,18 @@ export const useConversionLogic = (
         ));
 
         // Update database
-        supabase.from('migration_files').update({
+        const { error } = await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
+          converted_content: result.convertedCode,
+          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
+          data_type_mapping: result.dataTypeMapping,
+          issues: result.issues,
+          performance_metrics: result.performance
         }).eq('id', file.id);
+
+        if (error) {
+          console.error('Error updating file in database:', error);
+        }
       });
 
       toast({
