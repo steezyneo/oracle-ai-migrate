@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Database, FileText, Calendar, User, Home, Eye, Download, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Database, FileText, Home, Eye, Download, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,7 @@ import HomeButton from '@/components/HomeButton';
 import { format } from 'date-fns';
 import CodeDiffViewer from '@/components/CodeDiffViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Migration {
   id: string;
@@ -22,26 +23,28 @@ interface Migration {
   pending_count: number;
 }
 
-interface DeploymentLog {
+interface MigrationFile {
   id: string;
-  created_at: string;
-  status: string;
-  lines_of_sql: number;
-  file_count: number;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  original_content: string;
+  converted_content: string | null;
+  conversion_status: 'pending' | 'success' | 'failed';
   error_message: string | null;
+  created_at: string;
 }
 
 const History = () => {
   const { user, profile, loading } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [migrations, setMigrations] = useState<Migration[]>([]);
-  const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'migrations' | 'deployments'>('migrations');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMigrationId, setSelectedMigrationId] = useState<string | null>(null);
-  const [migrationFiles, setMigrationFiles] = useState<any[]>([]);
-  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [migrationFiles, setMigrationFiles] = useState<MigrationFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const isFetchingFiles = useRef(false);
 
@@ -80,6 +83,11 @@ const History = () => {
 
       if (migrationsError) {
         console.error('Error fetching migrations:', migrationsError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch migration history",
+          variant: "destructive",
+        });
       } else {
         const processedMigrations = migrationsData?.map(migration => {
           const files = migration.migration_files || [];
@@ -96,29 +104,20 @@ const History = () => {
         
         setMigrations(processedMigrations);
       }
-
-      // Fetch deployment logs
-      const { data: logsData, error: logsError } = await supabase
-        .from('deployment_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (logsError) {
-        console.error('Error fetching deployment logs:', logsError);
-      } else {
-        setDeploymentLogs(logsData || []);
-      }
       
     } catch (error) {
       console.error('Error fetching history:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBackToDashboard = () => {
-    // Navigate back to dashboard with the remembered tab
     navigate('/migration', { state: { activeTab: returnTab } });
   };
 
@@ -130,15 +129,27 @@ const History = () => {
   const fetchMigrationFiles = async (migrationId: string) => {
     if (isFetchingFiles.current) return;
     isFetchingFiles.current = true;
+    
     try {
       const { data, error } = await supabase
         .from('migration_files')
         .select('*')
         .eq('migration_id', migrationId)
         .order('file_name', { ascending: true });
-      if (error) throw error;
+        
+      if (error) {
+        console.error('Error fetching migration files:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch migration files",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setMigrationFiles(data || []);
     } catch (err) {
+      console.error('Error in fetchMigrationFiles:', err);
       setMigrationFiles([]);
     } finally {
       isFetchingFiles.current = false;
@@ -147,27 +158,131 @@ const History = () => {
 
   // Handle row click
   const handleRowClick = async (migrationId: string) => {
-    setSelectedMigrationId(migrationId);
-    await fetchMigrationFiles(migrationId);
+    if (selectedMigrationId === migrationId) {
+      // Collapse if already selected
+      setSelectedMigrationId(null);
+      setMigrationFiles([]);
+    } else {
+      setSelectedMigrationId(migrationId);
+      await fetchMigrationFiles(migrationId);
+    }
   };
 
   // Handle file view
-  const handleViewFile = (file: any) => {
+  const handleViewFile = (e: React.MouseEvent, file: MigrationFile) => {
+    e.stopPropagation();
     setSelectedFile(file);
     setShowCodeDialog(true);
   };
 
-  // Delete file from database and update UI
-  const handleDeleteFile = async (fileId: string) => {
+  // Handle file download
+  const handleDownloadFile = (e: React.MouseEvent, file: MigrationFile) => {
+    e.stopPropagation();
+    
+    const content = file.converted_content || file.original_content;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.file_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Downloaded",
+      description: `${file.file_name} has been downloaded`,
+    });
+  };
+
+  // Delete migration
+  const handleDeleteMigration = async (e: React.MouseEvent, migrationId: string) => {
+    e.stopPropagation();
+    
+    if (!confirm('Are you sure you want to delete this migration? This action cannot be undone.')) {
+      return;
+    }
+    
     try {
-      const { error } = await supabase.from('migration_files').delete().eq('id', fileId);
-      if (error) {
-        alert('Failed to delete file from database.');
-      } else {
-        setMigrationFiles(prev => prev.filter(f => f.id !== fileId));
+      // Delete migration files first
+      const { error: filesError } = await supabase
+        .from('migration_files')
+        .delete()
+        .eq('migration_id', migrationId);
+        
+      if (filesError) {
+        console.error('Error deleting migration files:', filesError);
+        toast({
+          title: "Error",
+          description: "Failed to delete migration files",
+          variant: "destructive",
+        });
+        return;
       }
+      
+      // Delete migration
+      const { error: migrationError } = await supabase
+        .from('migrations')
+        .delete()
+        .eq('id', migrationId);
+        
+      if (migrationError) {
+        console.error('Error deleting migration:', migrationError);
+        toast({
+          title: "Error",
+          description: "Failed to delete migration",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update UI
+      setMigrations(prev => prev.filter(m => m.id !== migrationId));
+      if (selectedMigrationId === migrationId) {
+        setSelectedMigrationId(null);
+        setMigrationFiles([]);
+      }
+      
+      toast({
+        title: "Deleted",
+        description: "Migration has been deleted successfully",
+      });
     } catch (error) {
-      alert('An error occurred while deleting the file.');
+      console.error('Error in handleDeleteMigration:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the migration",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Get status icon
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'pending':
+        return <AlertCircle className="h-4 w-4 text-orange-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'pending':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -216,134 +331,178 @@ const History = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* Tab Navigation */}
-          <div className="flex gap-2">
-            <Button
-              variant={activeTab === 'migrations' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('migrations')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Migration Projects ({migrations.length})
-            </Button>
-          </div>
-
-          {/* Content */}
-          {activeTab === 'migrations' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Conversion History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {migrations.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      No migrations yet
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      Start your first migration project to see it here
-                    </p>
-                    <Button onClick={() => navigate('/migration')}>
-                      Start New Migration
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-lg border bg-white">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Conversion History ({migrations.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {migrations.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No migrations yet
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Start your first migration project to see it here
+                </p>
+                <Button onClick={() => navigate('/migration')}>
+                  Start New Migration
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border bg-white">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Files</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {migrations.map((migration) => (
+                      <React.Fragment key={migration.id}>
+                        <tr
+                          className={`cursor-pointer hover:bg-blue-50 transition ${
+                            selectedMigrationId === migration.id ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => handleRowClick(migration.id)}
+                        >
+                          <td className="px-4 py-3 font-medium text-blue-900 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                            {migration.project_name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {format(new Date(migration.created_at), 'MMM dd, yyyy HH:mm')}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2 py-1 text-sm bg-gray-100 text-gray-800 rounded">
+                              {migration.file_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2 py-1 text-sm bg-green-100 text-green-800 rounded">
+                              {migration.success_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2 py-1 text-sm bg-red-100 text-red-800 rounded">
+                              {migration.failed_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2 py-1 text-sm bg-orange-100 text-orange-800 rounded">
+                              {migration.pending_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex gap-1 justify-center">
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRowClick(migration.id);
+                                }}
+                                title="View Files"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={(e) => handleDeleteMigration(e, migration.id)}
+                                title="Delete Migration"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-100">
-                        {migrations.map((migration) => (
-                          <React.Fragment key={migration.id}>
-                            <tr
-                              className={`cursor-pointer hover:bg-blue-50 transition`}
-                              onClick={() => handleRowClick(migration.id)}
-                            >
-                              <td className="px-4 py-3 font-medium text-blue-900 flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-blue-600" />
-                                {migration.project_name}
+                        
+                        {/* Show files if this migration is selected */}
+                        {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
+                          migrationFiles.map((file) => (
+                            <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
+                              <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <span className="truncate max-w-xs">{file.file_name}</span>
                               </td>
-                              <td className="px-4 py-3 text-gray-700">{format(new Date(migration.created_at), 'MMM dd, yyyy')}</td>
-                              <td className="px-4 py-3 text-center">
-                                <span className="inline-block w-8 text-blue-600 bg-blue-50 rounded-full">{migration.success_count}</span>
+                              <td className="px-4 py-2 text-center text-xs text-gray-600">
+                                {file.file_type}
                               </td>
-                              <td className="px-4 py-3 text-center">
-                                <span className="inline-block w-8 text-purple-600 bg-purple-50 rounded-full">{migration.failed_count}</span>
+                              <td className="px-4 py-2 text-center" colSpan={2}>
+                                <div className="flex items-center justify-center gap-2">
+                                  {getStatusIcon(file.conversion_status)}
+                                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
+                                    {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
+                                  </span>
+                                </div>
                               </td>
-                              <td className="px-4 py-3 text-center">
-                                <span className="inline-block w-8 text-orange-600 bg-orange-50 rounded-full">{migration.pending_count}</span>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Success</span>
-                              </td>
-                              <td className="px-4 py-3 text-center flex gap-2 justify-center">
-                                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleRowClick(migration.id); }}><Eye className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost"><Download className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDeleteFile(migration.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                              <td className="px-4 py-2 text-center">
+                                <div className="flex gap-1 justify-center">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => handleViewFile(e, file)}
+                                    title="View Code"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => handleDownloadFile(e, file)}
+                                    title="Download File"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
-                            {/* Show files if this migration is selected */}
-                            {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
-                              migrationFiles.map((file) => (
-                                <tr key={file.id} className="bg-gray-50 hover:bg-blue-100 cursor-pointer">
-                                  <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2} onClick={() => handleViewFile(file)}>
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                    {file.file_name}
-                                  </td>
-                                  <td className="px-4 py-2 text-center">
-                                    {file.conversion_status === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />}
-                                  </td>
-                                  <td className="px-4 py-2 text-center">
-                                    {file.conversion_status === 'failed' && <XCircle className="h-4 w-4 text-red-500 mx-auto" />}
-                                  </td>
-                                  <td className="px-4 py-2 text-center">
-                                    {file.conversion_status === 'pending' && <AlertCircle className="h-4 w-4 text-orange-500 mx-auto" />}
-                                  </td>
-                                  <td className="px-4 py-2 text-center" colSpan={2}>
-                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${file.conversion_status === 'success' ? 'bg-green-100 text-green-800' : file.conversion_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}</span>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {/* Code Diff Dialog */}
-                <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
-                  <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                      <DialogTitle>Code Comparison: {selectedFile?.file_name}</DialogTitle>
-                      <DialogClose />
-                    </DialogHeader>
-                    {selectedFile && (
-                      <CodeDiffViewer
-                        originalCode={selectedFile.original_content || ''}
-                        convertedCode={selectedFile.converted_content || ''}
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                          ))
+                        )}
+                        
+                        {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
+                          <tr className="bg-gray-50">
+                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                              No files found for this migration
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Code Diff Dialog */}
+        <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Code Comparison: {selectedFile?.file_name}</DialogTitle>
+              <DialogClose />
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              {selectedFile && (
+                <CodeDiffViewer
+                  originalCode={selectedFile.original_content || ''}
+                  convertedCode={selectedFile.converted_content || 'No converted code available'}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

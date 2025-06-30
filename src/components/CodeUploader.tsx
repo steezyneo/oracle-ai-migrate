@@ -28,12 +28,22 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   
-  const processFiles = (uploadedFiles: FileList | null) => {
+  const processFiles = useCallback((uploadedFiles: FileList | null) => {
     if (!uploadedFiles) return;
     
     console.log('Processing files:', uploadedFiles.length);
     
     Array.from(uploadedFiles).forEach(file => {
+      // Skip if file is too large (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: `${file.name} is too large. Please select files under 10MB.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       
       reader.onload = (e) => {
@@ -47,7 +57,18 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
             status: 'pending'
           };
           
-          setFiles(prevFiles => [...prevFiles, newFile]);
+          setFiles(prevFiles => {
+            // Check if file already exists
+            if (prevFiles.some(f => f.name === file.name)) {
+              toast({
+                title: 'Duplicate File',
+                description: `${file.name} is already uploaded.`,
+                variant: 'destructive'
+              });
+              return prevFiles;
+            }
+            return [...prevFiles, newFile];
+          });
           
           toast({
             title: 'File Uploaded',
@@ -66,7 +87,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       
       reader.readAsText(file);
     });
-  };
+  }, [toast]);
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     processFiles(event.target.files);
@@ -75,9 +96,38 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
 
   const handleFolderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('Folder upload triggered:', event.target.files);
-    if (event.target.files && event.target.files.length > 0) {
-      console.log('Processing folder with files:', event.target.files.length);
-      processFiles(event.target.files);
+    const files = event.target.files;
+    
+    if (files && files.length > 0) {
+      console.log('Processing folder with files:', files.length);
+      
+      // Filter for supported file types
+      const supportedFiles = Array.from(files).filter(file => {
+        const ext = file.name.toLowerCase().split('.').pop();
+        return ['sql', 'txt', 'prc', 'trg', 'tab', 'proc', 'sp'].includes(ext || '');
+      });
+      
+      if (supportedFiles.length === 0) {
+        toast({
+          title: 'No Supported Files',
+          description: 'No supported files found in the selected folder. Please select a folder containing .sql, .txt, .prc, .trg, or .tab files.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      if (supportedFiles.length !== files.length) {
+        toast({
+          title: 'Some Files Skipped',
+          description: `${files.length - supportedFiles.length} unsupported files were skipped. Only .sql, .txt, .prc, .trg, and .tab files are supported.`,
+        });
+      }
+      
+      // Create a new FileList with only supported files
+      const dt = new DataTransfer();
+      supportedFiles.forEach(file => dt.items.add(file));
+      
+      processFiles(dt.files);
     } else {
       toast({
         title: 'No Folder Selected',
@@ -112,7 +162,30 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     setIsDragging(false);
     
     const dt = e.dataTransfer;
-    processFiles(dt.files);
+    const droppedFiles = dt.files;
+    
+    if (droppedFiles && droppedFiles.length > 0) {
+      // Filter for supported file types
+      const supportedFiles = Array.from(droppedFiles).filter(file => {
+        const ext = file.name.toLowerCase().split('.').pop();
+        return ['sql', 'txt', 'prc', 'trg', 'tab', 'proc', 'sp'].includes(ext || '');
+      });
+      
+      if (supportedFiles.length === 0) {
+        toast({
+          title: 'Unsupported Files',
+          description: 'Only .sql, .txt, .prc, .trg, and .tab files are supported.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Create new FileList with supported files
+      const newDt = new DataTransfer();
+      supportedFiles.forEach(file => newDt.items.add(file));
+      
+      processFiles(newDt.files);
+    }
   };
   
   const handleDropAreaClick = () => {
@@ -364,14 +437,14 @@ END`;
                       multiple
                       className="hidden"
                       onChange={handleFileUpload}
-                      accept=".sql,.txt,.tab,.prc,.trg"
+                      accept=".sql,.txt,.tab,.prc,.trg,.proc,.sp"
                       ref={fileInputRef}
                     />
                   </Label>
                   <Button 
                     variant="outline"
                     type="button"
-                    onClick={() => folderInputRef.current && folderInputRef.current.click()}
+                    onClick={handleFolderSelect}
                   >
                     <Folder className="h-4 w-4 mr-2" />
                     Browse Folder
@@ -382,13 +455,16 @@ END`;
                     multiple
                     style={{ display: 'none' }}
                     // @ts-ignore
-                    webkitdirectory
+                    webkitdirectory="true"
                     // @ts-ignore
-                    directory
+                    directory="true"
                     onChange={handleFolderUpload}
                     ref={folderInputRef}
                   />
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Supported formats: .sql, .txt, .prc, .trg, .tab, .proc, .sp
+                </p>
               </div>
             </TabsContent>
 
