@@ -42,6 +42,28 @@ export const useConversionLogic = (
     }
   };
 
+  const updateDatabaseRecord = async (fileId: string, result: any, newStatus: 'pending' | 'success' | 'failed') => {
+    try {
+      const { error } = await supabase.from('migration_files').update({
+        conversion_status: newStatus,
+        converted_content: result.convertedCode || null,
+        error_message: newStatus === 'failed' ? (result.error || 'Conversion failed') : null,
+        data_type_mapping: result.dataTypeMapping ? JSON.stringify(result.dataTypeMapping) : null,
+        issues: result.issues ? JSON.stringify(result.issues) : null,
+        performance_metrics: result.performance ? JSON.stringify(result.performance) : null
+      }).eq('id', fileId);
+
+      if (error) {
+        console.error('Error updating file in database:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Database update error:', error);
+      return false;
+    }
+  };
+
   const handleConvertFile = useCallback(async (fileId: string) => {
     const file = files.find(f => f.id === fileId);
     if (!file) return;
@@ -76,6 +98,8 @@ export const useConversionLogic = (
       setConversionResults(prev => [...prev, conversionResult]);
       
       const newStatus = mapConversionStatus(result.status);
+      
+      // Update local state
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
@@ -90,19 +114,8 @@ export const useConversionLogic = (
           : f
       ));
 
-      // Update database with proper JSON serialization
-      const { error } = await supabase.from('migration_files').update({
-        conversion_status: newStatus,
-        converted_content: result.convertedCode,
-        error_message: newStatus === 'failed' ? 'Conversion failed' : null,
-        data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
-        issues: JSON.parse(JSON.stringify(result.issues)),
-        performance_metrics: JSON.parse(JSON.stringify(result.performance))
-      }).eq('id', file.id);
-
-      if (error) {
-        console.error('Error updating file in database:', error);
-      }
+      // Update database
+      await updateDatabaseRecord(fileId, result, newStatus);
 
       toast({
         title: "Conversion Complete",
@@ -121,10 +134,7 @@ export const useConversionLogic = (
       ));
       
       // Update database with error
-      await supabase.from('migration_files').update({
-        conversion_status: 'failed',
-        error_message: errorMessage
-      }).eq('id', file.id);
+      await updateDatabaseRecord(fileId, { error: errorMessage }, 'failed');
       
       toast({
         title: "Conversion Failed",
@@ -161,7 +171,7 @@ export const useConversionLogic = (
         }
       );
 
-      // Update files and results with proper async handling
+      // Process results sequentially
       for (let index = 0; index < results.length; index++) {
         const result = results[index];
         const file = typeFiles[index];
@@ -181,11 +191,13 @@ export const useConversionLogic = (
         
         setConversionResults(prev => [...prev, conversionResult]);
         
+        const newStatus = mapConversionStatus(result.status);
+        
         setFiles(prev => prev.map(f => 
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: mapConversionStatus(result.status),
+                conversionStatus: newStatus,
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -194,19 +206,8 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database with proper JSON serialization
-        const { error } = await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode,
-          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
-          data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
-          issues: JSON.parse(JSON.stringify(result.issues)),
-          performance_metrics: JSON.parse(JSON.stringify(result.performance))
-        }).eq('id', file.id);
-
-        if (error) {
-          console.error('Error updating file in database:', error);
-        }
+        // Update database
+        await updateDatabaseRecord(file.id, result, newStatus);
       }
 
       toast({
@@ -250,7 +251,7 @@ export const useConversionLogic = (
         }
       );
 
-      // Update files and results with proper async handling
+      // Process results sequentially
       for (let index = 0; index < results.length; index++) {
         const result = results[index];
         const file = pendingFiles[index];
@@ -270,11 +271,13 @@ export const useConversionLogic = (
         
         setConversionResults(prev => [...prev, conversionResult]);
         
+        const newStatus = mapConversionStatus(result.status);
+        
         setFiles(prev => prev.map(f => 
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: mapConversionStatus(result.status),
+                conversionStatus: newStatus,
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -283,19 +286,8 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database with proper JSON serialization
-        const { error } = await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode,
-          error_message: mapConversionStatus(result.status) === 'failed' ? 'Conversion failed' : null,
-          data_type_mapping: JSON.parse(JSON.stringify(result.dataTypeMapping)),
-          issues: JSON.parse(JSON.stringify(result.issues)),
-          performance_metrics: JSON.parse(JSON.stringify(result.performance))
-        }).eq('id', file.id);
-
-        if (error) {
-          console.error('Error updating file in database:', error);
-        }
+        // Update database
+        await updateDatabaseRecord(file.id, result, newStatus);
       }
 
       toast({
@@ -334,6 +326,7 @@ export const useConversionLogic = (
         )
       );
 
+      // Update database to success status
       await supabase
         .from('migration_files')
         .update({
@@ -341,7 +334,7 @@ export const useConversionLogic = (
           conversion_status: 'success',
           error_message: null,
         })
-        .eq('file_name', fileToFix.name);
+        .eq('id', fileId);
 
       toast({
         title: "File Fixed",
