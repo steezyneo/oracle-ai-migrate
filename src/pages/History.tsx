@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Database, FileText, Home, Eye, Download, Trash2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -45,6 +46,9 @@ const History = () => {
   const [migrationFiles, setMigrationFiles] = useState<MigrationFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [selectedMigrations, setSelectedMigrations] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const isFetchingFiles = useRef(false);
 
   // Get the return tab from location state
@@ -203,6 +207,133 @@ const History = () => {
     });
   };
 
+  // Toggle bulk delete mode
+  const toggleBulkDeleteMode = () => {
+    setBulkDeleteMode(!bulkDeleteMode);
+    setSelectedMigrations(new Set());
+    setSelectedFiles(new Set());
+  };
+
+  // Handle migration selection
+  const handleMigrationSelect = (migrationId: string, checked: boolean) => {
+    const newSelected = new Set(selectedMigrations);
+    if (checked) {
+      newSelected.add(migrationId);
+    } else {
+      newSelected.delete(migrationId);
+    }
+    setSelectedMigrations(newSelected);
+  };
+
+  // Handle file selection
+  const handleFileSelect = (fileId: string, checked: boolean) => {
+    const newSelected = new Set(selectedFiles);
+    if (checked) {
+      newSelected.add(fileId);
+    } else {
+      newSelected.delete(fileId);
+    }
+    setSelectedFiles(newSelected);
+  };
+
+  // Bulk delete migrations
+  const handleBulkDeleteMigrations = async () => {
+    if (selectedMigrations.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedMigrations.size} migration(s)? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const migrationIds = Array.from(selectedMigrations);
+      
+      // Delete migration files first
+      for (const migrationId of migrationIds) {
+        await supabase.from('migration_files').delete().eq('migration_id', migrationId);
+      }
+      
+      // Delete migrations
+      const { error } = await supabase
+        .from('migrations')
+        .delete()
+        .in('id', migrationIds);
+        
+      if (error) {
+        console.error('Error bulk deleting migrations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete migrations",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update UI
+      setMigrations(prev => prev.filter(m => !selectedMigrations.has(m.id)));
+      setSelectedMigrations(new Set());
+      setBulkDeleteMode(false);
+      
+      toast({
+        title: "Deleted",
+        description: `Successfully deleted ${migrationIds.length} migration(s)`,
+      });
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting migrations",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Bulk delete files
+  const handleBulkDeleteFiles = async () => {
+    if (selectedFiles.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedFiles.size} file(s)? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const fileIds = Array.from(selectedFiles);
+      
+      const { error } = await supabase
+        .from('migration_files')
+        .delete()
+        .in('id', fileIds);
+        
+      if (error) {
+        console.error('Error bulk deleting files:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete files",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update UI
+      setMigrationFiles(prev => prev.filter(f => !selectedFiles.has(f.id)));
+      setSelectedFiles(new Set());
+      
+      // Refresh migration counts
+      await fetchHistory();
+      
+      toast({
+        title: "Deleted",
+        description: `Successfully deleted ${fileIds.length} file(s)`,
+      });
+    } catch (error) {
+      console.error('Error in bulk delete files:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting files",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Delete migration
   const handleDeleteMigration = async (e: React.MouseEvent, migrationId: string) => {
     e.stopPropagation();
@@ -331,7 +462,40 @@ const History = () => {
               </div>
             </div>
             
-            <UserDropdown />
+            <div className="flex items-center gap-2">
+              <Button 
+                variant={bulkDeleteMode ? "default" : "outline"}
+                onClick={toggleBulkDeleteMode}
+                className="flex items-center gap-2"
+              >
+                {bulkDeleteMode ? "Exit Selection" : "Bulk Delete"}
+              </Button>
+              {bulkDeleteMode && (
+                <>
+                  {selectedMigrations.size > 0 && (
+                    <Button 
+                      variant="destructive"
+                      onClick={handleBulkDeleteMigrations}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Migrations ({selectedMigrations.size})
+                    </Button>
+                  )}
+                  {selectedFiles.size > 0 && (
+                    <Button 
+                      variant="destructive"
+                      onClick={handleBulkDeleteFiles}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Files ({selectedFiles.size})
+                    </Button>
+                  )}
+                </>
+              )}
+              <UserDropdown />
+            </div>
           </div>
         </div>
       </header>
@@ -343,6 +507,11 @@ const History = () => {
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Conversion History ({migrations.length})
+              {bulkDeleteMode && (
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  - Selection Mode Active
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -364,6 +533,11 @@ const History = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      {bulkDeleteMode && (
+                        <th className="px-4 py-3 text-center">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Select</span>
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Files</th>
@@ -380,8 +554,17 @@ const History = () => {
                           className={`cursor-pointer hover:bg-blue-50 transition ${
                             selectedMigrationId === migration.id ? 'bg-blue-50' : ''
                           }`}
-                          onClick={() => handleRowClick(migration.id)}
+                          onClick={() => !bulkDeleteMode && handleRowClick(migration.id)}
                         >
+                          {bulkDeleteMode && (
+                            <td className="px-4 py-3 text-center">
+                              <Checkbox
+                                checked={selectedMigrations.has(migration.id)}
+                                onCheckedChange={(checked) => handleMigrationSelect(migration.id, checked as boolean)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </td>
+                          )}
                           <td className="px-4 py-3 font-medium text-blue-900 flex items-center gap-2">
                             <FileText className="h-4 w-4 text-blue-600" />
                             {migration.project_name}
@@ -411,25 +594,29 @@ const History = () => {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex gap-1 justify-center">
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRowClick(migration.id);
-                                }}
-                                title="View Files"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={(e) => handleDeleteMigration(e, migration.id)}
-                                title="Delete Migration"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
+                              {!bulkDeleteMode && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRowClick(migration.id);
+                                    }}
+                                    title="View Files"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => handleDeleteMigration(e, migration.id)}
+                                    title="Delete Migration"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -438,10 +625,19 @@ const History = () => {
                         {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
                           migrationFiles.map((file) => (
                             <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
-                              <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
+                              {bulkDeleteMode && (
+                                <td className="px-4 py-2 text-center">
+                                  <Checkbox
+                                    checked={selectedFiles.has(file.id)}
+                                    onCheckedChange={(checked) => handleFileSelect(file.id, checked as boolean)}
+                                  />
+                                </td>
+                              )}
+                              <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={bulkDeleteMode ? 1 : 2}>
                                 <FileText className="h-4 w-4 text-gray-500" />
                                 <span className="truncate max-w-xs">{file.file_name}</span>
                               </td>
+                              {!bulkDeleteMode && <td></td>}
                               <td className="px-4 py-2 text-center text-xs text-gray-600">
                                 {file.file_type}
                               </td>
@@ -454,24 +650,26 @@ const History = () => {
                                 </div>
                               </td>
                               <td className="px-4 py-2 text-center">
-                                <div className="flex gap-1 justify-center">
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={(e) => handleViewFile(e, file)}
-                                    title="View Code"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    onClick={(e) => handleDownloadFile(e, file)}
-                                    title="Download File"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                {!bulkDeleteMode && (
+                                  <div className="flex gap-1 justify-center">
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={(e) => handleViewFile(e, file)}
+                                      title="View Code"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={(e) => handleDownloadFile(e, file)}
+                                      title="Download File"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -479,7 +677,7 @@ const History = () => {
                         
                         {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
                           <tr className="bg-gray-50">
-                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={bulkDeleteMode ? 8 : 7} className="px-4 py-8 text-center text-gray-500">
                               No files found for this migration
                             </td>
                           </tr>
