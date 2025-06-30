@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { convertSybaseToOracle, convertMultipleFiles, generateConversionReport } from '@/utils/conversionUtils';
+import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversionResult, ConversionReport } from '@/types';
 
@@ -28,7 +28,6 @@ export const useConversionLogic = (
   const { toast } = useToast();
   const [isConverting, setIsConverting] = useState(false);
   const [convertingFileId, setConvertingFileId] = useState<string | null>(null);
-  const [conversionProgress, setConversionProgress] = useState({ completed: 0, total: 0 });
 
   const mapConversionStatus = (status: 'success' | 'warning' | 'error'): 'pending' | 'success' | 'failed' => {
     switch (status) {
@@ -42,28 +41,6 @@ export const useConversionLogic = (
     }
   };
 
-  const updateDatabaseRecord = async (fileId: string, result: any, newStatus: 'pending' | 'success' | 'failed') => {
-    try {
-      const { error } = await supabase.from('migration_files').update({
-        conversion_status: newStatus,
-        converted_content: result.convertedCode || null,
-        error_message: newStatus === 'failed' ? (result.error || 'Conversion failed') : null,
-        data_type_mapping: result.dataTypeMapping ? JSON.stringify(result.dataTypeMapping) : null,
-        issues: result.issues ? JSON.stringify(result.issues) : null,
-        performance_metrics: result.performance ? JSON.stringify(result.performance) : null
-      }).eq('id', fileId);
-
-      if (error) {
-        console.error('Error updating file in database:', error);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Database update error:', error);
-      return false;
-    }
-  };
-
   const handleConvertFile = useCallback(async (fileId: string) => {
     const file = files.find(f => f.id === fileId);
     if (!file) return;
@@ -72,21 +49,16 @@ export const useConversionLogic = (
     setIsConverting(true);
     
     try {
-      const codeFile = {
-        id: file.id,
-        name: file.name,
-        content: file.content,
-        type: file.type,
-        status: 'pending' as const
-      };
-
-      const result = await convertSybaseToOracle(codeFile, selectedAiModel);
+      const result = await convertSybaseToOracle(file, selectedAiModel);
       
       const conversionResult: ConversionResult = {
         id: result.id,
         originalFile: {
-          ...codeFile,
-          status: 'success'
+          id: file.id,
+          name: file.name,
+          content: file.content,
+          type: file.type,
+          status: 'pending'
         },
         convertedCode: result.convertedCode,
         issues: result.issues,
@@ -97,90 +69,53 @@ export const useConversionLogic = (
       
       setConversionResults(prev => [...prev, conversionResult]);
       
-      const newStatus = mapConversionStatus(result.status);
-      
-      // Update local state
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
               ...f, 
-              conversionStatus: newStatus,
+              conversionStatus: mapConversionStatus(result.status),
               convertedContent: result.convertedCode,
               dataTypeMapping: result.dataTypeMapping,
               issues: result.issues,
-              performanceMetrics: result.performance,
-              errorMessage: newStatus === 'failed' ? 'Conversion failed' : null
+              performanceMetrics: result.performance
             }
           : f
       ));
 
-      // Update database
-      await updateDatabaseRecord(fileId, result, newStatus);
-
-      toast({
-        title: "Conversion Complete",
-        description: `Successfully converted ${file.name}`,
-      });
+      await supabase.from('migration_files').update({
+        conversion_status: mapConversionStatus(result.status),
+        converted_content: result.convertedCode
+      }).eq('id', file.id);
     } catch (error) {
       console.error('Conversion failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Conversion failed';
-      
       setFiles(prev => prev.map(f => 
-        f.id === fileId ? { 
-          ...f, 
-          conversionStatus: 'failed',
-          errorMessage: errorMessage
-        } : f
+        f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
-      
-      // Update database with error
-      await updateDatabaseRecord(fileId, { error: errorMessage }, 'failed');
-      
-      toast({
-        title: "Conversion Failed",
-        description: `Failed to convert ${file.name}: ${errorMessage}`,
-        variant: "destructive",
-      });
     } finally {
       setConvertingFileId(null);
       setIsConverting(false);
     }
-  }, [files, selectedAiModel, setFiles, setConversionResults, toast]);
+  }, [files, selectedAiModel, setFiles, setConversionResults]);
 
   const handleConvertAllByType = useCallback(async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
     const typeFiles = files.filter(f => f.type === type && f.conversionStatus === 'pending');
     if (typeFiles.length === 0) return;
 
     setIsConverting(true);
-    setConversionProgress({ completed: 0, total: typeFiles.length });
     
-    try {
-      const codeFiles = typeFiles.map(file => ({
-        id: file.id,
-        name: file.name,
-        content: file.content,
-        type: file.type,
-        status: 'pending' as const
-      }));
-
-      const results = await convertMultipleFiles(
-        codeFiles, 
-        selectedAiModel,
-        (completed, total) => {
-          setConversionProgress({ completed, total });
-        }
-      );
-
-      // Process results sequentially
-      for (let index = 0; index < results.length; index++) {
-        const result = results[index];
-        const file = typeFiles[index];
+    for (const file of typeFiles) {
+      setConvertingFileId(file.id);
+      try {
+        const result = await convertSybaseToOracle(file, selectedAiModel);
         
         const conversionResult: ConversionResult = {
           id: result.id,
           originalFile: {
-            ...codeFiles[index],
-            status: 'success'
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: 'pending'
           },
           convertedCode: result.convertedCode,
           issues: result.issues,
@@ -191,13 +126,11 @@ export const useConversionLogic = (
         
         setConversionResults(prev => [...prev, conversionResult]);
         
-        const newStatus = mapConversionStatus(result.status);
-        
         setFiles(prev => prev.map(f => 
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: newStatus,
+                conversionStatus: mapConversionStatus(result.status),
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -206,61 +139,41 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database
-        await updateDatabaseRecord(file.id, result, newStatus);
+        await supabase.from('migration_files').update({
+          conversion_status: mapConversionStatus(result.status),
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
+      } catch (error) {
+        console.error(`Conversion failed for ${file.name}:`, error);
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+        ));
       }
-
-      toast({
-        title: "Batch Conversion Complete",
-        description: `Converted ${results.length} ${type} files`,
-      });
-    } catch (error) {
-      console.error(`Batch conversion failed for ${type}:`, error);
-      toast({
-        title: "Batch Conversion Failed",
-        description: `Failed to convert ${type} files`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsConverting(false);
-      setConversionProgress({ completed: 0, total: 0 });
     }
-  }, [files, selectedAiModel, setFiles, setConversionResults, toast]);
+    
+    setConvertingFileId(null);
+    setIsConverting(false);
+  }, [files, selectedAiModel, setFiles, setConversionResults]);
 
   const handleConvertAll = useCallback(async () => {
     const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    setConversionProgress({ completed: 0, total: pendingFiles.length });
     
-    try {
-      const codeFiles = pendingFiles.map(file => ({
-        id: file.id,
-        name: file.name,
-        content: file.content,
-        type: file.type,
-        status: 'pending' as const
-      }));
-
-      const results = await convertMultipleFiles(
-        codeFiles, 
-        selectedAiModel,
-        (completed, total) => {
-          setConversionProgress({ completed, total });
-        }
-      );
-
-      // Process results sequentially
-      for (let index = 0; index < results.length; index++) {
-        const result = results[index];
-        const file = pendingFiles[index];
+    for (const file of pendingFiles) {
+      setConvertingFileId(file.id);
+      try {
+        const result = await convertSybaseToOracle(file, selectedAiModel);
         
         const conversionResult: ConversionResult = {
           id: result.id,
           originalFile: {
-            ...codeFiles[index],
-            status: 'success'
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: 'pending'
           },
           convertedCode: result.convertedCode,
           issues: result.issues,
@@ -271,13 +184,11 @@ export const useConversionLogic = (
         
         setConversionResults(prev => [...prev, conversionResult]);
         
-        const newStatus = mapConversionStatus(result.status);
-        
         setFiles(prev => prev.map(f => 
           f.id === file.id 
             ? { 
                 ...f, 
-                conversionStatus: newStatus,
+                conversionStatus: mapConversionStatus(result.status),
                 convertedContent: result.convertedCode,
                 dataTypeMapping: result.dataTypeMapping,
                 issues: result.issues,
@@ -286,26 +197,21 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update database
-        await updateDatabaseRecord(file.id, result, newStatus);
+        await supabase.from('migration_files').update({
+          conversion_status: mapConversionStatus(result.status),
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
+      } catch (error) {
+        console.error(`Conversion failed for ${file.name}:`, error);
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+        ));
       }
-
-      toast({
-        title: "All Files Converted",
-        description: `Successfully processed ${results.length} files`,
-      });
-    } catch (error) {
-      console.error('Batch conversion failed:', error);
-      toast({
-        title: "Conversion Failed",
-        description: "Failed to convert all files",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConverting(false);
-      setConversionProgress({ completed: 0, total: 0 });
     }
-  }, [files, selectedAiModel, setFiles, setConversionResults, toast]);
+    
+    setConvertingFileId(null);
+    setIsConverting(false);
+  }, [files, selectedAiModel, setFiles, setConversionResults]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
@@ -326,7 +232,6 @@ export const useConversionLogic = (
         )
       );
 
-      // Update database to success status
       await supabase
         .from('migration_files')
         .update({
@@ -334,7 +239,7 @@ export const useConversionLogic = (
           conversion_status: 'success',
           error_message: null,
         })
-        .eq('id', fileId);
+        .eq('file_name', fileToFix.name);
 
       toast({
         title: "File Fixed",
@@ -360,7 +265,7 @@ export const useConversionLogic = (
         name: file.name,
         content: file.content,
         type: file.type,
-        status: 'success'
+        status: 'pending'
       },
       convertedCode: file.convertedContent || '',
       issues: file.issues || [],
@@ -386,7 +291,6 @@ export const useConversionLogic = (
   return {
     isConverting,
     convertingFileId,
-    conversionProgress,
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,

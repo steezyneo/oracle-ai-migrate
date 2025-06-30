@@ -2,7 +2,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
@@ -26,7 +25,6 @@ interface ConversionPanelProps {
   selectedFile: FileItem | null;
   isConverting: boolean;
   convertingFileId: string | null;
-  conversionProgress?: { completed: number; total: number };
   onFileSelect: (file: FileItem) => void;
   onConvertFile: (fileId: string) => void;
   onConvertAllByType: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
@@ -43,7 +41,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   selectedFile,
   isConverting,
   convertingFileId,
-  conversionProgress,
   onFileSelect,
   onConvertFile,
   onConvertAllByType,
@@ -86,30 +83,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           isConverting={isConverting}
           convertingFileId={convertingFileId}
         />
-        
-        {/* Conversion Progress */}
-        {isConverting && conversionProgress && conversionProgress.total > 0 && (
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle className="text-sm">Conversion Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Processing files...</span>
-                  <span>{conversionProgress.completed}/{conversionProgress.total}</span>
-                </div>
-                <Progress 
-                  value={(conversionProgress.completed / conversionProgress.total) * 100} 
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-600">
-                  Using optimized batch processing for faster conversion
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <div className="col-span-8">

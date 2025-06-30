@@ -1,17 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Database, FileText, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
+
+import CodeUploader from '@/components/CodeUploader';
+import ReportViewer from '@/components/ReportViewer';
+import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
-import CodeUploader from '@/components/CodeUploader';
-import AIModelSelector from '@/components/AIModelSelector';
-import Help from '@/components/Help';
-import ReportViewer from '@/components/ReportViewer';
 
 interface FileItem {
   id: string;
@@ -32,21 +34,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-
-  const [activeTab, setActiveTab] = useState('upload');
+  
+  const initialTab = location.state?.activeTab || 'upload';
+  
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
-  const [selectedAiModel, setSelectedAiModel] = useState('gemini-1.5-flash-latest');
+  const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
+  const [report, setReport] = useState<ConversionReport | null>(null);
+  const [showReport, setShowReport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [migrationReport, setMigrationReport] = useState<ConversionReport | null>(null);
 
   const { handleCodeUpload } = useMigrationManager();
-  
   const {
     isConverting,
     convertingFileId,
-    conversionProgress,
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,
@@ -59,52 +62,70 @@ const Dashboard = () => {
       navigate('/auth');
       return;
     }
+  }, [user, loading, navigate]);
 
-    const stateTab = location.state?.activeTab;
-    if (stateTab) {
-      setActiveTab(stateTab);
+  useEffect(() => {
+    if (files.length > 0 && !selectedFile) {
+      const firstConvertedFile = files.find(f => f.convertedContent);
+      setSelectedFile(firstConvertedFile || files[0]);
     }
-  }, [user, loading, navigate, location.state]);
+  }, [files, selectedFile]);
 
-  const handleUploadComplete = async (uploadedFiles: any[]) => {
+  const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
     setFiles(convertedFiles);
     setActiveTab('conversion');
-    
-    toast({
-      title: "Files Ready",
-      description: `${convertedFiles.length} files are ready for conversion`,
-    });
   };
 
   const handleFileSelect = (file: FileItem) => {
     setSelectedFile(file);
   };
 
-  const handleManualEdit = (newContent: string) => {
-    if (!selectedFile) return;
-    
-    setFiles(prev => prev.map(f => 
-      f.id === selectedFile.id 
-        ? { ...f, convertedContent: newContent }
-        : f
-    ));
-    
-    setSelectedFile(prev => prev ? { ...prev, convertedContent: newContent } : null);
-  };
-
   const handleDismissIssue = (issueId: string) => {
     if (!selectedFile) return;
-    
-    const updatedIssues = selectedFile.issues?.filter(issue => issue.id !== issueId) || [];
-    
-    setFiles(prev => prev.map(f => 
-      f.id === selectedFile.id 
+    const fileIdx = files.findIndex(f => f.id === selectedFile.id);
+    if (fileIdx === -1) return;
+    const updatedIssues = selectedFile.issues?.filter(i => i.id !== issueId) || [];
+    setFiles(prevFiles => prevFiles.map((f, idx) =>
+      idx === fileIdx
         ? { ...f, issues: updatedIssues }
         : f
     ));
-    
-    setSelectedFile(prev => prev ? { ...prev, issues: updatedIssues } : null);
+    setSelectedFile(prev => prev && prev.id === selectedFile.id
+      ? { ...prev, issues: updatedIssues }
+      : prev
+    );
+  };
+
+  const handleManualEdit = (newContent: string) => {
+    if (selectedFile) {
+      const updatedFile = { ...selectedFile, convertedContent: newContent };
+      
+      setFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.id === selectedFile.id
+            ? updatedFile
+            : file
+        )
+      );
+      
+      setSelectedFile(updatedFile);
+    }
+  };
+
+  const handleGenerateReportWrapper = async () => {
+    try {
+      const newReport = await handleGenerateReport();
+      setReport(newReport);
+      setShowReport(true);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: "Failed to generate the conversion report",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleGoToHistory = () => {
@@ -115,37 +136,11 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleShowHelp = () => {
-    setShowHelp(true);
-  };
-
-  const handleReportGenerated = async () => {
-    try {
-      const report = await handleGenerateReport();
-      setMigrationReport(report);
-      console.log('Report generated:', report);
-      
-      toast({
-        title: "Migration Complete",
-        description: "Your migration report has been generated successfully",
-      });
-      
-      setActiveTab('report');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast({
-        title: "Report Generation Failed",
-        description: "Failed to generate migration report",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <Database className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>Loading dashboard...</p>
         </div>
       </div>
@@ -156,40 +151,56 @@ const Dashboard = () => {
     return null;
   }
 
+  if (showReport && report) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <DashboardHeader
+          onGoToHistory={handleGoToHistory}
+          onGoHome={handleGoHome}
+          onShowHelp={() => setShowHelp(true)}
+          title="Migration Report"
+        />
+        <main className="container mx-auto px-4 py-8">
+          <ReportViewer 
+            report={report} 
+            onBack={() => setShowReport(false)} 
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader
         onGoToHistory={handleGoToHistory}
         onGoHome={handleGoHome}
-        onShowHelp={handleShowHelp}
+        onShowHelp={() => setShowHelp(true)}
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="upload">Upload</TabsTrigger>
-              <TabsTrigger value="conversion">Convert</TabsTrigger>
-              <TabsTrigger value="report">Report</TabsTrigger>
-            </TabsList>
-            
-            <AIModelSelector
-              selectedModel={selectedAiModel}
-              onModelChange={setSelectedAiModel}
-            />
-          </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion')}>
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Upload Code
+            </TabsTrigger>
+            <TabsTrigger value="conversion" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Conversion
+            </TabsTrigger>
+          </TabsList>
 
-          <TabsContent value="upload" className="space-y-6">
-            <CodeUploader onComplete={handleUploadComplete} />
+          <TabsContent value="upload">
+            <CodeUploader onComplete={handleCodeUploadWrapper} />
           </TabsContent>
 
-          <TabsContent value="conversion" className="space-y-6">
+          <TabsContent value="conversion">
             <ConversionPanel
               files={files}
               selectedFile={selectedFile}
               isConverting={isConverting}
               convertingFileId={convertingFileId}
-              conversionProgress={conversionProgress}
               onFileSelect={handleFileSelect}
               onConvertFile={handleConvertFile}
               onConvertAllByType={handleConvertAllByType}
@@ -197,25 +208,9 @@ const Dashboard = () => {
               onFixFile={handleFixFile}
               onManualEdit={handleManualEdit}
               onDismissIssue={handleDismissIssue}
-              onGenerateReport={handleReportGenerated}
+              onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={() => setActiveTab('upload')}
             />
-          </TabsContent>
-
-          <TabsContent value="report" className="space-y-6">
-            {migrationReport ? (
-              <ReportViewer 
-                report={migrationReport} 
-                onBack={() => setActiveTab('conversion')} 
-              />
-            ) : (
-              <div className="text-center py-8">
-                <h3 className="text-lg font-semibold mb-4">Migration Report</h3>
-                <p className="text-gray-600">
-                  Complete the conversion process to generate your migration report.
-                </p>
-              </div>
-            )}
           </TabsContent>
         </Tabs>
       </main>
