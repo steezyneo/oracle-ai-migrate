@@ -13,9 +13,12 @@ import {
   Loader2,
   Minimize2,
   Maximize2,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useAuth } from "../hooks/useAuth";
 
 interface Message {
   id: string;
@@ -28,6 +31,9 @@ interface Message {
 interface CosmoChatProps {
   className?: string;
 }
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAjp-ksF02c3YosUv4rvULe9nrSrVkjmVY";
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const CosmoChat: React.FC<CosmoChatProps> = ({ className }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,6 +48,7 @@ const CosmoChat: React.FC<CosmoChatProps> = ({ className }) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [useGemini, setUseGemini] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +92,13 @@ const CosmoChat: React.FC<CosmoChatProps> = ({ className }) => {
     setMessages(prev => [...prev, loadingMessage]);
 
     try {
-      const response = await generateCosmoResponse(inputValue.trim());
+      let response: string;
+      
+      if (useGemini) {
+        response = await generateGeminiResponse(inputValue.trim());
+      } else {
+        response = await generateLocalResponse(inputValue.trim());
+      }
       
       // Remove loading message and add actual response
       setMessages(prev => prev.filter(msg => !msg.isLoading).concat({
@@ -95,26 +108,57 @@ const CosmoChat: React.FC<CosmoChatProps> = ({ className }) => {
         timestamp: new Date(),
       }));
     } catch (error) {
-      // Remove loading message and add error response
-      setMessages(prev => prev.filter(msg => !msg.isLoading).concat({
-        id: (Date.now() + 2).toString(),
-        content: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
-        sender: 'bot',
-        timestamp: new Date(),
-      }));
+      console.error('Error generating response:', error);
+      // Fallback to local response if Gemini fails
+      try {
+        const fallbackResponse = await generateLocalResponse(inputValue.trim());
+        setMessages(prev => prev.filter(msg => !msg.isLoading).concat({
+          id: (Date.now() + 2).toString(),
+          content: fallbackResponse,
+          sender: 'bot',
+          timestamp: new Date(),
+        }));
+      } catch (fallbackError) {
+        // Remove loading message and add error response
+        setMessages(prev => prev.filter(msg => !msg.isLoading).concat({
+          id: (Date.now() + 2).toString(),
+          content: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
+          sender: 'bot',
+          timestamp: new Date(),
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  const generateGeminiResponse = async (userInput: string): Promise<string> => {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      
+      const prompt = `You are Cosmo Agents, an AI assistant for a Sybase to Oracle migration tool. You help users with:
+
+1. Oracle SQL and PL/SQL questions
+2. Python programming questions
+3. Questions about the migration tool and its features
+4. General technical support
+
+User question: "${userInput}"
+
+Please provide a helpful, detailed response. If the question is about Oracle SQL, include code examples. If it's about Python, include relevant code snippets. If it's about the migration tool, explain the features and how to use them.
+
+Format your response with proper markdown for code blocks and emphasis. Keep responses informative but concise.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      throw error;
     }
   };
 
-  const generateCosmoResponse = async (userInput: string): Promise<string> => {
+  const generateLocalResponse = async (userInput: string): Promise<string> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
@@ -495,6 +539,40 @@ I'm here to make your migration journey smoother! 🚀`;
 Could you please rephrase your question or ask about one of these topics? I'm here to help! 😊`;
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const quickActions = [
+    {
+      label: "Oracle SQL Basics",
+      question: "What are the basic Oracle SQL syntax differences from other databases?"
+    },
+    {
+      label: "Python Database",
+      question: "How do I connect Python to Oracle database?"
+    },
+    {
+      label: "Migration Tool",
+      question: "How do I use this migration tool?"
+    },
+    {
+      label: "Data Types",
+      question: "What are the Oracle data type mappings from Sybase?"
+    }
+  ];
+
+  const handleQuickAction = (question: string) => {
+    setInputValue(question);
+    // Auto-send the question
+    setTimeout(() => {
+      handleSendMessage();
+    }, 100);
+  };
+
   return (
     <div className={cn("fixed bottom-4 right-4 z-50", className)}>
       {/* Chat Toggle Button */}
@@ -520,9 +598,20 @@ Could you please rephrase your question or ask about one of these topics? I'm he
                 </div>
                 <div>
                   <CardTitle className="text-lg">Cosmo Agents</CardTitle>
-                  <Badge variant="secondary" className="text-xs bg-white/20 text-white">
-                    AI Assistant
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary" className="text-xs bg-white/20 text-white">
+                      AI Assistant
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setUseGemini(!useGemini)}
+                      className="text-white hover:bg-white/20 h-6 px-2 text-xs"
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      {useGemini ? 'Gemini' : 'Local'}
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -580,6 +669,27 @@ Could you please rephrase your question or ask about one of these topics? I'm he
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Quick Actions */}
+                    {messages.length === 1 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 text-center">Quick questions:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {quickActions.map((action, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleQuickAction(action.question)}
+                              className="text-xs h-6 px-2"
+                            >
+                              {action.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>

@@ -63,7 +63,7 @@ interface ConversionReport {
   summary: string;
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAiU5Dt6ZEEYsYCh4Z02GNm1XWXup6xcBg";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAjp-ksF02c3YosUv4rvULe9nrSrVkjmVY";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const Dashboard = () => {
