@@ -585,29 +585,16 @@ Could you please rephrase your question or ask about one of these topics? I'm he
                       <div
                         key={message.id}
                         className={cn(
-                          "flex",
-                          message.sender === 'user' ? 'justify-end' : 'justify-start'
+                          'mb-2 rounded-lg px-4 py-2',
+                          message.sender === 'bot' ? 'bg-gray-100 text-gray-900' : 'bg-primary text-white',
+                          'font-inter',
+                          'text-base',
                         )}
+                        style={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif', fontSize: '1.05rem' }}
                       >
-                        <div
-                          className={cn(
-                            "max-w-[80%] rounded-lg px-3 py-2",
-                            message.sender === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
-                          )}
-                        >
-                          {message.isLoading ? (
-                            <div className="flex items-center space-x-2">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span className="text-sm">Cosmo is thinking...</span>
-                            </div>
-                          ) : (
-                            <div className="text-sm whitespace-pre-wrap">
-                              {message.content}
-                            </div>
-                          )}
-                        </div>
+                        {message.sender === 'bot'
+                          ? message.content.charAt(0).toUpperCase() + message.content.slice(1).replace(/([^.])$/, '$1.')
+                          : message.content}
                       </div>
                     ))}
                     

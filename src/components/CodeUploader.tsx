@@ -454,11 +454,13 @@ END`;
                     ref={folderInputRef}
                   />
                 </div>
-                <div className="flex justify-center mt-4">
-                  <Button variant="outline" size="sm" onClick={onReset} disabled={!onReset}>
-                    Reset
-                  </Button>
-                </div>
+                {onReset && (
+                  <div className="flex justify-center mt-4">
+                    <Button variant="outline" size="sm" onClick={onReset}>
+                      Reset
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
