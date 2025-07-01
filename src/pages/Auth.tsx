@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import CosmoChat from '@/components/CosmoChat';
+import { supabase } from '@/lib/supabase';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +26,7 @@ const Auth = () => {
 
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -76,6 +78,21 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    if (!loginData.email) {
+      toast({ title: 'Enter your email', description: 'Please enter your email above to reset your password.', variant: 'destructive' });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(loginData.email);
+    if (error) {
+      toast({ title: 'Reset Failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Reset Email Sent', description: 'Check your email for a password reset link.' });
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -113,7 +130,7 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="login-password">Password</Label>
                     <Input
                       id="login-password"
@@ -122,8 +139,11 @@ const Auth = () => {
                       onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
                       required
                     />
-                    <button type="button" onClick={() => setShowLoginPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 focus:outline-none">
+                    <button type="button" onClick={() => setShowLoginPassword(v => !v)} className="absolute right-3 top-9 text-gray-400 focus:outline-none">
                       {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                    <button type="button" className="text-xs text-blue-600 hover:underline mt-1 ml-1" onClick={handleForgotPassword} disabled={isLoading}>
+                      Forgot Password?
                     </button>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -155,7 +175,7 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
                       id="signup-password"
@@ -164,7 +184,7 @@ const Auth = () => {
                       onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
                       required
                     />
-                    <button type="button" onClick={() => setShowSignupPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 focus:outline-none">
+                    <button type="button" onClick={() => setShowSignupPassword(v => !v)} className="absolute right-3 top-9 text-gray-400 focus:outline-none">
                       {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>

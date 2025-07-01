@@ -454,8 +454,8 @@ END`;
                     ref={folderInputRef}
                   />
                 </div>
-                <div className="flex justify-center mt-6">
-                  <Button variant="destructive" size="lg" onClick={onReset ? onReset : () => window.location.reload()}>
+                <div className="flex justify-center mt-4">
+                  <Button variant="outline" size="sm" onClick={onReset} disabled={!onReset}>
                     Reset
                   </Button>
                 </div>
