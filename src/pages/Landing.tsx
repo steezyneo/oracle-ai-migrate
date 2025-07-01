@@ -9,7 +9,7 @@ import CosmoChat from '@/components/CosmoChat';
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [showHelp, setShowHelp] = useState(false);
 
   const handleGetStarted = () => {
@@ -53,8 +53,8 @@ const Landing = () => {
                     <History className="h-4 w-4 mr-2" />
                     History
                   </Button>
-                  <Button onClick={() => navigate('/migration')}>
-                    Go to Dashboard
+                  <Button onClick={async () => { await signOut(); }}>
+                    Sign Out
                   </Button>
                 </>
               ) : (
