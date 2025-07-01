@@ -454,11 +454,11 @@ END`;
                     ref={folderInputRef}
                   />
                 </div>
-                {onReset && (
-                  <div className="flex justify-center mt-6">
-                    <Button variant="destructive" onClick={onReset}>Reset</Button>
-                  </div>
-                )}
+                <div className="flex justify-center mt-6">
+                  <Button variant="destructive" size="lg" onClick={onReset ? onReset : () => window.location.reload()}>
+                    Reset
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 
