@@ -455,7 +455,7 @@ END`;
                   />
                 </div>
                 {onReset && (
-                  <div className="flex justify-center mt-4">
+                  <div className="flex justify-center mt-6">
                     <Button variant="destructive" onClick={onReset}>Reset</Button>
                   </div>
                 )}
