@@ -145,9 +145,7 @@ const CosmoChat: React.FC<CosmoChatProps> = ({ className }) => {
 
 User question: "${userInput}"
 
-Please provide a helpful, detailed response. If the question is about Oracle SQL, include code examples. If it's about Python, include relevant code snippets. If it's about the migration tool, explain the features and how to use them.
-
-Format your response with proper markdown for code blocks and emphasis. Keep responses informative but concise.`;
+Respond with a brief, clear, and to-the-point answer. Only include code or examples if absolutely necessary. Avoid long explanations. Use markdown for code blocks if needed.`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -167,68 +165,11 @@ Format your response with proper markdown for code blocks and emphasis. Keep res
     // Oracle SQL related questions
     if (input.includes('oracle') && input.includes('sql')) {
       if (input.includes('syntax') || input.includes('basic')) {
-        return `Oracle SQL has some key differences from other SQL dialects:
-
-**Basic SELECT Syntax:**
-\`\`\`sql
-SELECT column1, column2, column3
-FROM table_name
-WHERE condition;
-\`\`\`
-
-**Key Oracle Features:**
-- **ROWNUM**: For row limiting (before Oracle 12c)
-- **DUAL table**: For calculations without tables
-- **NVL()**: Null value handling
-- **DECODE()**: Conditional logic
-- **CONNECT BY**: Hierarchical queries
-
-**Example with ROWNUM:**
-\`\`\`sql
-SELECT * FROM employees 
-WHERE ROWNUM <= 10;
-\`\`\`
-
-Would you like me to explain any specific Oracle SQL feature in detail?`;
+        return `**Oracle SQL Example:**\n\n\`\`\`sql\nSELECT * FROM table_name WHERE condition;\n\`\`\`\nUse ROWNUM for limits. Need more? Ask!`;
       }
       
       if (input.includes('procedure') || input.includes('function')) {
-        return `**Oracle PL/SQL Procedures and Functions:**
-
-**Basic Procedure Syntax:**
-\`\`\`sql
-CREATE OR REPLACE PROCEDURE procedure_name (
-    param1 IN VARCHAR2,
-    param2 OUT NUMBER
-) AS
-BEGIN
-    -- Procedure logic here
-    param2 := 42;
-END;
-/
-\`\`\`
-
-**Basic Function Syntax:**
-\`\`\`sql
-CREATE OR REPLACE FUNCTION function_name (
-    param1 IN VARCHAR2
-) RETURN NUMBER AS
-    result NUMBER;
-BEGIN
-    -- Function logic here
-    result := 42;
-    RETURN result;
-END;
-/
-\`\`\`
-
-**Key Differences from Sybase:**
-- Oracle uses PL/SQL instead of T-SQL
-- Different data types (VARCHAR2, NUMBER, DATE)
-- Different exception handling syntax
-- Package concept for organizing code
-
-Need help with a specific procedure or function?`;
+        return `**PL/SQL Procedure Example:**\n\n\`\`\`sql\nCREATE OR REPLACE PROCEDURE my_proc AS BEGIN NULL; END;\n\`\`\`\nLet me know if you want details!`;
       }
       
       if (input.includes('data type') || input.includes('mapping')) {
