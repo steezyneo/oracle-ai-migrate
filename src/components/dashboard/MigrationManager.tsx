@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +51,20 @@ export const useMigrationManager = () => {
   }, [user, toast]);
 
   const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
+    // Ensure a migration exists before uploading files
+    if (!currentMigrationId) {
+      await startNewMigration();
+    }
+    const migrationId = currentMigrationId || (await (async () => {
+      const { data } = await supabase
+        .from('migrations')
+        .select('id')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      return data?.id;
+    })());
     const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
       id: file.id,
       name: file.name,
@@ -65,9 +78,8 @@ export const useMigrationManager = () => {
       convertedContent: undefined,
       errorMessage: undefined,
     }));
-
     try {
-      if (!currentMigrationId) {
+      if (!migrationId) {
         console.error('No migration ID available');
         toast({
           title: "Upload Failed",
@@ -76,10 +88,9 @@ export const useMigrationManager = () => {
         });
         return convertedFiles;
       }
-
       for (const file of convertedFiles) {
         await supabase.from('migration_files').insert({
-          migration_id: currentMigrationId,
+          migration_id: migrationId,
           file_name: file.name,
           file_path: file.path,
           file_type: file.type,
@@ -87,7 +98,6 @@ export const useMigrationManager = () => {
           conversion_status: 'pending',
         });
       }
-
       toast({
         title: "Files Uploaded",
         description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
@@ -100,15 +110,8 @@ export const useMigrationManager = () => {
         variant: "destructive",
       });
     }
-
     return convertedFiles;
-  }, [currentMigrationId, toast]);
-
-  useEffect(() => {
-    if (user && !currentMigrationId) {
-      startNewMigration();
-    }
-  }, [user, currentMigrationId, startNewMigration]);
+  }, [currentMigrationId, toast, startNewMigration, user]);
 
   return {
     currentMigrationId,
