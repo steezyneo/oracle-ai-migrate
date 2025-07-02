@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -27,6 +28,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   report,
   onBack,
 }) => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
@@ -57,17 +59,17 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   }, []);
 
   const fetchDeploymentLogs = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('deployment_logs')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-
       if (error) {
         console.error('Error fetching deployment logs:', error);
         return;
       }
-
       setDeploymentLogs(data || []);
     } catch (error) {
       console.error('Error fetching deployment logs:', error);
@@ -75,10 +77,12 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   };
 
   const saveDeploymentLog = async (status: string, linesOfSql: number, fileCount: number, errorMessage?: string) => {
+    if (!user) return null;
     try {
       const { data, error } = await supabase
         .from('deployment_logs')
         .insert({
+          user_id: user.id,
           status,
           lines_of_sql: linesOfSql,
           file_count: fileCount,
@@ -86,12 +90,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         })
         .select()
         .single();
-
       if (error) {
         console.error('Error saving deployment log:', error);
         return null;
       }
-
       return data;
     } catch (error) {
       console.error('Error saving deployment log:', error);

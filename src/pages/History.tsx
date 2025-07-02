@@ -293,6 +293,28 @@ const History = () => {
     }
   };
 
+  const handleClearAllHistory = async () => {
+    if (!confirm('Are you sure you want to clear all your migration history? This will delete all your migration files, migrations, and deployment logs. This action cannot be undone.')) {
+      return;
+    }
+    try {
+      // Delete all migration files for the user
+      await supabase.from('migration_files').delete().in('migration_id',
+        (await supabase.from('migrations').select('id').eq('user_id', user?.id)).data?.map(m => m.id) || []
+      );
+      // Delete all migrations for the user
+      await supabase.from('migrations').delete().eq('user_id', user?.id);
+      // Delete all deployment logs for the user
+      await supabase.from('deployment_logs').delete().eq('user_id', user?.id);
+      setMigrations([]);
+      setMigrationFiles([]);
+      setSelectedMigrationId(null);
+      toast({ title: 'History Cleared', description: 'All your migration history has been deleted.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to clear history', variant: 'destructive' });
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -343,6 +365,15 @@ const History = () => {
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Conversion History ({migrations.length})
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-4"
+                onClick={handleClearAllHistory}
+                disabled={migrations.length === 0}
+              >
+                Clear All History
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
