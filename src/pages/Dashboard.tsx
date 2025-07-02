@@ -197,17 +197,17 @@ const Dashboard = () => {
 
           <TabsContent value="conversion">
             <ConversionPanel
-              files={files}
+                    files={files}
               selectedFile={selectedFile}
               isConverting={isConverting}
               convertingFileId={convertingFileId}
               onFileSelect={handleFileSelect}
-              onConvertFile={handleConvertFile}
-              onConvertAllByType={handleConvertAllByType}
-              onConvertAll={handleConvertAll}
-              onFixFile={handleFixFile}
-              onManualEdit={handleManualEdit}
-              onDismissIssue={handleDismissIssue}
+                    onConvertFile={handleConvertFile}
+                    onConvertAllByType={handleConvertAllByType}
+                    onConvertAll={handleConvertAll}
+                    onFixFile={handleFixFile}
+                        onManualEdit={handleManualEdit}
+                        onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={() => setActiveTab('upload')}
             />
