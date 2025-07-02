@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
@@ -215,47 +214,64 @@ export const useConversionLogic = (
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
+    setConvertingFileId(fileId);
     try {
       const fileToFix = files.find(file => file.id === fileId);
       if (!fileToFix) {
         console.error('File not found');
         return;
       }
-
-      const fixedContent = fileToFix.convertedContent || fileToFix.content;
-
-      setFiles(prevFiles =>
-        prevFiles.map(file =>
-          file.id === fileId
-            ? { ...file, convertedContent: fixedContent, conversionStatus: 'success' }
-            : file
-        )
-      );
-
-      await supabase
-        .from('migration_files')
-        .update({
-          converted_content: fixedContent,
-          conversion_status: 'success',
-          error_message: null,
-        })
-        .eq('file_name', fileToFix.name);
-
+      // Re-run the conversion logic for the failed file
+      const result = await convertSybaseToOracle(fileToFix, selectedAiModel);
+      const conversionResult: ConversionResult = {
+        id: result.id,
+        originalFile: {
+          id: fileToFix.id,
+          name: fileToFix.name,
+          content: fileToFix.content,
+          type: fileToFix.type,
+          status: 'pending'
+        },
+        convertedCode: result.convertedCode,
+        issues: result.issues,
+        dataTypeMapping: result.dataTypeMapping,
+        performance: result.performance,
+        status: result.status
+      };
+      setConversionResults(prev => [...prev, conversionResult]);
+      setFiles(prev => prev.map(f =>
+        f.id === fileId
+          ? {
+              ...f,
+              conversionStatus: mapConversionStatus(result.status),
+              convertedContent: result.convertedCode,
+              dataTypeMapping: result.dataTypeMapping,
+              issues: result.issues,
+              performanceMetrics: result.performance
+            }
+          : f
+      ));
+      await supabase.from('migration_files').update({
+        conversion_status: mapConversionStatus(result.status),
+        converted_content: result.convertedCode
+      }).eq('id', fileId);
       toast({
-        title: "File Fixed",
+        title: 'File Fixed',
         description: `Successfully fixed ${fileToFix.name}`,
       });
     } catch (error: any) {
       console.error('Error fixing file:', error);
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, conversionStatus: 'failed' } : f));
       toast({
-        title: "Fix Failed",
-        description: error.message || "Failed to fix the file",
-        variant: "destructive",
+        title: 'Fix Failed',
+        description: error.message || 'Failed to fix the file',
+        variant: 'destructive',
       });
     } finally {
+      setConvertingFileId(null);
       setIsConverting(false);
     }
-  }, [files, setFiles, toast]);
+  }, [files, selectedAiModel, setFiles, setConversionResults, toast, mapConversionStatus]);
 
   const handleGenerateReport = useCallback(async (): Promise<ConversionReport> => {
     const conversionResults: ConversionResult[] = files.map(file => ({
