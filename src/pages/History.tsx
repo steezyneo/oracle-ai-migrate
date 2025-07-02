@@ -372,7 +372,7 @@ const History = () => {
               onClick={handleClearAllHistory}
               disabled={migrations.length === 0}
             >
-              Clear All History
+              Clear History
             </Button>
           </CardHeader>
           <CardContent>
