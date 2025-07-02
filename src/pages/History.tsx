@@ -46,6 +46,7 @@ const History = () => {
   const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const isFetchingFiles = useRef(false);
+  const [activeTab, setActiveTab] = useState<'migrations' | 'logs'>(location.state?.activeTab || 'migrations');
 
   // Get the return tab from location state
   const returnTab = location.state?.returnTab || 'upload';
@@ -117,7 +118,11 @@ const History = () => {
   };
 
   const handleBackToDashboard = () => {
-    navigate('/migration', { state: { activeTab: returnTab } });
+    // Map history tab to dashboard tab
+    let dashboardTab = 'upload';
+    if (returnTab === 'conversion' || activeTab === 'migrations') dashboardTab = 'conversion';
+    // If you want to support more tabs, add logic here
+    navigate('/migration', { state: { activeTab: dashboardTab } });
   };
 
   const handleGoHome = () => {
