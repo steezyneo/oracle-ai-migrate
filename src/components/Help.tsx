@@ -246,14 +246,14 @@ const Help: React.FC<HelpProps> = ({ onClose }) => {
                         <Mail className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-medium">Email Support</p>
-                          <p className="text-sm text-gray-600">support@migration-platform.com</p>
+                          <p className="text-sm text-gray-600">support@cosmoagents.com</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Phone className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-medium">Phone Support</p>
-                          <p className="text-sm text-gray-600">+1 (555) 123-4567</p>
+                          <p className="text-sm text-gray-600">+91 (630) 123-4567</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
