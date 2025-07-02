@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Edit, Save } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -72,9 +73,26 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     onManualEdit(editedContent);
     setIsEditing(false);
+    // Persist to Supabase
+    if (file.id) {
+      const { error } = await supabase
+        .from('migration_files')
+        .update({ converted_content: editedContent })
+        .eq('id', file.id);
+      if (error) {
+        // Optionally, show a toast for error
+        if (window && window.toast) {
+          window.toast({ title: 'Save Failed', description: error.message, variant: 'destructive' });
+        }
+      } else {
+        if (window && window.toast) {
+          window.toast({ title: 'Saved', description: 'Changes saved to database.' });
+        }
+      }
+    }
   };
 
   return (
