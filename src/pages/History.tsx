@@ -361,20 +361,19 @@ const History = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Conversion History ({migrations.length})
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-4"
-                onClick={handleClearAllHistory}
-                disabled={migrations.length === 0}
-              >
-                Clear All History
-              </Button>
             </CardTitle>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearAllHistory}
+              disabled={migrations.length === 0}
+            >
+              Clear All History
+            </Button>
           </CardHeader>
           <CardContent>
             {migrations.length === 0 ? (
