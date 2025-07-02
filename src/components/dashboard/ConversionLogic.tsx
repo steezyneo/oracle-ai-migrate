@@ -85,7 +85,7 @@ export const useConversionLogic = (
       await supabase.from('migration_files').update({
         conversion_status: mapConversionStatus(result.status),
         converted_content: result.convertedCode
-      }).eq('id', file.id);
+      }).eq('file_name', file.name);
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
@@ -142,7 +142,7 @@ export const useConversionLogic = (
         await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
           converted_content: result.convertedCode
-        }).eq('id', file.id);
+        }).eq('file_name', file.name);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
@@ -200,7 +200,7 @@ export const useConversionLogic = (
         await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
           converted_content: result.convertedCode
-        }).eq('id', file.id);
+        }).eq('file_name', file.name);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 

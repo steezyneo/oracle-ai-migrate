@@ -504,7 +504,7 @@ const History = () => {
               {selectedFile && (
                 <CodeDiffViewer
                   originalCode={selectedFile.original_content || ''}
-                  convertedCode={selectedFile.converted_content || 'No converted code available'}
+                  convertedCode={selectedFile.converted_content || selectedFile.original_content || 'No converted code available'}
                 />
               )}
             </div>
