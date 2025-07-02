@@ -16,8 +16,8 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  signIn: (email: string, password: string, onSuccess?: () => void) => Promise<{ error: any }>;
+  signOut: (onSuccess?: () => void) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,17 +112,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, onSuccess?: () => void) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
-    
+    if (!error && onSuccess) {
+      onSuccess(); // Navigate immediately
+      // Profile will be fetched in the background by the auth state listener
+    }
     return { error };
   };
 
-  const signOut = async () => {
+  const signOut = async (onSuccess?: () => void) => {
     await supabase.auth.signOut();
+    if (onSuccess) {
+      onSuccess(); // Navigate immediately
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Help from '@/components/Help';
 import CosmoChat from '@/components/CosmoChat';
+import { toast } from '@/components/ui/use-toast';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -26,6 +27,16 @@ const Landing = () => {
     } else {
       navigate('/auth');
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut(() => {
+      toast({
+        title: "Signed out",
+        description: "You have been signed out.",
+      });
+      navigate('/auth');
+    });
   };
 
   return (
@@ -53,7 +64,7 @@ const Landing = () => {
                     <History className="h-4 w-4 mr-2" />
                     History
                   </Button>
-                  <Button onClick={async () => { await signOut(); }}>
+                  <Button onClick={handleSignOut}>
                     Sign Out
                   </Button>
                 </>

@@ -37,31 +37,31 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    const { error } = await signIn(loginData.email, loginData.password);
-    
+    const { error } = await signIn(
+      loginData.email,
+      loginData.password,
+      () => {
+        toast({
+          title: "Welcome back!",
+          description: "Successfully logged in.",
+        });
+        navigate('/migration');
+      }
+    );
     if (error) {
       toast({
         title: "Login Failed",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in.",
-      });
     }
-    
     setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signUp(signupData.email, signupData.password, signupData.fullName);
-    
     if (error) {
       toast({
         title: "Signup Failed",
@@ -74,7 +74,6 @@ const Auth = () => {
         description: "Please check your email to verify your account.",
       });
     }
-    
     setIsLoading(false);
   };
 
@@ -148,7 +147,7 @@ const Auth = () => {
                       Forgot Password?
                     </button>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading} loading={isLoading} aria-busy={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
                   </Button>
@@ -192,7 +191,7 @@ const Auth = () => {
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading} loading={isLoading} aria-busy={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account
                   </Button>
