@@ -120,8 +120,7 @@ const History = () => {
   const handleBackToDashboard = () => {
     // Map history tab to dashboard tab
     let dashboardTab = 'upload';
-    if (returnTab === 'conversion' || activeTab === 'migrations') dashboardTab = 'conversion';
-    // If you want to support more tabs, add logic here
+    if (activeTab === 'migrations') dashboardTab = 'conversion';
     navigate('/migration', { state: { activeTab: dashboardTab } });
   };
 
