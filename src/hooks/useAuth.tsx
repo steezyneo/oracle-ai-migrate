@@ -15,9 +15,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, onSuccess?: () => void) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, onSuccess?: () => void) => Promise<{ error: any }>;
+  signOut: (onSuccess?: () => void) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,33 +32,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user profile
-          setTimeout(async () => {
-            try {
-              const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (error) {
-                console.error('Error fetching profile:', error);
-              } else {
-                setProfile(profileData);
-              }
-            } catch (err) {
-              console.error('Profile fetch error:', err);
-            }
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
         setLoading(false);
       }
     );
@@ -67,63 +42,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          try {
-            const { data: profileData, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (error) {
-              console.error('Error fetching profile:', error);
-            } else {
-              setProfile(profileData);
-            }
-          } catch (err) {
-            console.error('Profile fetch error:', err);
-          }
-          setLoading(false);
-        }, 0);
-      } else {
-        setLoading(false);
-      }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (!error) setProfile(profileData);
+      else setProfile(null);
+    } catch {
+      setProfile(null);
+    }
+  };
+
+  const signUp = async (email: string, password: string, fullName: string, onSuccess?: () => void) => {
     const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        }
+        data: { full_name: fullName }
       }
     });
-    
+    if (!error) {
+      if (onSuccess) onSuccess(); // Navigate immediately
+      // Fetch profile in background
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) fetchProfile(data.user.id);
+      });
+    }
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
+  const signIn = async (email: string, password: string, onSuccess?: () => void) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      if (onSuccess) onSuccess(); // Navigate immediately
+      // Fetch profile in background
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) fetchProfile(data.user.id);
+      });
+    }
     return { error };
   };
 
-  const signOut = async () => {
+  const signOut = async (onSuccess?: () => void) => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    setProfile(null);
+    if (onSuccess) onSuccess(); // Navigate immediately
   };
 
   return (
