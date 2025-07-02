@@ -118,17 +118,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password
     });
     if (!error && onSuccess) {
-      onSuccess(); // Navigate immediately
-      // Profile will be fetched in the background by the auth state listener
+      // Navigate immediately after authentication
+      onSuccess();
     }
+    // Profile will be fetched in the background by the auth state listener
     return { error };
   };
 
   const signOut = async (onSuccess?: () => void) => {
     await supabase.auth.signOut();
     if (onSuccess) {
-      onSuccess(); // Navigate immediately
+      // Navigate immediately after sign out
+      onSuccess();
     }
+    // No need to wait for any other async work
   };
 
   return (
