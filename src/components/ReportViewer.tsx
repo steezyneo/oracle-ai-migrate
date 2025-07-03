@@ -148,7 +148,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         // Update conversion_status in migration_files for this file
         const { error: updateError } = await supabase.from('migration_files').update({
           conversion_status: deployResult.success ? 'success' : 'failed',
-        }).eq('file_name', result.originalFile.name);
+        }).eq('id', result.originalFile.id);
         
         if (updateError) {
           console.error('Error updating file status:', updateError);
