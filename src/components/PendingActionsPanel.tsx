@@ -37,7 +37,7 @@ const PendingActionsPanel: React.FC = () => {
 
   const handleMarkAsReviewed = async (file: UnreviewedFile) => {
     const codeToSave = editingFile === file.id ? editedContent : file.converted_code;
-    const originalCode = (file as any).original_code || '';
+    const originalCode = file.original_code || '';
     const success = await markAsReviewed(file.id, file.file_name, codeToSave, originalCode);
     
     if (success && editingFile === file.id) {

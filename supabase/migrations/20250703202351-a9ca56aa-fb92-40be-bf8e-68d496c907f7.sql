@@ -4,6 +4,7 @@ CREATE TABLE public.unreviewed_files (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   file_name TEXT NOT NULL,
   converted_code TEXT NOT NULL,
+  original_code TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'unreviewed' CHECK (status IN ('unreviewed', 'reviewed')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -47,3 +48,6 @@ CREATE TRIGGER update_unreviewed_files_updated_at
   BEFORE UPDATE ON public.unreviewed_files
   FOR EACH ROW
   EXECUTE FUNCTION public.update_unreviewed_files_updated_at();
+
+-- Add original_code column to unreviewed_files table
+ALTER TABLE public.unreviewed_files ADD COLUMN original_code TEXT NOT NULL DEFAULT '';

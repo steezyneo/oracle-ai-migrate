@@ -47,7 +47,8 @@ export const useUnreviewedFiles = () => {
         .insert({
           ...fileData,
           user_id: user.id,
-          status: 'unreviewed'
+          status: 'unreviewed',
+          original_code: fileData.original_code || ''
         });
 
       if (error) throw error;
@@ -78,6 +79,7 @@ export const useUnreviewedFiles = () => {
         .from('unreviewed_files')
         .update({
           converted_code: updateData.converted_code,
+          original_code: updateData.original_code,
           status: updateData.status,
           updated_at: new Date().toISOString()
         })
@@ -105,10 +107,16 @@ export const useUnreviewedFiles = () => {
   };
 
   // Mark a file as reviewed and move to history
-  const markAsReviewed = async (id: string, fileName: string, convertedCode: string, originalCode: string) => {
+  const markAsReviewed = async (id: string, fileName: string, convertedCode: string, originalCode?: string) => {
     if (!user) return false;
 
     try {
+      // Fallback: get original_code from state if not provided
+      let origCode = originalCode;
+      if (!origCode) {
+        const file = unreviewedFiles.find(f => f.id === id);
+        origCode = file?.original_code || '';
+      }
       // First, add to migration history
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
@@ -130,7 +138,7 @@ export const useUnreviewedFiles = () => {
           file_path: fileName,
           file_type: 'other',
           converted_content: convertedCode,
-          original_content: originalCode,
+          original_content: origCode,
           conversion_status: 'success'
         });
 
