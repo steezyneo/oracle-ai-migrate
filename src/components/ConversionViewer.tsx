@@ -8,6 +8,7 @@ import { Edit, Save } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -68,6 +69,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
@@ -83,14 +85,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         .update({ converted_content: editedContent })
         .eq('id', file.id);
       if (error) {
-        // Optionally, show a toast for error
-        if (window && window.toast) {
-          window.toast({ title: 'Save Failed', description: error.message, variant: 'destructive' });
-        }
+        toast({
+          title: 'Save Failed',
+          description: error.message,
+          variant: 'destructive'
+        });
       } else {
-        if (window && window.toast) {
-          window.toast({ title: 'Saved', description: 'Changes saved to database.' });
-        }
+        toast({
+          title: 'Saved',
+          description: 'Changes saved to database.'
+        });
       }
     }
   };
