@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +48,7 @@ const History = () => {
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const isFetchingFiles = useRef(false);
 
-  // Get the return tab from location state
+  // Get the return tab from location state with better fallback handling
   const returnTab = location.state?.returnTab || 'upload';
 
   useEffect(() => {
@@ -117,7 +118,13 @@ const History = () => {
   };
 
   const handleBackToDashboard = () => {
-    navigate('/migration', { state: { activeTab: returnTab } });
+    // Always navigate back to the specific tab the user came from
+    navigate('/migration', { 
+      state: { 
+        activeTab: returnTab,
+        returnTab: returnTab // Also set returnTab to ensure consistency
+      } 
+    });
   };
 
   const handleGoHome = () => {

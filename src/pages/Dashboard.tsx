@@ -35,7 +35,8 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  const initialTab = location.state?.activeTab || 'upload';
+  // Get the initial tab from location state or default to 'upload'
+  const initialTab = location.state?.activeTab || location.state?.returnTab || 'upload';
   
   const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -129,6 +130,7 @@ const Dashboard = () => {
   };
 
   const handleGoToHistory = () => {
+    // Pass current active tab so history knows where to return to
     navigate('/history', { state: { returnTab: activeTab } });
   };
 
@@ -197,17 +199,17 @@ const Dashboard = () => {
 
           <TabsContent value="conversion">
             <ConversionPanel
-                    files={files}
+              files={files}
               selectedFile={selectedFile}
               isConverting={isConverting}
               convertingFileId={convertingFileId}
               onFileSelect={handleFileSelect}
-                    onConvertFile={handleConvertFile}
-                    onConvertAllByType={handleConvertAllByType}
-                    onConvertAll={handleConvertAll}
-                    onFixFile={handleFixFile}
-                        onManualEdit={handleManualEdit}
-                        onDismissIssue={handleDismissIssue}
+              onConvertFile={handleConvertFile}
+              onConvertAllByType={handleConvertAllByType}
+              onConvertAll={handleConvertAll}
+              onFixFile={handleFixFile}
+              onManualEdit={handleManualEdit}
+              onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={() => setActiveTab('upload')}
             />
