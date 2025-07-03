@@ -12,9 +12,11 @@ import HomeButton from '@/components/HomeButton';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { Database as DatabaseIcon, Code, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [currentStep, setCurrentStep] = useState<ConversionStep>('connection');
   const [files, setFiles] = useState<CodeFile[]>([]);
   const [results, setResults] = useState<ConversionResult[]>([]);
@@ -439,6 +441,11 @@ const Index = () => {
       </header>
       
       <main className="container mx-auto px-4 py-8">
+        <div className="flex justify-end p-4">
+          <Button onClick={async () => { await signOut(); window.location.href = '/'; }}>
+            Sign Out
+          </Button>
+        </div>
         {renderStepIndicator()}
         {renderCurrentStep()}
       </main>
