@@ -110,8 +110,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setProfile(null);
     if (onSuccess) {
       onSuccess();
-    } else {
-      window.location.href = '/auth';
     }
   };
 
