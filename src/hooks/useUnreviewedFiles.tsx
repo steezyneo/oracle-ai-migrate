@@ -105,7 +105,7 @@ export const useUnreviewedFiles = () => {
   };
 
   // Mark a file as reviewed and move to history
-  const markAsReviewed = async (id: string, fileName: string, convertedCode: string) => {
+  const markAsReviewed = async (id: string, fileName: string, convertedCode: string, originalCode: string) => {
     if (!user) return false;
 
     try {
@@ -130,6 +130,7 @@ export const useUnreviewedFiles = () => {
           file_path: fileName,
           file_type: 'other',
           converted_content: convertedCode,
+          original_content: originalCode,
           conversion_status: 'success'
         });
 
