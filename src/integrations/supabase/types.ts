@@ -179,6 +179,36 @@ export type Database = {
         }
         Relationships: []
       }
+      unreviewed_files: {
+        Row: {
+          converted_code: string
+          created_at: string
+          file_name: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          converted_code: string
+          created_at?: string
+          file_name: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          converted_code?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

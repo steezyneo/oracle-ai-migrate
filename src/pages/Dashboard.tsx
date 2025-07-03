@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, FileText, Upload } from 'lucide-react';
+import { Database, FileText, Upload, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -12,8 +12,10 @@ import ReportViewer from '@/components/ReportViewer';
 import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
+import PendingActionsPanel from '@/components/PendingActionsPanel';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
+import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 
 interface FileItem {
   id: string;
@@ -35,9 +37,9 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  const initialTab = location.state?.activeTab || 'upload';
+  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'pending') || 'upload';
   
-  const [activeTab, setActiveTab] = useState<'upload' | 'conversion'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'pending'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
@@ -47,6 +49,7 @@ const Dashboard = () => {
   const [showHelp, setShowHelp] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
+  const { unreviewedFiles } = useUnreviewedFiles();
   const {
     isConverting,
     convertingFileId,
@@ -179,8 +182,8 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion')}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending')}>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Upload Code
@@ -188,6 +191,15 @@ const Dashboard = () => {
             <TabsTrigger value="conversion" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Conversion
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex items-center gap-2 relative">
+              <Clock className="h-4 w-4" />
+              Pending Actions
+              {unreviewedFiles.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {unreviewedFiles.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -211,6 +223,10 @@ const Dashboard = () => {
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={() => setActiveTab('upload')}
             />
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <PendingActionsPanel />
           </TabsContent>
         </Tabs>
       </main>

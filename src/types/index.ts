@@ -71,3 +71,6 @@ export interface ConversionReport {
 }
 
 export type ConversionStep = 'connection' | 'upload' | 'review' | 'report';
+
+// Re-export unreviewed files types
+export * from './unreviewedFiles';

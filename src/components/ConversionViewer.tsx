@@ -4,10 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save } from 'lucide-react';
+import { Edit, Save, Clock } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -66,6 +68,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   onManualEdit,
   onDismissIssue,
 }) => {
+  const { toast } = useToast();
+  const { addUnreviewedFile } = useUnreviewedFiles();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
 
@@ -83,15 +87,41 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         .update({ converted_content: editedContent })
         .eq('id', file.id);
       if (error) {
-        // Optionally, show a toast for error
-        if (window && window.toast) {
-          window.toast({ title: 'Save Failed', description: error.message, variant: 'destructive' });
-        }
+        toast({
+          title: 'Save Failed',
+          description: error.message,
+          variant: 'destructive'
+        });
       } else {
-        if (window && window.toast) {
-          window.toast({ title: 'Saved', description: 'Changes saved to database.' });
-        }
+        toast({
+          title: 'Saved',
+          description: 'Changes saved to database.'
+        });
       }
+    }
+  };
+
+  const handleMarkAsUnreviewed = async () => {
+    if (!file.convertedContent) {
+      toast({
+        title: "No Converted Code",
+        description: "This file doesn't have converted code to mark as unreviewed.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const success = await addUnreviewedFile({
+      user_id: '', // This will be set by the hook
+      file_name: file.name,
+      converted_code: file.convertedContent
+    });
+
+    if (success) {
+      toast({
+        title: "File Marked as Unreviewed",
+        description: `${file.name} has been added to your pending actions for review.`,
+      });
     }
   };
 
@@ -109,11 +139,22 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             </Badge>
             <Badge variant="outline">{file.type}</Badge>
             {file.convertedContent && (
-              <FileDownloader
-                fileName={file.name}
-                content={file.convertedContent}
-                fileType={file.type}
-              />
+              <>
+                <FileDownloader
+                  fileName={file.name}
+                  content={file.convertedContent}
+                  fileType={file.type}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleMarkAsUnreviewed}
+                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Mark as Unreviewed
+                </Button>
+              </>
             )}
           </div>
         </CardTitle>
