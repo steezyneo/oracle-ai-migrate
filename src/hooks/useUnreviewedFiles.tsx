@@ -47,7 +47,8 @@ export const useUnreviewedFiles = () => {
         .insert({
           ...fileData,
           user_id: user.id,
-          status: 'unreviewed'
+          status: 'unreviewed',
+          original_code: fileData.original_code,
         });
 
       if (error) throw error;
@@ -78,6 +79,7 @@ export const useUnreviewedFiles = () => {
         .from('unreviewed_files')
         .update({
           converted_code: updateData.converted_code,
+          original_code: updateData.original_code,
           status: updateData.status,
           updated_at: new Date().toISOString()
         })

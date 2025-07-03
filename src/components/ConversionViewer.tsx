@@ -114,7 +114,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     const success = await addUnreviewedFile({
       user_id: '', // This will be set by the hook
       file_name: file.name,
-      converted_code: file.convertedContent
+      converted_code: file.convertedContent,
+      original_code: file.content,
     });
 
     if (success) {

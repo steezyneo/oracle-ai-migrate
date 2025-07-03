@@ -135,6 +135,16 @@ const PendingActionsPanel: React.FC = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">
+                      Original Code:
+                    </label>
+                    <ScrollArea className="h-[120px] w-full rounded-md border mb-2">
+                      <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
+                        {file.original_code}
+                      </pre>
+                    </ScrollArea>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
                       Converted Code:
                     </label>
                     {editingFile === file.id ? (
