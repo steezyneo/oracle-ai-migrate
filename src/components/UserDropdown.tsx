@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,9 +10,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const UserDropdown = () => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   if (!profile) return null;
 
@@ -28,7 +29,7 @@ const UserDropdown = () => {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+        <DropdownMenuItem onClick={() => signOut(() => navigate('/auth'))} className="text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>
