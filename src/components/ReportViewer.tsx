@@ -32,6 +32,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>(() => report.results.map(r => r.id));
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
@@ -123,17 +124,30 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     });
   };
 
+  const handleToggleFile = (fileId: string) => {
+    setSelectedFileIds(prev =>
+      prev.includes(fileId)
+        ? prev.filter(id => id !== fileId)
+        : [...prev, fileId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedFileIds(report.results.map(r => r.id));
+  };
+  const handleDeselectAll = () => {
+    setSelectedFileIds([]);
+  };
+
   const handleDeploy = async () => {
     setIsDeploying(true);
     try {
-      // Calculate lines of SQL and file count from the report
-      const linesOfSql = report.summary.split('\n').length;
-      const fileCount = report.filesProcessed;
-      // Simulate deployment using the mock function from databaseUtils
-      // We'll assume each file is deployed individually for status update
+      // Calculate lines of SQL and file count from the selected files
+      const selectedResults = report.results.filter(r => selectedFileIds.includes(r.id));
+      const linesOfSql = selectedResults.reduce((sum, r) => sum + (r.convertedCode?.split('\n').length || 0), 0);
+      const fileCount = selectedResults.length;
       let allSuccess = true;
-      for (const result of report.results) {
-        // Simulate deployment for each file (replace with real logic as needed)
+      for (const result of selectedResults) {
         const deployResult = await deployToOracle(
           { 
             type: 'oracle',
@@ -145,11 +159,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           },
           result.convertedCode
         );
-        // Update conversion_status in migration_files for this file
         const { error: updateError } = await supabase.from('migration_files').update({
           conversion_status: deployResult.success ? 'success' : 'failed',
         }).eq('id', result.originalFile.id);
-        
         if (updateError) {
           console.error('Error updating file status:', updateError);
         } else {
@@ -249,11 +261,22 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">Processed Files</h3>
+            <div className="flex gap-2 mb-2">
+              <Button size="sm" variant="outline" onClick={handleSelectAll}>Select All</Button>
+              <Button size="sm" variant="outline" onClick={handleDeselectAll}>Deselect All</Button>
+            </div>
             <ScrollArea className="h-[200px] border rounded-md p-4">
               <div className="space-y-2">
                 {report.results.map(result => (
                   <div key={result.id} className="flex justify-between items-center p-2 border-b">
                     <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={selectedFileIds.includes(result.id)}
+                        onChange={() => handleToggleFile(result.id)}
+                        id={`select-file-${result.id}`}
+                      />
                       {result.status === 'success' ? (
                         <Check className="h-4 w-4 text-green-500 mr-2" />
                       ) : result.status === 'warning' ? (
@@ -261,7 +284,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
                       ) : (
                         <X className="h-4 w-4 text-red-500 mr-2" />
                       )}
-                      <span>{result.originalFile.name}</span>
+                      <label htmlFor={`select-file-${result.id}`}>{result.originalFile.name}</label>
                     </div>
                     <Badge>{result.originalFile.type}</Badge>
                   </div>
