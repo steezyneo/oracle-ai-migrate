@@ -65,19 +65,7 @@ export const useMigrationManager = () => {
         .single();
       return data?.id;
     })());
-    const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
-      id: file.id,
-      name: file.name,
-      path: file.name,
-      type: file.type,
-      content: file.content,
-      conversionStatus: 'pending' as const,
-      dataTypeMapping: [],
-      issues: [],
-      performanceMetrics: undefined,
-      convertedContent: undefined,
-      errorMessage: undefined,
-    }));
+    const convertedFiles: FileItem[] = [];
     try {
       if (!migrationId) {
         console.error('No migration ID available');
@@ -86,16 +74,38 @@ export const useMigrationManager = () => {
           description: "No migration ID available",
           variant: "destructive",
         });
-        return convertedFiles;
+        return [];
       }
-      for (const file of convertedFiles) {
-        await supabase.from('migration_files').insert({
+      for (const file of uploadedFiles) {
+        const { data, error } = await supabase.from('migration_files').insert({
           migration_id: migrationId,
           file_name: file.name,
-          file_path: file.path,
+          file_path: file.name,
           file_type: file.type,
           original_content: file.content,
           conversion_status: 'pending',
+        }).select().single();
+        if (error) {
+          console.error('Error saving file to Supabase:', error);
+          toast({
+            title: "Upload Failed",
+            description: `Failed to save file ${file.name}`,
+            variant: "destructive",
+          });
+          continue;
+        }
+        convertedFiles.push({
+          id: data.id, // Use the real DB id
+          name: file.name,
+          path: file.name,
+          type: file.type,
+          content: file.content,
+          conversionStatus: 'pending',
+          dataTypeMapping: [],
+          issues: [],
+          performanceMetrics: undefined,
+          convertedContent: undefined,
+          errorMessage: undefined,
         });
       }
       toast({
