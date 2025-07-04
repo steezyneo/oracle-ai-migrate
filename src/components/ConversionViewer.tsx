@@ -268,6 +268,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             <ConversionIssuesPanel
               issues={file.issues || []}
               onDismissIssue={onDismissIssue}
+              conversionStatus={file.conversionStatus}
             />
           </TabsContent>
           

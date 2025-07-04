@@ -18,11 +18,13 @@ interface ConversionIssue {
 interface ConversionIssuesPanelProps {
   issues: ConversionIssue[];
   onDismissIssue: (issueId: string) => void;
+  conversionStatus: 'pending' | 'success' | 'failed';
 }
 
 const ConversionIssuesPanel: React.FC<ConversionIssuesPanelProps> = ({
   issues,
-  onDismissIssue
+  onDismissIssue,
+  conversionStatus
 }) => {
   const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
 
@@ -61,23 +63,28 @@ const ConversionIssuesPanel: React.FC<ConversionIssuesPanelProps> = ({
   };
 
   if (issues.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            Conversion Issues
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-            <p className="text-green-600 font-medium">No issues found!</p>
-            <p className="text-gray-500 text-sm">The conversion completed successfully.</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    if (conversionStatus === 'success' || conversionStatus === 'failed') {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Conversion Issues
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+              <p className="text-green-600 font-medium">No issues found!</p>
+              <p className="text-gray-500 text-sm">The conversion completed successfully.</p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    } else {
+      // If conversion is pending, show nothing
+      return null;
+    }
   }
 
   return (
