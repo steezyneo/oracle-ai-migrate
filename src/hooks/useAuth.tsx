@@ -8,6 +8,7 @@ interface Profile {
   email: string;
   created_at: string;
   updated_at: string;
+  username?: string;
 }
 
 interface AuthContextType {
@@ -73,14 +74,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const generateUsername = async (email: string) => {
+    let base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    let username = base;
+    let suffix = 1;
+    // Check for uniqueness
+    while (true) {
+      const { data, error } = await supabase.from('profiles').select('id').eq('username', username).single();
+      if (!data) break;
+      username = `${base}${suffix}`;
+      suffix++;
+    }
+    return username;
+  };
+
   const signUp = async (email: string, password: string, fullName: string, onSuccess?: () => void) => {
     const redirectUrl = `${window.location.origin}/`;
+    const username = await generateUsername(email);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { full_name: fullName }
+        data: { full_name: fullName, username }
       }
     });
     if (!error) {
@@ -112,6 +128,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       onSuccess();
     } else {
       window.location.href = '/auth';
+    }
+  };
+
+  // Helper to backfill usernames for existing users
+  export const backfillUsernames = async () => {
+    const { data: profiles } = await supabase.from('profiles').select('*');
+    for (const profile of profiles) {
+      if (!profile.username) {
+        const username = await generateUsername(profile.email);
+        await supabase.from('profiles').update({ username }).eq('id', profile.id);
+      }
     }
   };
 

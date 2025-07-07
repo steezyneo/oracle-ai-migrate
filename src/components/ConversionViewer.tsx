@@ -10,6 +10,7 @@ import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -79,6 +80,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
+  const { profile: currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
@@ -89,6 +91,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const [assignUserId, setAssignUserId] = useState(file.assignedTo || '');
   const [isAssigning, setIsAssigning] = useState(false);
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
 
   const currentIndex = fileList ? fileList.findIndex(f => f.id === file.id) : -1;
   const hasPrev = fileList && currentIndex > 0;
@@ -97,6 +100,12 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
+
+  useEffect(() => {
+    supabase.from('profiles').select('id,username,full_name,email').then(({ data }) => {
+      setAllUsers(data || []);
+    });
+  }, []);
 
   const handleSaveEdit = async () => {
     onManualEdit(editedContent);
@@ -497,21 +506,26 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               <span className="font-medium">Review Status:</span> {file.reviewStatus || 'pending'}
             </div>
             <div>
-              <span className="font-medium">Reviewer:</span> {file.reviewerId || 'Unassigned'}
+              <span className="font-medium">Reviewer:</span> {allUsers.find(u => u.id === file.reviewerId)?.full_name || allUsers.find(u => u.id === file.reviewerId)?.username || allUsers.find(u => u.id === file.reviewerId)?.email || 'Unassigned'}
             </div>
             <div>
-              <span className="font-medium">Assigned To:</span> {file.assignedTo || 'Unassigned'}
+              <span className="font-medium">Assigned To:</span> {allUsers.find(u => u.id === file.assignedTo)?.full_name || allUsers.find(u => u.id === file.assignedTo)?.username || allUsers.find(u => u.id === file.assignedTo)?.email || 'Unassigned'}
             </div>
           </div>
           <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Assign to user ID..."
+            <select
               value={assignUserId}
               onChange={e => setAssignUserId(e.target.value)}
               className="border p-1 rounded text-sm"
               disabled={isAssigning}
-            />
+            >
+              <option value="">Assign to user...</option>
+              {allUsers.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.username || u.email}
+                </option>
+              ))}
+            </select>
             <Button size="sm" onClick={async () => {
               setIsAssigning(true);
               await supabase.from('migration_files').update({ assigned_to: assignUserId }).eq('id', file.id);
@@ -535,7 +549,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {file.reviewComments && file.reviewComments.length > 0 ? file.reviewComments.map((c, idx) => (
                 <div key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm">
-                  <span className="font-semibold">{c.userName || c.userId}:</span> {c.comment}
+                  <span className="font-semibold">{allUsers.find(u => u.id === c.userId)?.full_name || c.userName || c.userId}:</span> {c.comment}
                   <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
                 </div>
               )) : <div className="text-gray-400 text-sm">No comments yet.</div>}
@@ -553,8 +567,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 setIsSubmittingComment(true);
                 const commentObj = {
                   id: crypto.randomUUID(),
-                  userId: 'currentUser', // Replace with actual user id
-                  userName: 'Current User', // Replace with actual user name
+                  userId: currentUser?.id || '',
+                  userName: currentUser?.full_name || currentUser?.username || currentUser?.email || '',
                   comment: newComment,
                   createdAt: new Date().toISOString(),
                 };
@@ -565,6 +579,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               }} disabled={isSubmittingComment || !newComment.trim()}>Add</Button>
             </div>
           </div>
+          <div className="mb-2 text-xs text-gray-500">You are: {currentUser?.full_name || currentUser?.username || currentUser?.email}</div>
         </div>
       </CardContent>
 

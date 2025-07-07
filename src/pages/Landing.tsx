@@ -54,14 +54,14 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Database className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-gray-900">Sybase to Oracle Migration</h1>
+              <h1 className="text-2xl font-bold text-foreground">Sybase to Oracle Migration</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Button 
@@ -113,11 +113,11 @@ const Landing = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+            <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight">
               Migrate Your Sybase Database to Oracle with{' '}
               <span className="text-primary">AI-Powered Precision</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl text-foreground mb-8 leading-relaxed">
               Transform your legacy Sybase applications to modern Oracle infrastructure 
               with intelligent code conversion, automated testing, and seamless deployment.
             </p>
@@ -136,13 +136,13 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-card">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            <h3 className="text-3xl font-bold text-foreground mb-4">
               Why Choose Our Migration Platform?
             </h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-foreground max-w-2xl mx-auto">
               Leverage cutting-edge AI technology to ensure accurate, efficient, and reliable database migration
             </p>
           </div>

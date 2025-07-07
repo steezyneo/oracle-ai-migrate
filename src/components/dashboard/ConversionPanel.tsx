@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
@@ -53,6 +53,13 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
 }) => {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [assignUserId, setAssignUserId] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    supabase.from('profiles').select('id,username,full_name,email').then(({ data }) => {
+      setAllUsers(data || []);
+    });
+  }, []);
 
   const handleApproveSelected = async () => {
     await Promise.all(selectedFileIds.map(id =>
@@ -94,13 +101,18 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
         <div className="flex gap-2 mb-2">
           <Button size="sm" onClick={() => selectedFileIds.forEach(id => onConvertFile(id))} disabled={selectedFileIds.length === 0}>Convert Selected</Button>
           <Button size="sm" onClick={handleApproveSelected} disabled={selectedFileIds.length === 0}>Approve Selected</Button>
-          <input
-            type="text"
-            placeholder="Assign to user ID..."
+          <select
             value={assignUserId}
             onChange={e => setAssignUserId(e.target.value)}
-            className="border p-1 rounded text-sm w-32"
-          />
+            className="border p-1 rounded text-sm w-40"
+          >
+            <option value="">Assign to user...</option>
+            {allUsers.map(u => (
+              <option key={u.id} value={u.id}>
+                {u.full_name || u.username || u.email}
+              </option>
+            ))}
+          </select>
           <Button size="sm" onClick={handleAssignSelected} disabled={selectedFileIds.length === 0 || !assignUserId}>Assign Selected</Button>
         </div>
         <FileTreeView
