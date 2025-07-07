@@ -8,6 +8,7 @@ import { Database, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/App';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,7 @@ const Auth = () => {
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
   const [signupPasswordVisible, setSignupPasswordVisible] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -110,9 +112,22 @@ const Auth = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Database className="h-12 w-12 text-primary mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">Migration Tool</h1>
+            <h1 className="text-2xl font-bold text-foreground">Migration Tool</h1>
           </div>
-          <p className="text-gray-600">Sign in to start your Sybase to Oracle migration</p>
+          <p className="text-muted-foreground">Sign in to start your Sybase to Oracle migration</p>
+        </div>
+
+        <div className="flex justify-end mb-4">
+          <select
+            value={theme}
+            onChange={e => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+            className="border rounded p-1 text-xs bg-background text-foreground"
+            style={{ minWidth: 80 }}
+          >
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="system">System</option>
+          </select>
         </div>
 
         <Card>
@@ -152,7 +167,7 @@ const Auth = () => {
                     />
                     <button
                       type="button"
-                      className="absolute right-2 top-8 text-gray-500"
+                      className="absolute right-2 top-8 text-foreground"
                       tabIndex={-1}
                       onClick={() => setLoginPasswordVisible(v => !v)}
                     >
@@ -204,7 +219,7 @@ const Auth = () => {
                     />
                     <button
                       type="button"
-                      className="absolute right-2 top-8 text-gray-500"
+                      className="absolute right-2 top-8 text-foreground"
                       tabIndex={-1}
                       onClick={() => setSignupPasswordVisible(v => !v)}
                     >
@@ -225,7 +240,7 @@ const Auth = () => {
           <Button 
             variant="ghost" 
             onClick={() => navigate('/')}
-            className="text-gray-600"
+            className="text-foreground"
           >
             ← Back to Home
           </Button>

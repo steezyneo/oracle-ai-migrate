@@ -15,6 +15,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useTheme } from '@/App'
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -738,6 +739,25 @@ const SidebarMenuSubButton = React.forwardRef<
 })
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
+// Add theme toggle dropdown at the bottom of the sidebar
+const SidebarThemeToggle = () => {
+  const { theme, setTheme } = useTheme();
+  return (
+    <div className="p-2 flex flex-col gap-1">
+      <label className="text-xs text-muted-foreground mb-1">Theme</label>
+      <select
+        value={theme}
+        onChange={e => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+        className="border rounded p-1 text-xs bg-background text-foreground"
+      >
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="system">System</option>
+      </select>
+    </div>
+  );
+};
+
 export {
   Sidebar,
   SidebarContent,
@@ -763,4 +783,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  SidebarThemeToggle,
 }
