@@ -55,23 +55,44 @@ interface FileItem {
   dataTypeMapping?: DataTypeMapping[];
   issues?: ConversionIssue[];
   performanceMetrics?: PerformanceMetrics;
+  explanations?: string[];
+  reviewStatus?: 'pending' | 'approved' | 'changes_requested';
+  reviewerId?: string;
+  assignedTo?: string;
+  reviewComments?: { id: string; userId: string; userName: string; comment: string; createdAt: string }[];
 }
 
 interface ConversionViewerProps {
   file: FileItem;
   onManualEdit: (newContent: string) => void;
   onDismissIssue: (issueId: string) => void;
+  onNavigateFile?: (fileId: string) => void;
+  fileList?: FileItem[];
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
   onManualEdit,
   onDismissIssue,
+  onNavigateFile,
+  fileList,
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestion, setSuggestion] = useState('');
+  const [isReconverting, setIsReconverting] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [assignUserId, setAssignUserId] = useState(file.assignedTo || '');
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [reviewActionLoading, setReviewActionLoading] = useState(false);
+
+  const currentIndex = fileList ? fileList.findIndex(f => f.id === file.id) : -1;
+  const hasPrev = fileList && currentIndex > 0;
+  const hasNext = fileList && fileList.length > 0 && currentIndex < fileList.length - 1;
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
@@ -126,9 +147,52 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
+  // Handler for reconvert with suggestion
+  const handleReconvertWithSuggestion = async () => {
+    setIsReconverting(true);
+    try {
+      // Use the suggestion as a custom prompt
+      const customPrompt = suggestion.trim();
+      // Call backend conversion logic (assume window.handleFileReconvert is injected by parent)
+      if (typeof window !== 'undefined' && (window as any).handleFileReconvert) {
+        await (window as any).handleFileReconvert(file.id, customPrompt);
+      }
+      toast({ title: 'Reconversion started', description: 'The file is being reconverted with your suggestion.' });
+      setShowSuggestionModal(false);
+      setSuggestion('');
+    } catch (e) {
+      toast({ title: 'Reconversion failed', description: 'Could not reconvert the file.' });
+    } finally {
+      setIsReconverting(false);
+    }
+  };
+
+  // Handler for auto-fix
+  const handleAutoFix = async () => {
+    setIsReconverting(true);
+    try {
+      const autoFixPrompt = 'Automatically fix any issues or errors in the following Sybase to Oracle conversion. Apply best practices and resolve warnings.';
+      if (typeof window !== 'undefined' && (window as any).handleFileReconvert) {
+        await (window as any).handleFileReconvert(file.id, autoFixPrompt);
+      }
+      toast({ title: 'Auto-fix started', description: 'The file is being auto-fixed by the AI.' });
+    } catch (e) {
+      toast({ title: 'Auto-fix failed', description: 'Could not auto-fix the file.' });
+    } finally {
+      setIsReconverting(false);
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
+        {/* Next/Previous navigation */}
+        {fileList && fileList.length > 1 && (
+          <div className="flex gap-2 mb-2">
+            <Button size="sm" variant="outline" onClick={() => hasPrev && onNavigateFile && onNavigateFile(fileList[currentIndex - 1].id)} disabled={!hasPrev}>Previous</Button>
+            <Button size="sm" variant="outline" onClick={() => hasNext && onNavigateFile && onNavigateFile(fileList[currentIndex + 1].id)} disabled={!hasNext}>Next</Button>
+          </div>
+        )}
         <CardTitle className="flex items-center justify-between">
           <span>{file.name}</span>
           <div className="flex items-center gap-2">
@@ -181,6 +245,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {file.content}
               </pre>
             </div>
+
+            {/* AI Explanations for Explainable AI */}
+            {file.explanations && file.explanations.length > 0 && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-2">
+                <h4 className="text-blue-800 font-semibold mb-1">AI Explanation</h4>
+                {file.explanations.map((explanation, idx) => (
+                  <p key={idx} className="text-blue-900 text-sm mb-1 whitespace-pre-line">{explanation}</p>
+                ))}
+              </div>
+            )}
             
             {file.convertedContent && (
               <div>
@@ -209,9 +283,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                    {file.convertedContent}
-                  </pre>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" variant="secondary" onClick={() => setShowSuggestionModal(true)} disabled={isReconverting}>
+                      Reconvert with Suggestion
+                    </Button>
+                    {(file.conversionStatus === 'failed' || (file.issues && file.issues.length > 0)) && (
+                      <Button size="sm" variant="outline" onClick={handleAutoFix} disabled={isReconverting}>
+                        Auto-Fix
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -407,7 +488,104 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Review/Collaboration Section */}
+        <div className="mt-8 border-t pt-6">
+          <h3 className="text-lg font-semibold mb-2">Review & Collaboration</h3>
+          <div className="flex flex-wrap gap-4 mb-2">
+            <div>
+              <span className="font-medium">Review Status:</span> {file.reviewStatus || 'pending'}
+            </div>
+            <div>
+              <span className="font-medium">Reviewer:</span> {file.reviewerId || 'Unassigned'}
+            </div>
+            <div>
+              <span className="font-medium">Assigned To:</span> {file.assignedTo || 'Unassigned'}
+            </div>
+          </div>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="Assign to user ID..."
+              value={assignUserId}
+              onChange={e => setAssignUserId(e.target.value)}
+              className="border p-1 rounded text-sm"
+              disabled={isAssigning}
+            />
+            <Button size="sm" onClick={async () => {
+              setIsAssigning(true);
+              await supabase.from('migration_files').update({ assigned_to: assignUserId }).eq('id', file.id);
+              setIsAssigning(false);
+            }} disabled={isAssigning || !assignUserId}>Assign</Button>
+          </div>
+          <div className="flex gap-2 mb-4">
+            <Button size="sm" variant="success" onClick={async () => {
+              setReviewActionLoading(true);
+              await supabase.from('migration_files').update({ review_status: 'approved' }).eq('id', file.id);
+              setReviewActionLoading(false);
+            }} disabled={reviewActionLoading}>Approve</Button>
+            <Button size="sm" variant="destructive" onClick={async () => {
+              setReviewActionLoading(true);
+              await supabase.from('migration_files').update({ review_status: 'changes_requested' }).eq('id', file.id);
+              setReviewActionLoading(false);
+            }} disabled={reviewActionLoading}>Request Changes</Button>
+          </div>
+          <div className="mb-2">
+            <h4 className="font-medium mb-1">Comments</h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {file.reviewComments && file.reviewComments.length > 0 ? file.reviewComments.map((c, idx) => (
+                <div key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm">
+                  <span className="font-semibold">{c.userName || c.userId}:</span> {c.comment}
+                  <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                </div>
+              )) : <div className="text-gray-400 text-sm">No comments yet.</div>}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                className="border p-1 rounded text-sm flex-1"
+                disabled={isSubmittingComment}
+              />
+              <Button size="sm" onClick={async () => {
+                setIsSubmittingComment(true);
+                const commentObj = {
+                  id: crypto.randomUUID(),
+                  userId: 'currentUser', // Replace with actual user id
+                  userName: 'Current User', // Replace with actual user name
+                  comment: newComment,
+                  createdAt: new Date().toISOString(),
+                };
+                const updatedComments = [...(file.reviewComments || []), commentObj];
+                await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
+                setNewComment('');
+                setIsSubmittingComment(false);
+              }} disabled={isSubmittingComment || !newComment.trim()}>Add</Button>
+            </div>
+          </div>
+        </div>
       </CardContent>
+
+      {/* Modal for suggestion input */}
+      {showSuggestionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-2">Reconvert with Suggestion</h3>
+            <textarea
+              className="w-full border border-gray-300 rounded p-2 mb-4 min-h-[60px]"
+              value={suggestion}
+              onChange={e => setSuggestion(e.target.value)}
+              placeholder="E.g., Use Oracle 12c+ features, optimize for performance, etc."
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowSuggestionModal(false)} disabled={isReconverting}>Cancel</Button>
+              <Button size="sm" onClick={handleReconvertWithSuggestion} disabled={isReconverting || !suggestion.trim()}>Reconvert</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

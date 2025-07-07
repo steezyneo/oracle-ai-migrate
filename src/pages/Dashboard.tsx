@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, FileText, Upload, Clock } from 'lucide-react';
@@ -6,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
+import { Button } from '@/components/ui/button';
 
 import CodeUploader from '@/components/CodeUploader';
 import ReportViewer from '@/components/ReportViewer';
@@ -47,6 +47,9 @@ const Dashboard = () => {
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState<string>('');
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(0);
 
   const { handleCodeUpload } = useMigrationManager();
   const { unreviewedFiles } = useUnreviewedFiles();
@@ -58,7 +61,7 @@ const Dashboard = () => {
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
-  } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
+  } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -73,6 +76,25 @@ const Dashboard = () => {
       setSelectedFile(firstConvertedFile || files[0]);
     }
   }, [files, selectedFile]);
+
+  useEffect(() => {
+    // Expose a reconvert handler for ConversionViewer
+    (window as any).handleFileReconvert = async (fileId: string, customPrompt: string) => {
+      setCustomPrompt(customPrompt); // Set the custom prompt for this reconversion
+      await handleConvertFile(fileId);
+      setCustomPrompt(''); // Reset after reconversion
+    };
+    return () => {
+      delete (window as any).handleFileReconvert;
+    };
+  }, [handleConvertFile]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('wizardSeen')) {
+      setShowWizard(true);
+      localStorage.setItem('wizardSeen', '1');
+    }
+  }, []);
 
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
@@ -179,6 +201,7 @@ const Dashboard = () => {
         onGoToHistory={handleGoToHistory}
         onGoHome={handleGoHome}
         onShowHelp={() => setShowHelp(true)}
+        extra={<Button size="sm" onClick={() => setShowWizard(true)}>Show Wizard</Button>}
       />
 
       <main className="container mx-auto px-4 py-8">
@@ -208,6 +231,16 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="conversion">
+            <div className="mb-4 max-w-2xl mx-auto">
+              <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-1">Custom AI Prompt (optional)</label>
+              <textarea
+                id="customPrompt"
+                value={customPrompt}
+                onChange={e => setCustomPrompt(e.target.value)}
+                placeholder="E.g., Focus on optimizing performance, or use Oracle 12c+ features, etc."
+                className="w-full p-2 border border-gray-300 rounded text-sm min-h-[60px]"
+              />
+            </div>
             <ConversionPanel
                     files={files}
               selectedFile={selectedFile}
@@ -233,6 +266,24 @@ const Dashboard = () => {
 
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
+      )}
+
+      {showWizard && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full">
+            <h2 className="text-2xl font-bold mb-4">Migration Wizard</h2>
+            <ol className="mb-6 space-y-2">
+              <li className={wizardStep === 0 ? 'font-bold text-blue-600' : ''}>1. Upload your Sybase code files</li>
+              <li className={wizardStep === 1 ? 'font-bold text-blue-600' : ''}>2. Convert files to Oracle</li>
+              <li className={wizardStep === 2 ? 'font-bold text-blue-600' : ''}>3. Review and approve conversions</li>
+              <li className={wizardStep === 3 ? 'font-bold text-blue-600' : ''}>4. Generate and export migration report</li>
+            </ol>
+            <div className="flex justify-between">
+              <Button size="sm" variant="outline" onClick={() => setShowWizard(false)}>Close</Button>
+              <Button size="sm" onClick={() => setWizardStep(s => Math.min(s + 1, 3))} disabled={wizardStep === 3}>Next</Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

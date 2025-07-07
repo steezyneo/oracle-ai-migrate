@@ -1,10 +1,10 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FileItem {
   id: string;
@@ -51,6 +51,25 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onGenerateReport,
   onUploadRedirect,
 }) => {
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const [assignUserId, setAssignUserId] = useState('');
+
+  const handleApproveSelected = async () => {
+    await Promise.all(selectedFileIds.map(id =>
+      supabase.from('migration_files').update({ review_status: 'approved' }).eq('id', id)
+    ));
+    setSelectedFileIds([]);
+  };
+
+  const handleAssignSelected = async () => {
+    if (!assignUserId) return;
+    await Promise.all(selectedFileIds.map(id =>
+      supabase.from('migration_files').update({ assigned_to: assignUserId }).eq('id', id)
+    ));
+    setSelectedFileIds([]);
+    setAssignUserId('');
+  };
+
   if (files.length === 0) {
     return (
       <Card className="max-w-2xl mx-auto">
@@ -72,6 +91,18 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
+        <div className="flex gap-2 mb-2">
+          <Button size="sm" onClick={() => selectedFileIds.forEach(id => onConvertFile(id))} disabled={selectedFileIds.length === 0}>Convert Selected</Button>
+          <Button size="sm" onClick={handleApproveSelected} disabled={selectedFileIds.length === 0}>Approve Selected</Button>
+          <input
+            type="text"
+            placeholder="Assign to user ID..."
+            value={assignUserId}
+            onChange={e => setAssignUserId(e.target.value)}
+            className="border p-1 rounded text-sm w-32"
+          />
+          <Button size="sm" onClick={handleAssignSelected} disabled={selectedFileIds.length === 0 || !assignUserId}>Assign Selected</Button>
+        </div>
         <FileTreeView
           files={files}
           onFileSelect={onFileSelect}
@@ -82,6 +113,8 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileId={convertingFileId}
+          selectedFileIds={selectedFileIds}
+          onBulkSelect={setSelectedFileIds}
         />
       </div>
 
@@ -92,6 +125,11 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
               file={selectedFile}
               onManualEdit={onManualEdit}
               onDismissIssue={onDismissIssue}
+              fileList={files}
+              onNavigateFile={fileId => {
+                const nextFile = files.find(f => f.id === fileId);
+                if (nextFile) onFileSelect(nextFile);
+              }}
             />
             
             {files.some(f => f.conversionStatus === 'success') && (

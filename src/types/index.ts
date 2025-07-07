@@ -26,6 +26,7 @@ export interface ConversionResult {
   dataTypeMapping?: DataTypeMapping[];
   performance?: PerformanceMetrics;
   status: 'success' | 'warning' | 'error';
+  explanations?: string[];
 }
 
 export interface ConversionIssue {
@@ -35,6 +36,7 @@ export interface ConversionIssue {
   severity: 'info' | 'warning' | 'error';
   suggestedFix?: string;
   originalCode?: string;
+  explanation?: string;
 }
 
 export interface DataTypeMapping {
@@ -74,3 +76,31 @@ export type ConversionStep = 'connection' | 'upload' | 'review' | 'report';
 
 // Re-export unreviewed files types
 export * from './unreviewedFiles';
+
+export interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  type: 'table' | 'procedure' | 'trigger' | 'other';
+  content: string;
+  conversionStatus: 'pending' | 'success' | 'failed';
+  convertedContent?: string;
+  errorMessage?: string;
+  dataTypeMapping?: DataTypeMapping[];
+  issues?: ConversionIssue[];
+  performanceMetrics?: PerformanceMetrics;
+  explanations?: string[];
+  // Collaboration/Review fields
+  reviewStatus?: 'pending' | 'approved' | 'changes_requested';
+  reviewerId?: string;
+  reviewComments?: ReviewComment[];
+  assignedTo?: string;
+}
+
+export interface ReviewComment {
+  id: string;
+  userId: string;
+  userName?: string;
+  comment: string;
+  createdAt: string;
+}

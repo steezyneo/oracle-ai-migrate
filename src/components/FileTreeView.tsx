@@ -40,6 +40,8 @@ interface FileTreeViewProps {
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileId?: string | null;
+  selectedFileIds?: string[];
+  onBulkSelect?: (ids: string[]) => void;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -51,11 +53,16 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onFixFile,
   selectedFile,
   isConverting = false,
-  convertingFileId = null
+  convertingFileId = null,
+  selectedFileIds = [],
+  onBulkSelect
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['tables', 'procedures', 'triggers'])
   );
+  const [localSelected, setLocalSelected] = useState<string[]>(selectedFileIds);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -146,6 +153,22 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         
         {isExpanded && (
           <div className="ml-4 space-y-1">
+            <div className="flex items-center mb-1 ml-4">
+              <input
+                type="checkbox"
+                checked={sectionFiles.every(f => localSelected.includes(f.id)) && sectionFiles.length > 0}
+                onChange={e => {
+                  const sectionIds = sectionFiles.map(f => f.id);
+                  const newSelected = e.target.checked
+                    ? Array.from(new Set([...localSelected, ...sectionIds]))
+                    : localSelected.filter(id => !sectionIds.includes(id));
+                  setLocalSelected(newSelected);
+                  onBulkSelect && onBulkSelect(newSelected);
+                }}
+                className="mr-2"
+              />
+              <span className="text-xs">Select Section</span>
+            </div>
             {sectionFiles.map((file) => (
               <div
                 key={file.id}
@@ -156,11 +179,27 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 onClick={() => onFileSelect(file)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={localSelected.includes(file.id)}
+                    onChange={e => {
+                      const newSelected = e.target.checked
+                        ? [...localSelected, file.id]
+                        : localSelected.filter(id => id !== file.id);
+                      setLocalSelected(newSelected);
+                      onBulkSelect && onBulkSelect(newSelected);
+                    }}
+                    onClick={e => e.stopPropagation()}
+                    className="mr-2"
+                  />
                   <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className={cn(
                     "text-sm truncate",
                     file.conversionStatus === 'success' && "text-green-700",
-                    file.conversionStatus === 'failed' && "text-red-700"
+                    file.conversionStatus === 'failed' && "text-red-700",
+                    file.conversionStatus === 'pending' && "font-bold text-yellow-700",
+                    file.conversionStatus === 'failed' && <span className="ml-1 text-xs text-red-500">(Error)</span>,
+                    file.conversionStatus === 'pending' && <span className="ml-1 text-xs text-yellow-600">(Needs Review)</span>
                   )}>
                     {file.name}
                   </span>
@@ -210,6 +249,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const others = getFilesByType('other');
   const totalPending = getTotalPendingFiles();
 
+  const filteredFiles = files.filter(f =>
+    (statusFilter === 'all' || f.conversionStatus === statusFilter) &&
+    f.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -228,6 +272,38 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4">
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="border p-1 rounded text-sm flex-1"
+            />
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as any)}
+              className="border p-1 rounded text-sm"
+            >
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+          <div className="flex items-center mb-2">
+            <input
+              type="checkbox"
+              checked={localSelected.length === files.length && files.length > 0}
+              onChange={e => {
+                const allIds = files.map(f => f.id);
+                setLocalSelected(e.target.checked ? allIds : []);
+                onBulkSelect && onBulkSelect(e.target.checked ? allIds : []);
+              }}
+              className="mr-2"
+            />
+            <span className="font-medium">Select All</span>
+          </div>
           {renderSection('tables', 'Tables', tables)}
           {renderSection('procedures', 'Procedures', procedures)}
           {renderSection('triggers', 'Triggers', triggers)}

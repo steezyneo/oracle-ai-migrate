@@ -5,7 +5,7 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAiU5Dt6ZEEY
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
-export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
+export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default', customPrompt?: string): Promise<ConversionResult> => {
   console.log(`Converting with ${aiModel} AI model`);
   
   const startTime = Date.now();
@@ -16,8 +16,10 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   // Analyze code complexity before conversion
   const originalComplexity = analyzeCodeComplexity(file.content);
   
-  // Use Gemini for the entire conversion
-  const prompt = `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
+  // Use custom prompt if provided, otherwise use default
+  const prompt = customPrompt && customPrompt.trim().length > 0
+    ? `${customPrompt}\n\nSybase code:\n${file.content}`
+    : `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
   const result = await model.generateContent(prompt);
   const response = await result.response;
@@ -45,6 +47,18 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
     convertedCode
   );
 
+  // Generate AI explanation for the conversion
+  let explanations: string[] = [];
+  try {
+    const explanationPrompt = `Explain the main changes and rationale for converting the following Sybase SQL code to Oracle PL/SQL. Highlight any complex rewrites, data type changes, and best practices applied.\n\nSybase code:\n${file.content}\n\nOracle code:\n${convertedCode}`;
+    const explanationResult = await model.generateContent(explanationPrompt);
+    const explanationResponse = await explanationResult.response;
+    const explanationText = explanationResponse.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+    explanations = [explanationText];
+  } catch (e) {
+    explanations = ["Explanation not available due to an error."];
+  }
+
   return {
     id: crypto.randomUUID(),
     originalFile: file,
@@ -53,7 +67,8 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
     dataTypeMapping,
     performance: performanceMetrics,
     status: issues.some(i => i.severity === 'error') ? 'error' : 
-            issues.length > 0 ? 'warning' : 'success'
+            issues.length > 0 ? 'warning' : 'success',
+    explanations,
   };
 };
 

@@ -9,6 +9,10 @@ import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { ChartContainer } from '@/components/ui/chart';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -33,6 +37,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(() => report.results.map(r => r.id));
+  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'impact' | 'full'>('overview');
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
@@ -216,93 +221,200 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       toast({ title: 'Delete Failed', description: 'An error occurred while deleting the file.', variant: 'destructive' });
     }
   };
-  
+
+  // Add export handlers
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Oracle Migration Report', 10, 10);
+    doc.text(report.summary, 10, 20);
+    doc.save(`oracle-migration-report-${report.timestamp.split('T')[0]}.pdf`);
+    toast({ title: 'PDF Exported', description: 'The migration report has been exported as PDF.' });
+  };
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(report.results.map(r => ({
+      File: r.originalFile.name,
+      Status: r.status,
+      Improvement: r.performance?.improvementPercentage || 0,
+      Issues: r.issues.length,
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    XLSX.writeFile(wb, `oracle-migration-report-${report.timestamp.split('T')[0]}.xlsx`);
+    toast({ title: 'Excel Exported', description: 'The migration report has been exported as Excel.' });
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-2xl">Migration Report</CardTitle>
-              <CardDescription>
-                Generated on {new Date(report.timestamp).toLocaleString()} | Report ID: {report.timestamp.split('T')[0]}-{Date.now().toString().slice(-6)}
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-base font-normal px-3 py-1">
-              {report.successCount + report.warningCount} of {report.filesProcessed} Successful
-            </Badge>
+          <CardTitle className="text-2xl">Migration Report</CardTitle>
+          <CardDescription>
+            Generated on {new Date(report.timestamp).toLocaleString()} | Report ID: {report.timestamp.split('T')[0]}-{Date.now().toString().slice(-6)}
+          </CardDescription>
+          <div className="flex gap-4 mt-4">
+            <Button size="sm" variant={activeTab === 'overview' ? 'default' : 'outline'} onClick={() => setActiveTab('overview')}>Overview</Button>
+            <Button size="sm" variant={activeTab === 'details' ? 'default' : 'outline'} onClick={() => setActiveTab('details')}>File Details</Button>
+            <Button size="sm" variant={activeTab === 'impact' ? 'default' : 'outline'} onClick={() => setActiveTab('impact')}>Change Impact</Button>
+            <Button size="sm" variant={activeTab === 'full' ? 'default' : 'outline'} onClick={() => setActiveTab('full')}>Full Report</Button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" onClick={handleDownload} variant="outline">
+              Download TXT
+            </Button>
+            <Button size="sm" onClick={handleExportPDF} variant="outline">
+              Export PDF
+            </Button>
+            <Button size="sm" onClick={handleExportExcel} variant="outline">
+              Export Excel
+            </Button>
           </div>
         </CardHeader>
-        
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <Check className="h-6 w-6 text-green-500" />
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              {/* Migration Progress Pie Chart */}
+              <div className="max-w-md mx-auto">
+                <h4 className="text-lg font-semibold mb-2">Migration Progress</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Success', value: report.successCount },
+                        { name: 'Warning', value: report.warningCount },
+                        { name: 'Error', value: report.errorCount },
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label
+                    >
+                      <Cell fill="#22c55e" />
+                      <Cell fill="#fbbf24" />
+                      <Cell fill="#ef4444" />
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Success</p>
-              <p className="text-2xl font-bold">{report.successCount}</p>
-            </div>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
+              {/* Performance Improvement Bar Chart */}
+              <div className="max-w-2xl mx-auto">
+                <h4 className="text-lg font-semibold mb-2">Performance Improvements</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={report.results.map(r => ({
+                    name: r.originalFile.name,
+                    improvement: r.performance?.improvementPercentage || 0,
+                  }))}>
+                    <XAxis dataKey="name" hide />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="improvement" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Warnings</p>
-              <p className="text-2xl font-bold">{report.warningCount}</p>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <X className="h-6 w-6 text-red-500" />
+              {/* Summary Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mt-8">
+                <div>
+                  <p className="text-2xl font-bold">{report.successCount}</p>
+                  <p className="text-gray-600">Success</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{report.warningCount}</p>
+                  <p className="text-gray-600">Warnings</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{report.errorCount}</p>
+                  <p className="text-gray-600">Errors</p>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Errors</p>
-              <p className="text-2xl font-bold">{report.errorCount}</p>
             </div>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Processed Files</h3>
-            <div className="flex gap-2 mb-2">
-              <Button size="sm" variant="outline" onClick={handleSelectAll}>Select All</Button>
-              <Button size="sm" variant="outline" onClick={handleDeselectAll}>Deselect All</Button>
+          )}
+          {activeTab === 'impact' && (
+            <div className="space-y-8">
+              <h4 className="text-lg font-semibold mb-2">Change Impact Analysis</h4>
+              {/* Most affected objects by type/name */}
+              <div>
+                <h5 className="font-medium mb-1">Most Affected Objects</h5>
+                <ul className="list-disc pl-6">
+                  {getMostAffectedObjects(report).map((obj, idx) => (
+                    <li key={idx} className="mb-1">
+                      <span className="font-semibold">{obj.type}:</span> {obj.name} ({obj.issues} issues, {obj.improvement}% improvement)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* Files with most issues */}
+              <div>
+                <h5 className="font-medium mb-1">Files with Most Issues</h5>
+                <ul className="list-disc pl-6">
+                  {getFilesWithMostIssues(report).map((f, idx) => (
+                    <li key={idx} className="mb-1">
+                      {f.name} - {f.issues} issues
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* Largest performance changes */}
+              <div>
+                <h5 className="font-medium mb-1">Largest Performance Changes</h5>
+                <ul className="list-disc pl-6">
+                  {getLargestPerformanceChanges(report).map((f, idx) => (
+                    <li key={idx} className="mb-1">
+                      {f.name} - {f.improvement}% improvement
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <ScrollArea className="h-[200px] border rounded-md p-4">
-              <div className="space-y-2">
-                {report.results.map(result => (
-                  <div key={result.id} className="flex justify-between items-center p-2 border-b">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="mr-2"
-                        checked={selectedFileIds.includes(result.id)}
-                        onChange={() => handleToggleFile(result.id)}
-                        id={`select-file-${result.id}`}
-                      />
-                      {result.status === 'success' ? (
-                        <Check className="h-4 w-4 text-green-500 mr-2" />
-                      ) : result.status === 'warning' ? (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                      ) : (
-                        <X className="h-4 w-4 text-red-500 mr-2" />
-                      )}
-                      <label htmlFor={`select-file-${result.id}`}>{result.originalFile.name}</label>
+          )}
+          {activeTab === 'details' && (
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2">Processed Files</h3>
+              <div className="flex gap-2 mb-2">
+                <Button size="sm" variant="outline" onClick={handleSelectAll}>Select All</Button>
+                <Button size="sm" variant="outline" onClick={handleDeselectAll}>Deselect All</Button>
+              </div>
+              <ScrollArea className="h-[200px] border rounded-md p-4">
+                <div className="space-y-2">
+                  {report.results.map(result => (
+                    <div key={result.id} className="flex justify-between items-center p-2 border-b">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="mr-2"
+                          checked={selectedFileIds.includes(result.id)}
+                          onChange={() => handleToggleFile(result.id)}
+                          id={`select-file-${result.id}`}
+                        />
+                        {result.status === 'success' ? (
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                        ) : result.status === 'warning' ? (
+                          <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500 mr-2" />
+                        )}
+                        <label htmlFor={`select-file-${result.id}`}>{result.originalFile.name}</label>
+                      </div>
+                      <Badge>{result.originalFile.type}</Badge>
                     </div>
-                    <Badge>{result.originalFile.type}</Badge>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Full Report</h3>
-            <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
-              <ScrollArea className="h-[300px] p-4">
-                <pre className="text-sm whitespace-pre-wrap font-mono text-slate-800 dark:text-slate-200">
-                  {report.summary}
-                </pre>
+                  ))}
+                </div>
               </ScrollArea>
             </div>
-          </div>
+          )}
+          {activeTab === 'full' && (
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2">Full Report</h3>
+              <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
+                <ScrollArea className="h-[300px] p-4">
+                  <pre className="text-sm whitespace-pre-wrap font-mono text-slate-800 dark:text-slate-200">
+                    {report.summary}
+                  </pre>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
           
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
@@ -380,5 +492,30 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     </div>
   );
 };
+
+// Helper functions for impact analysis
+function getMostAffectedObjects(report) {
+  // Aggregate by type/name, sum issues and improvements
+  const map = {};
+  report.results.forEach(r => {
+    const key = `${r.originalFile.type}:${r.originalFile.name}`;
+    if (!map[key]) map[key] = { type: r.originalFile.type, name: r.originalFile.name, issues: 0, improvement: 0 };
+    map[key].issues += r.issues.length;
+    map[key].improvement += r.performance?.improvementPercentage || 0;
+  });
+  return Object.values(map).sort((a, b) => b.issues - a.issues).slice(0, 5);
+}
+function getFilesWithMostIssues(report) {
+  return report.results
+    .map(r => ({ name: r.originalFile.name, issues: r.issues.length }))
+    .sort((a, b) => b.issues - a.issues)
+    .slice(0, 5);
+}
+function getLargestPerformanceChanges(report) {
+  return report.results
+    .map(r => ({ name: r.originalFile.name, improvement: r.performance?.improvementPercentage || 0 }))
+    .sort((a, b) => Math.abs(b.improvement) - Math.abs(a.improvement))
+    .slice(0, 5);
+}
 
 export default ReportViewer;

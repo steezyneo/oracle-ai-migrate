@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, HelpCircle } from 'lucide-react';
+import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, HelpCircle, Sun, Moon, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Help from '@/components/Help';
@@ -10,6 +10,32 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [showHelp, setShowHelp] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as any) || 'system';
+    }
+    return 'system';
+  });
+
+  useEffect(() => {
+    if (theme === 'system') {
+      document.documentElement.classList.remove('dark');
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    } else if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const cycleTheme = () => {
+    setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
+  };
+
+  const themeIcon = theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Monitor className="h-5 w-5" />;
 
   const handleGetStarted = () => {
     if (user) {
@@ -66,6 +92,15 @@ const Landing = () => {
                   </Button>
                 </>
               )}
+              <Button
+                variant="outline"
+                onClick={cycleTheme}
+                className="flex items-center gap-2"
+                title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
+              >
+                {themeIcon}
+                {theme.charAt(0).toUpperCase() + theme.slice(1)}
+              </Button>
             </div>
           </div>
         </div>

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Database, History, HelpCircle } from 'lucide-react';
+import { Database, History, HelpCircle, Sun, Moon, Monitor } from 'lucide-react';
 import UserDropdown from '@/components/UserDropdown';
 import HomeButton from '@/components/HomeButton';
 
@@ -18,6 +17,33 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onShowHelp,
   title = "Migration Dashboard"
 }) => {
+  const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as any) || 'system';
+    }
+    return 'system';
+  });
+
+  React.useEffect(() => {
+    if (theme === 'system') {
+      document.documentElement.classList.remove('dark');
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    } else if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const cycleTheme = () => {
+    setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
+  };
+
+  const themeIcon = theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Monitor className="h-5 w-5" />;
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4 py-4">
@@ -46,6 +72,15 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             >
               <HelpCircle className="h-4 w-4" />
               Help
+            </Button>
+            <Button
+              variant="outline"
+              onClick={cycleTheme}
+              className="flex items-center gap-2"
+              title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
+            >
+              {themeIcon}
+              {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </Button>
             <UserDropdown />
           </div>
