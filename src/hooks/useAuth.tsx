@@ -23,6 +23,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Move generateUsername to module scope
+const generateUsername = async (email: string) => {
+  let base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  let username = base;
+  let suffix = 1;
+  // Check for uniqueness
+  while (true) {
+    const { data, error } = await supabase.from('profiles').select('id').eq('username', username).single();
+    if (!data) break;
+    username = `${base}${suffix}`;
+    suffix++;
+  }
+  return username;
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -74,20 +89,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const generateUsername = async (email: string) => {
-    let base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    let username = base;
-    let suffix = 1;
-    // Check for uniqueness
-    while (true) {
-      const { data, error } = await supabase.from('profiles').select('id').eq('username', username).single();
-      if (!data) break;
-      username = `${base}${suffix}`;
-      suffix++;
-    }
-    return username;
-  };
-
   const signUp = async (email: string, password: string, fullName: string, onSuccess?: () => void) => {
     const redirectUrl = `${window.location.origin}/`;
     const username = await generateUsername(email);
@@ -131,17 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Helper to backfill usernames for existing users
-  export const backfillUsernames = async () => {
-    const { data: profiles } = await supabase.from('profiles').select('*');
-    for (const profile of profiles) {
-      if (!profile.username) {
-        const username = await generateUsername(profile.email);
-        await supabase.from('profiles').update({ username }).eq('id', profile.id);
-      }
-    }
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
@@ -163,4 +153,14 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const backfillUsernames = async () => {
+  const { data: profiles } = await supabase.from('profiles').select('*');
+  for (const profile of profiles) {
+    if (!profile.username) {
+      const username = await generateUsername(profile.email);
+      await supabase.from('profiles').update({ username }).eq('id', profile.id);
+    }
+  }
 };
