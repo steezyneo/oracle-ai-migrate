@@ -110,17 +110,19 @@ export const useMigrationManager = () => {
       }
       toast({
         title: "Files Uploaded",
-        description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
+        description: `${convertedFiles.length} files uploaded successfully!`,
+        variant: "success",
       });
+      return convertedFiles;
     } catch (error) {
-      console.error('Error saving files to Supabase:', error);
+      console.error('Error uploading files:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to save the uploaded files",
+        description: "An error occurred during file upload.",
         variant: "destructive",
       });
+      return [];
     }
-    return convertedFiles;
   }, [currentMigrationId, toast, startNewMigration, user]);
 
   return {
