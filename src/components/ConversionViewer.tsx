@@ -541,12 +541,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <div className="mb-2">
             <h4 className="font-medium mb-1">Comments</h4>
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {file.reviewComments && file.reviewComments.length > 0 ? file.reviewComments.map((c, idx) => (
-                <div key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm">
-                  <span className="font-semibold">{allUsers.find(u => u.id === c.userId)?.full_name || c.userName || c.userId}:</span> {c.comment}
-                  <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
-                </div>
-              )) : <div className="text-gray-400 text-sm">No comments yet.</div>}
+              {file.reviewComments && file.reviewComments.length > 0 ? (
+                <ul className="list-disc pl-5">
+                  {file.reviewComments.map((c, idx) => (
+                    <li key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm mb-1">
+                      <span className="font-semibold">{allUsers.find(u => u.id === c.userId)?.full_name || c.userName || c.userId}:</span> {c.comment}
+                      <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <div className="text-gray-400 text-sm">No comments yet.</div>}
             </div>
             <div className="flex gap-2 mt-2">
               <input

@@ -10,32 +10,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [showHelp, setShowHelp] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as any) || 'system';
-    }
-    return 'system';
-  });
-
-  useEffect(() => {
-    if (theme === 'system') {
-      document.documentElement.classList.remove('dark');
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    } else if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const cycleTheme = () => {
-    setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
-  };
-
-  const themeIcon = theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Monitor className="h-5 w-5" />;
+  // Remove all theme/dark/system mode logic and UI
 
   const handleGetStarted = () => {
     if (user) {
@@ -92,15 +67,6 @@ const Landing = () => {
                   </Button>
                 </>
               )}
-              <Button
-                variant="outline"
-                onClick={cycleTheme}
-                className="flex items-center gap-2"
-                title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
-              >
-                {themeIcon}
-                {theme.charAt(0).toUpperCase() + theme.slice(1)}
-              </Button>
             </div>
           </div>
         </div>

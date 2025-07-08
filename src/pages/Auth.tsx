@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Loader2, Eye, EyeOff, Sun, Moon, Monitor } from 'lucide-react';
+import { Database, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -24,38 +24,12 @@ const Auth = () => {
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
   const [signupPasswordVisible, setSignupPasswordVisible] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as any) || 'system';
-    }
-    return 'system';
-  });
 
   useEffect(() => {
     if (user) {
       navigate('/migration');
     }
   }, [user, navigate]);
-
-  useEffect(() => {
-    if (theme === 'system') {
-      document.documentElement.classList.remove('dark');
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    } else if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const cycleTheme = () => {
-    setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
-  };
-
-  const themeIcon = theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Monitor className="h-5 w-5" />;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,18 +113,6 @@ const Auth = () => {
             <h1 className="text-2xl font-bold text-foreground">Migration Tool</h1>
           </div>
           <p className="text-foreground">Sign in to start your Sybase to Oracle migration</p>
-        </div>
-
-        <div className="w-full flex justify-end mb-4">
-          <Button
-            variant="outline"
-            onClick={cycleTheme}
-            className="flex items-center gap-2"
-            title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
-          >
-            {themeIcon}
-            {theme.charAt(0).toUpperCase() + theme.slice(1)}
-          </Button>
         </div>
 
         <Card className="bg-card text-card-foreground">

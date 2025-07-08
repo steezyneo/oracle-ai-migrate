@@ -17,32 +17,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onShowHelp,
   title = "Migration Dashboard"
 }) => {
-  const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as any) || 'system';
-    }
-    return 'system';
-  });
+  // Remove all theme/dark/system mode logic and UI
 
-  React.useEffect(() => {
-    if (theme === 'system') {
-      document.documentElement.classList.remove('dark');
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    } else if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const cycleTheme = () => {
-    setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
-  };
-
-  const themeIcon = theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Monitor className="h-5 w-5" />;
+  const themeIcon = <Sun className="h-5 w-5" />;
 
   return (
     <header className="bg-background shadow-sm border-b border-border">
@@ -75,12 +52,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             </Button>
             <Button
               variant="outline"
-              onClick={cycleTheme}
+              onClick={() => {}} // No theme toggle
               className="flex items-center gap-2"
-              title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
+              title="Theme: Light"
             >
               {themeIcon}
-              {theme.charAt(0).toUpperCase() + theme.slice(1)}
+              Light
             </Button>
             <UserDropdown />
           </div>
