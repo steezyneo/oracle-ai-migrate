@@ -94,6 +94,9 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const [isAssigning, setIsAssigning] = useState(false);
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
+  const [showCommentPrompt, setShowCommentPrompt] = useState(false);
 
   const currentIndex = fileList ? fileList.findIndex(f => f.id === file.id) : -1;
   const hasPrev = fileList && currentIndex > 0;
@@ -108,6 +111,14 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
       setAllUsers(data || []);
     });
   }, []);
+
+  useEffect(() => {
+    if (file.convertedContent && (!file.reviewComments || file.reviewComments.length === 0)) {
+      setShowCommentPrompt(true);
+    } else {
+      setShowCommentPrompt(false);
+    }
+  }, [file.convertedContent, file.reviewComments]);
 
   const handleSaveEdit = async () => {
     onManualEdit(editedContent);
@@ -541,12 +552,47 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <div className="mb-2">
             <h4 className="font-medium mb-1">Comments</h4>
             <div className="space-y-2 max-h-40 overflow-y-auto">
+              {showCommentPrompt && (
+                <div className="mb-2 p-2 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+                  Would you like to add any comments about this conversion?
+                </div>
+              )}
               {file.reviewComments && file.reviewComments.length > 0 ? (
                 <ul className="list-disc pl-5">
                   {file.reviewComments.map((c, idx) => (
-                    <li key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm mb-1">
-                      <span className="font-semibold">{allUsers.find(u => u.id === c.userId)?.full_name || c.userName || c.userId}:</span> {c.comment}
-                      <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                    <li key={c.id || idx} className="bg-gray-100 rounded p-2 text-sm mb-1 flex items-center justify-between">
+                      <div className="flex-1">
+                        <span className="font-semibold">{allUsers.find(u => u.id === c.userId)?.full_name || c.userName || c.userId}:</span> 
+                        {editingCommentId === c.id ? (
+                          <input
+                            className="border p-1 rounded text-sm ml-2"
+                            value={editingCommentText}
+                            onChange={e => setEditingCommentText(e.target.value)}
+                            onBlur={async () => {
+                              const updatedComments = file.reviewComments.map(com => com.id === c.id ? { ...com, comment: editingCommentText } : com);
+                              await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
+                              setEditingCommentId(null);
+                              setEditingCommentText('');
+                              if (onCommentAdded) onCommentAdded(file.id);
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="ml-2">{c.comment}</span>
+                        )}
+                        <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="flex gap-1 ml-2">
+                        <Button size="xs" variant="outline" onClick={() => {
+                          setEditingCommentId(c.id);
+                          setEditingCommentText(c.comment);
+                        }}>Edit</Button>
+                        <Button size="xs" variant="destructive" onClick={async () => {
+                          const updatedComments = file.reviewComments.filter(com => com.id !== c.id);
+                          await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
+                          if (onCommentAdded) onCommentAdded(file.id);
+                        }}>Delete</Button>
+                      </div>
                     </li>
                   ))}
                 </ul>

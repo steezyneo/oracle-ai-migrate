@@ -50,15 +50,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <HelpCircle className="h-4 w-4" />
               Help
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {}} // No theme toggle
-              className="flex items-center gap-2"
-              title="Theme: Light"
-            >
-              {themeIcon}
-              Light
-            </Button>
             <UserDropdown />
           </div>
         </div>
