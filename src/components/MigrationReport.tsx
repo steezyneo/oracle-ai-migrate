@@ -8,6 +8,9 @@ import { Separator } from '@/components/ui/separator';
 import { Download, Upload, CheckCircle, AlertTriangle, XCircle, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { LineChart, Line, XAxis as XAxisLine, YAxis as YAxisLine } from 'recharts';
 
 interface MigrationReportProps {
   report: any;
@@ -156,20 +159,65 @@ RECOMMENDATIONS
 `;
   };
 
+  const donutData = [
+    { name: 'Success', value: report.successfulFiles, color: '#22c55e' },
+    { name: 'Failed', value: report.failedFiles, color: '#ef4444' },
+    { name: 'Pending', value: report.totalFiles - report.successfulFiles - report.failedFiles, color: '#f59e42' },
+  ];
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">Migration Report</CardTitle>
-            <div className="flex gap-2">
-              <Button onClick={onBack} variant="outline">
-                Back to Review
-              </Button>
-              <Button onClick={handleDownloadReport}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </Button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <CardTitle className="text-2xl mb-2">Migration Project Metrics Overview</CardTitle>
+              <div className="flex gap-2 mb-2">
+                <Button onClick={onBack} variant="outline">Back to Review</Button>
+                <Button onClick={handleDownloadReport}><Download className="h-4 w-4 mr-2" />Download Report</Button>
+              </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-40 h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      startAngle={90}
+                      endAngle={-270}
+                      animationDuration={1200}
+                      isAnimationActive={true}
+                    >
+                      {donutData.map((entry, idx) => (
+                        <Cell key={`cell-${idx}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex gap-4 mt-4">
+                <div className="flex flex-col items-center">
+                  <CheckCircle className="h-6 w-6 text-green-500 mb-1" />
+                  <span className="font-bold text-green-700">{report.successfulFiles}</span>
+                  <span className="text-xs text-gray-500">Success</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <XCircle className="h-6 w-6 text-red-500 mb-1" />
+                  <span className="font-bold text-red-700">{report.failedFiles}</span>
+                  <span className="text-xs text-gray-500">Failed</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <AlertTriangle className="h-6 w-6 text-yellow-500 mb-1" />
+                  <span className="font-bold text-yellow-700">{report.totalFiles - report.successfulFiles - report.failedFiles}</span>
+                  <span className="text-xs text-gray-500">Pending</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -203,38 +251,89 @@ RECOMMENDATIONS
           {/* File List */}
           <div>
             <h3 className="text-lg font-medium mb-3">Processed Files</h3>
-            <ScrollArea className="h-64 border rounded">
-              <div className="p-4 space-y-2">
-                {report.files.map((file: any) => (
-                  <div key={file.id} className="flex items-center justify-between p-3 border rounded">
-                    <div className="flex items-center gap-3">
-                      {file.conversionStatus === 'success' ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : file.conversionStatus === 'failed' ? (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                      )}
-                      <div>
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {file.type} • {file.issues?.length || 0} issues
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={
-                      file.conversionStatus === 'success' ? 'default' :
-                      file.conversionStatus === 'failed' ? 'destructive' : 'secondary'
-                    }>
-                      {file.conversionStatus}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+            <div className="overflow-x-auto rounded border bg-white">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">File Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Issues</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {report.files.map((file: any) => (
+                    <tr key={file.id}>
+                      <td className="px-4 py-2 font-medium text-blue-900">{file.name}</td>
+                      <td className="px-4 py-2 text-gray-700">{file.type}</td>
+                      <td className="px-4 py-2 text-center">
+                        <span className={`inline-block px-2 py-1 text-xs rounded-full font-semibold ${file.conversionStatus === 'success' ? 'bg-green-100 text-green-800' : file.conversionStatus === 'failed' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{file.conversionStatus.charAt(0).toUpperCase() + file.conversionStatus.slice(1)}</span>
+                      </td>
+                      <td className="px-4 py-2 text-center">{file.issues?.length || 0}</td>
+                      <td className="px-4 py-2 text-xs text-red-600">{file.errorMessage || '-'}</td>
+                      <td className="px-4 py-2 text-center">
+                        <Button size="sm" variant="outline" onClick={() => window.open(`/view-code/${file.id}`, '_blank')}>View Code</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Performance & Quality Metrics */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-xl">Performance & Quality Metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Lines of Code Chart */}
+            <div>
+              <h4 className="font-medium mb-2">Lines of Code (Before/After)</h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={report.files.map(f => ({ name: f.name, Original: f.performanceMetrics?.codeQuality?.totalLines || 0, Converted: f.performanceMetrics?.codeQuality?.codeLines || 0 }))}>
+                  <XAxis dataKey="name" hide />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Original" fill="#8884d8" />
+                  <Bar dataKey="Converted" fill="#22c55e" />
+                </BarChart>
+              </div>
+              {/* Complexity Chart */}
+              <div>
+                <h4 className="font-medium mb-2">Complexity (Before/After)</h4>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={report.files.map(f => ({ name: f.name, Original: f.performanceMetrics?.originalComplexity || 0, Converted: f.performanceMetrics?.convertedComplexity || 0 }))}>
+                    <XAxis dataKey="name" hide />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="Original" stroke="#f59e42" />
+                    <Line type="monotone" dataKey="Converted" stroke="#22c55e" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Performance Score Chart */}
+              <div>
+                <h4 className="font-medium mb-2">Performance Score</h4>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={report.files.map(f => ({ name: f.name, Score: f.performanceMetrics?.performanceScore || 0 }))}>
+                    <XAxis dataKey="name" hide />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="Score" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
       {/* Deployment Section */}
       <Card>
