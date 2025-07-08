@@ -205,6 +205,13 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
+  const fetchLatestComments = async () => {
+    const { data, error } = await supabase.from('migration_files').select('review_comments').eq('id', file.id).single();
+    if (!error && data && data.review_comments) {
+      if (onCommentAdded) onCommentAdded(file.id);
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -573,6 +580,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                               await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
                               setEditingCommentId(null);
                               setEditingCommentText('');
+                              await fetchLatestComments();
                               if (onCommentAdded) onCommentAdded(file.id);
                             }}
                             autoFocus
@@ -590,6 +598,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                         <Button size="xs" variant="destructive" onClick={async () => {
                           const updatedComments = file.reviewComments.filter(com => com.id !== c.id);
                           await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
+                          await fetchLatestComments();
                           if (onCommentAdded) onCommentAdded(file.id);
                         }}>Delete</Button>
                       </div>
@@ -620,6 +629,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
                 setNewComment('');
                 setIsSubmittingComment(false);
+                await fetchLatestComments();
                 if (onCommentAdded) onCommentAdded(file.id);
               }} disabled={isSubmittingComment || !newComment.trim()}>Add</Button>
             </div>

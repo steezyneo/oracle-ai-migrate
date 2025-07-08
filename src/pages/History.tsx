@@ -472,61 +472,80 @@ const History = () => {
                           migrationFiles
                             .filter(file => file.conversion_status === 'success' && file.converted_content)
                             .map((file) => (
-                              <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
-                                <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
-                                  <FileText className="h-4 w-4 text-gray-500" />
-                                  <span className="truncate max-w-xs">{file.file_name}</span>
-                                </td>
-                                <td className="px-4 py-2 text-center text-xs text-gray-600">
-                                  {file.file_type}
-                                </td>
-                                <td className="px-4 py-2 text-center" colSpan={2}>
-                                  <div className="flex items-center justify-center gap-2">
-                                    {getStatusIcon(file.conversion_status)}
-                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
-                                      {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2 text-center">
-                                  <div className="flex gap-1 justify-center">
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost"
-                                      onClick={(e) => handleViewFile(e, file)}
-                                      title="View Code"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost"
-                                      onClick={(e) => handleDownloadFile(e, file)}
-                                      title="Download File"
-                                    >
-                                      <Download className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        // Fetch latest comments from the database before opening dialog
-                                        const { data, error } = await supabase.from('migration_files').select('review_comments').eq('id', file.id).single();
-                                        if (!error && data && data.review_comments) {
-                                          setSelectedFile({ ...file, review_comments: data.review_comments });
-                                        } else {
-                                          setSelectedFile(file);
-                                        }
-                                        setShowCommentsDialog(true);
-                                      }}
-                                      title="View Comments"
-                                    >
-                                      Comments
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
+                              <React.Fragment key={file.id}>
+                                <tr className="bg-gray-50 hover:bg-blue-100">
+                                  <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
+                                    <FileText className="h-4 w-4 text-gray-500" />
+                                    <span className="truncate max-w-xs">{file.file_name}</span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center text-xs text-gray-600">
+                                    {file.file_type}
+                                  </td>
+                                  <td className="px-4 py-2 text-center" colSpan={2}>
+                                    <div className="flex items-center justify-center gap-2">
+                                      {getStatusIcon(file.conversion_status)}
+                                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
+                                        {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <div className="flex gap-1 justify-center">
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        onClick={(e) => handleViewFile(e, file)}
+                                        title="View Code"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        onClick={(e) => handleDownloadFile(e, file)}
+                                        title="Download File"
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          // Fetch latest comments from the database before opening dialog
+                                          const { data, error } = await supabase.from('migration_files').select('review_comments').eq('id', file.id).single();
+                                          if (!error && data && data.review_comments) {
+                                            setSelectedFile({ ...file, review_comments: data.review_comments });
+                                          } else {
+                                            setSelectedFile(file);
+                                          }
+                                          setShowCommentsDialog(true);
+                                        }}
+                                        title="View Comments"
+                                      >
+                                        Comments
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {/* Comments bullet list under file row */}
+                                <tr className="bg-gray-50">
+                                  <td colSpan={7} className="px-16 pb-2 pt-0">
+                                    {file.review_comments && file.review_comments.length > 0 ? (
+                                      <ul className="list-disc ml-6 space-y-1">
+                                        {file.review_comments.map((c, idx) => (
+                                          <li key={c.id || idx} className="text-sm text-gray-700">
+                                            <span className="font-semibold">{c.userName || c.userId}:</span> {c.comment}
+                                            <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <div className="text-gray-400 text-sm ml-6">No comments yet.</div>
+                                    )}
+                                  </td>
+                                </tr>
+                              </React.Fragment>
                             ))
                         )}
                         
