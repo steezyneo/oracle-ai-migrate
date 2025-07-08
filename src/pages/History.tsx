@@ -469,7 +469,6 @@ const History = () => {
                         {/* Show files if this migration is selected */}
                         {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
                           migrationFiles
-                            .filter(file => file.conversion_status === 'success' && file.converted_content)
                             .map((file) => (
                               <React.Fragment key={file.id}>
                                 <tr className="bg-gray-50 hover:bg-blue-100">
