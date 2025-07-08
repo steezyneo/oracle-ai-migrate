@@ -336,7 +336,7 @@ RECOMMENDATIONS
         </Card>
 
       {/* Deployment Section */}
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -398,6 +398,31 @@ RECOMMENDATIONS
                 </div>
               )}
             </ScrollArea>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recommendations & Next Steps */}
+      <Card className="mt-6 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl">Recommendations & Next Steps</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-blue-50 rounded-lg p-4 flex flex-col gap-2 shadow">
+              <h4 className="font-semibold text-blue-800 mb-1">Recommended Actions</h4>
+              <ul className="list-disc pl-5 text-blue-900 space-y-1">
+                <li>Review all failed conversions manually</li>
+                <li>Test converted procedures in Oracle environment</li>
+                <li>Validate data integrity after migration</li>
+                <li>Monitor performance after deployment</li>
+              </ul>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4 flex flex-col gap-4 shadow">
+              <h4 className="font-semibold text-green-800 mb-1">Next Steps</h4>
+              <Button className="w-full" variant="outline" onClick={handleDownloadReport} title="Download the full migration report as TXT">Download All Files</Button>
+              <Button className="w-full" variant="default" onClick={() => window.location.href='/migration'} title="Start a new migration project">Start New Migration</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
