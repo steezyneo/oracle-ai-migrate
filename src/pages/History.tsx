@@ -32,6 +32,7 @@ interface MigrationFile {
   conversion_status: 'pending' | 'success' | 'failed';
   error_message: string | null;
   created_at: string;
+  review_comments?: Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>;
 }
 
 const History = () => {
@@ -152,7 +153,8 @@ const History = () => {
         ...file,
         conversion_status: ['pending', 'success', 'failed'].includes(file.conversion_status) 
           ? file.conversion_status as 'pending' | 'success' | 'failed'
-          : 'pending'
+          : 'pending',
+        review_comments: file.review_comments || [],
       }));
       
       setMigrationFiles(typedFiles);
