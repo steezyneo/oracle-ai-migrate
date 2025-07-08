@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
@@ -77,6 +77,24 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     setAssignUserId('');
   };
 
+  const fetchFileById = useCallback(async (fileId: string) => {
+    const { data, error } = await supabase.from('migration_files').select('*').eq('id', fileId).single();
+    if (error) return null;
+    return data;
+  }, []);
+
+  const handleFileSelect = useCallback(async (file: FileItem) => {
+    const latest = await fetchFileById(file.id);
+    if (latest) {
+      // Update the selected file in local state
+      onFileSelect({ ...file, ...latest });
+      // Optionally update the files array as well
+      // setFiles(prev => prev.map(f => f.id === file.id ? { ...f, ...latest } : f));
+    } else {
+      onFileSelect(file);
+    }
+  }, [fetchFileById, onFileSelect]);
+
   if (files.length === 0) {
     return (
       <Card className="max-w-2xl mx-auto">
@@ -139,7 +157,16 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
               fileList={files}
               onNavigateFile={fileId => {
                 const nextFile = files.find(f => f.id === fileId);
-                if (nextFile) onFileSelect(nextFile);
+                if (nextFile) handleFileSelect(nextFile);
+              }}
+              onCommentAdded={async (fileId) => {
+                // After adding a comment, fetch the latest file data
+                const latest = await fetchFileById(fileId);
+                if (latest) {
+                  onFileSelect({ ...selectedFile, ...latest });
+                  // Optionally update the files array as well
+                  // setFiles(prev => prev.map(f => f.id === fileId ? { ...f, ...latest } : f));
+                }
               }}
             />
             

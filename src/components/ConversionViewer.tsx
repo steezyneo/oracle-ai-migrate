@@ -69,6 +69,7 @@ interface ConversionViewerProps {
   onDismissIssue: (issueId: string) => void;
   onNavigateFile?: (fileId: string) => void;
   fileList?: FileItem[];
+  onCommentAdded?: (fileId: string) => void;
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
@@ -77,6 +78,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   onDismissIssue,
   onNavigateFile,
   fileList,
+  onCommentAdded,
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
@@ -568,6 +570,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 await supabase.from('migration_files').update({ review_comments: updatedComments }).eq('id', file.id);
                 setNewComment('');
                 setIsSubmittingComment(false);
+                if (onCommentAdded) onCommentAdded(file.id);
               }} disabled={isSubmittingComment || !newComment.trim()}>Add</Button>
             </div>
           </div>
