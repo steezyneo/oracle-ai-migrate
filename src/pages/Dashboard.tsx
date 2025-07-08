@@ -231,16 +231,6 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="conversion">
-            <div className="mb-4 max-w-2xl mx-auto">
-              <label htmlFor="customPrompt" className="block text-sm font-medium text-gray-700 mb-1">Custom AI Prompt (optional)</label>
-              <textarea
-                id="customPrompt"
-                value={customPrompt}
-                onChange={e => setCustomPrompt(e.target.value)}
-                placeholder="E.g., Focus on optimizing performance, or use Oracle 12c+ features, etc."
-                className="w-full p-2 border border-gray-300 rounded text-sm min-h-[60px]"
-              />
-            </div>
             <ConversionPanel
                     files={files}
               selectedFile={selectedFile}

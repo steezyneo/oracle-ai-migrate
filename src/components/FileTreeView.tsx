@@ -243,16 +243,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     );
   };
 
-  const tables = getFilesByType('table');
-  const procedures = getFilesByType('procedure');
-  const triggers = getFilesByType('trigger');
-  const others = getFilesByType('other');
-  const totalPending = getTotalPendingFiles();
-
+  // Filtered files based on search and status
   const filteredFiles = files.filter(f =>
     (statusFilter === 'all' || f.conversionStatus === statusFilter) &&
     f.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Use filteredFiles for sections
+  const tables = filteredFiles.filter(f => f.type === 'table');
+  const procedures = filteredFiles.filter(f => f.type === 'procedure');
+  const triggers = filteredFiles.filter(f => f.type === 'trigger');
+  const others = filteredFiles.filter(f => f.type === 'other');
+  const totalPending = filteredFiles.filter(f => f.conversionStatus === 'pending').length;
 
   return (
     <Card className="h-full">
