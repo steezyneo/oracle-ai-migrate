@@ -509,9 +509,15 @@ const History = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.stopPropagation();
-                                        setSelectedFile(file);
+                                        // Fetch latest comments from the database before opening dialog
+                                        const { data, error } = await supabase.from('migration_files').select('review_comments').eq('id', file.id).single();
+                                        if (!error && data && data.review_comments) {
+                                          setSelectedFile({ ...file, review_comments: data.review_comments });
+                                        } else {
+                                          setSelectedFile(file);
+                                        }
                                         setShowCommentsDialog(true);
                                       }}
                                       title="View Comments"

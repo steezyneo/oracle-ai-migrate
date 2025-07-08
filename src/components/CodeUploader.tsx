@@ -537,8 +537,8 @@ END`;
                   <ScrollArea className="max-h-96">
                     {dataTypeMappings.map((mapping, index) => (
                       <div key={index} className="grid grid-cols-4 gap-4 p-3 border-t text-sm">
-                        <div className="font-mono bg-red-50 px-2 py-1 rounded">{mapping.tsql}</div>
-                        <div className="font-mono bg-green-50 px-2 py-1 rounded">{mapping.plsql}</div>
+                        <code className="font-mono bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200 px-2 py-1 rounded">{mapping.tsql}</code>
+                        <code className="font-mono bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200 px-2 py-1 rounded">{mapping.plsql}</code>
                         <div className="text-gray-600">{mapping.usage}</div>
                         <div className="text-gray-500 text-xs">{mapping.notes}</div>
                       </div>
