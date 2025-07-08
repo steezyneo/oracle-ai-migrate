@@ -100,7 +100,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       <div className="col-span-4">
         <div className="flex gap-2 mb-2">
           <Button size="sm" onClick={() => selectedFileIds.forEach(id => onConvertFile(id))} disabled={selectedFileIds.length === 0}>Convert Selected</Button>
-          <Button size="sm" onClick={handleApproveSelected} disabled={selectedFileIds.length === 0}>Approve Selected</Button>
           <select
             value={assignUserId}
             onChange={e => setAssignUserId(e.target.value)}

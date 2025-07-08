@@ -274,11 +274,9 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     variant="outline"
                     onClick={() => setIsEditing(!isEditing)}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
                     {isEditing ? 'Cancel' : 'Edit'}
                   </Button>
                 </div>
-                
                 {isEditing ? (
                   <div className="space-y-2">
                     <Textarea
@@ -292,16 +290,9 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="secondary" onClick={() => setShowSuggestionModal(true)} disabled={isReconverting}>
-                      Reconvert with Suggestion
-                    </Button>
-                    {(file.conversionStatus === 'failed' || (file.issues && file.issues.length > 0)) && (
-                      <Button size="sm" variant="outline" onClick={handleAutoFix} disabled={isReconverting}>
-                        Auto-Fix
-                      </Button>
-                    )}
-                  </div>
+                  <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                    {file.convertedContent}
+                  </pre>
                 )}
               </div>
             )}
