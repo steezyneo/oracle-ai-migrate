@@ -45,6 +45,7 @@ const History = () => {
   const [migrationFiles, setMigrationFiles] = useState<MigrationFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [showCommentsDialog, setShowCommentsDialog] = useState(false);
   const isFetchingFiles = useRef(false);
 
   // Get the return tab from location state
@@ -503,6 +504,18 @@ const History = () => {
                                     >
                                       <Download className="h-4 w-4" />
                                     </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedFile(file);
+                                        setShowCommentsDialog(true);
+                                      }}
+                                      title="View Comments"
+                                    >
+                                      Comments
+                                    </Button>
                                   </div>
                                 </td>
                               </tr>
@@ -538,6 +551,30 @@ const History = () => {
                   originalCode={selectedFile.original_content || ''}
                   convertedCode={selectedFile.converted_content || selectedFile.original_content || 'No converted code available'}
                 />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Comments Dialog */}
+        <Dialog open={showCommentsDialog} onOpenChange={setShowCommentsDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Comments for: {selectedFile?.file_name}</DialogTitle>
+              <DialogClose />
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-96">
+              {selectedFile?.review_comments && selectedFile.review_comments.length > 0 ? (
+                <ul className="space-y-2">
+                  {selectedFile.review_comments.map((c, idx) => (
+                    <li key={c.id || idx} className="bg-gray-100 dark:bg-gray-800 rounded p-2 text-sm">
+                      <span className="font-semibold">{c.userName || c.userId}:</span> {c.comment}
+                      <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-gray-400 text-sm">No comments yet.</div>
               )}
             </div>
           </DialogContent>

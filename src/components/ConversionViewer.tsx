@@ -316,20 +316,20 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     <Card key={index} className="p-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <h4 className="font-medium text-red-600 mb-2">Sybase Type</h4>
-                          <code className="bg-red-50 px-3 py-2 rounded text-sm font-mono block">
+                          <h4 className="font-medium text-red-600 dark:text-red-400 mb-2">Sybase Type</h4>
+                          <code className="bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded text-sm font-mono block">
                             {mapping.sybaseType}
                           </code>
                         </div>
                         <div>
-                          <h4 className="font-medium text-green-600 mb-2">Oracle Type</h4>
-                          <code className="bg-green-50 px-3 py-2 rounded text-sm font-mono block">
+                          <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">Oracle Type</h4>
+                          <code className="bg-green-50 dark:bg-green-900/30 px-3 py-2 rounded text-sm font-mono block">
                             {mapping.oracleType}
                           </code>
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-700 mb-2">Description</h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                          <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">Description</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/40 px-3 py-2 rounded">
                             {mapping.description || 'Standard type conversion'}
                           </p>
                         </div>
@@ -361,13 +361,13 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {/* Performance Score */}
                 <Card className="p-6">
                   <div className="text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Overall Performance Score</h4>
-                    <div className="text-4xl font-bold text-blue-600 mb-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Overall Performance Score</h4>
+                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                       {file.performanceMetrics.performanceScore || 0}/100
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${file.performanceMetrics.performanceScore || 0}%` }}
                       ></div>
                     </div>
@@ -377,27 +377,27 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {/* Complexity Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Original Complexity</h4>
-                    <p className="text-2xl font-bold text-red-600">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Original Complexity</h4>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                       {file.performanceMetrics.originalComplexity || 0}
                     </p>
-                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Cyclomatic Complexity</p>
                   </Card>
                   
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Converted Complexity</h4>
-                    <p className="text-2xl font-bold text-green-600">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Converted Complexity</h4>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                       {file.performanceMetrics.convertedComplexity || 0}
                     </p>
-                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Cyclomatic Complexity</p>
                   </Card>
                   
                   <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Improvement</h4>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Improvement</h4>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                       {file.performanceMetrics.improvementPercentage || 0}%
                     </p>
-                    <p className="text-xs text-gray-500">Performance Gain</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Performance Gain</p>
                   </Card>
                 </div>
 
@@ -407,16 +407,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     <h4 className="text-lg font-medium mb-4">Code Quality Metrics</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.totalLines}</p>
-                        <p className="text-sm text-gray-600">Total Lines</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{file.performanceMetrics.codeQuality.totalLines}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Total Lines</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.codeLines}</p>
-                        <p className="text-sm text-gray-600">Code Lines</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{file.performanceMetrics.codeQuality.codeLines}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Code Lines</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.commentRatio}%</p>
-                        <p className="text-sm text-gray-600">Comment Ratio</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{file.performanceMetrics.codeQuality.commentRatio}%</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Comment Ratio</p>
                       </div>
                       <div className="text-center">
                         <Badge variant={
@@ -425,7 +425,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                         }>
                           {file.performanceMetrics.codeQuality.complexityLevel}
                         </Badge>
-                        <p className="text-sm text-gray-600 mt-1">Complexity</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Complexity</p>
                       </div>
                     </div>
                   </Card>
@@ -436,16 +436,16 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   <Card className="p-6">
                     <h4 className="text-lg font-medium mb-4">Maintainability Index</h4>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-purple-600 mb-2">
+                      <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
                         {file.performanceMetrics.maintainabilityIndex}/100
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                         <div 
-                          className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                          className="bg-purple-600 dark:bg-purple-400 h-3 rounded-full transition-all duration-300"
                           style={{ width: `${file.performanceMetrics.maintainabilityIndex}%` }}
                         ></div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                         {file.performanceMetrics.maintainabilityIndex >= 80 ? 'Excellent' :
                          file.performanceMetrics.maintainabilityIndex >= 60 ? 'Good' :
                          file.performanceMetrics.maintainabilityIndex >= 40 ? 'Fair' : 'Poor'} Maintainability
@@ -458,8 +458,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {file.performanceMetrics.conversionTimeMs && (
                   <Card className="p-4">
                     <div className="text-center">
-                      <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
-                      <p className="text-2xl font-bold text-orange-600">
+                      <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Conversion Time</h4>
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                         {file.performanceMetrics.conversionTimeMs}ms
                       </p>
                     </div>
@@ -474,7 +474,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                       {file.performanceMetrics.recommendations.map((rec, index) => (
                         <li key={index} className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-gray-700">{rec}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{rec}</span>
                         </li>
                       ))}
                     </ul>
