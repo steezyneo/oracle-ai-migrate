@@ -265,6 +265,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               </div>
             )}
             
+            {/* Editable converted code section */}
             {file.convertedContent && (
               <div>
                 <div className="flex items-center justify-between mb-2">
