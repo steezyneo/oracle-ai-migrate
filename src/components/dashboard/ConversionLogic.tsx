@@ -164,84 +164,83 @@ export const useConversionLogic = (
     setIsConverting(true);
     const concurrencyLimit = 3;
     let currentIndex = 0;
-    const totalFiles = pendingFiles.length;
+    const results: any[] = [];
+    let running: Promise<void>[] = [];
+    let convertingIds = new Set<string>();
 
-    while (currentIndex < totalFiles) {
-      const batch = pendingFiles.slice(currentIndex, currentIndex + concurrencyLimit);
+    const runNext = async () => {
+      if (currentIndex >= pendingFiles.length) return;
+      const file = pendingFiles[currentIndex++];
+      convertingIds.add(file.id);
+      setConvertingFileIds(Array.from(convertingIds));
+      try {
+        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
+        await supabase.from('migration_files').update({
+          conversion_status: mapConversionStatus(result.status),
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
+        results.push({ fileId: file.id, result, status: 'success' });
+      } catch (error) {
+        results.push({ fileId: file.id, error, status: 'failed' });
+      } finally {
+        convertingIds.delete(file.id);
+        setConvertingFileIds(Array.from(convertingIds));
+        if (currentIndex < pendingFiles.length) {
+          await runNext();
+        }
+      }
+    };
 
-      setConvertingFileIds(batch.map(f => f.id));
-      // Collect results for this batch
-      const batchResults = await Promise.all(
-        batch.map(async (file) => {
-          try {
-            const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
-            await supabase.from('migration_files').update({
-              conversion_status: mapConversionStatus(result.status),
-              converted_content: result.convertedCode
-            }).eq('id', file.id);
-            return {
-              fileId: file.id,
-              result,
-              status: 'success'
-            };
-          } catch (error) {
-            console.error(`Conversion failed for ${file.name}:`, error);
-            return {
-              fileId: file.id,
-              error,
-              status: 'failed'
-            };
-          }
-        })
-      );
-
-      // Batch update state after all conversions in this batch
-      setFiles(prev =>
-        prev.map(f => {
-          const batchResult = batchResults.find(r => r.fileId === f.id);
-          if (!batchResult) return f;
-          if (batchResult.status === 'success') {
-            const { result } = batchResult;
-            return {
-              ...f,
-              conversionStatus: mapConversionStatus(result.status),
-              convertedContent: result.convertedCode,
-              dataTypeMapping: result.dataTypeMapping,
-              issues: result.issues,
-              performanceMetrics: result.performance
-            };
-          } else {
-            return { ...f, conversionStatus: 'failed' };
-          }
-        })
-      );
-
-      setConversionResults(prev => [
-        ...prev,
-        ...batchResults
-          .filter(r => r.status === 'success')
-          .map(r => {
-            const { result } = r;
-            return {
-              id: result.id,
-              originalFile: {
-                id: result.originalFile.id,
-                name: result.originalFile.name,
-                content: result.originalFile.content,
-                type: result.originalFile.type,
-                status: 'pending'
-              },
-              convertedCode: result.convertedCode,
-              issues: result.issues,
-              dataTypeMapping: result.dataTypeMapping,
-              performance: result.performance,
-              status: result.status
-            };
-          })
-      ]);
-
-      currentIndex += concurrencyLimit;
+    // Start initial pool
+    for (let i = 0; i < Math.min(concurrencyLimit, pendingFiles.length); i++) {
+      running.push(runNext());
     }
+    await Promise.all(running);
+
+    // Batch update state after all conversions
+    setFiles(prev =>
+      prev.map(f => {
+        const batchResult = results.find(r => r.fileId === f.id);
+        if (!batchResult) return f;
+        if (batchResult.status === 'success') {
+          const { result } = batchResult;
+          return {
+            ...f,
+            conversionStatus: mapConversionStatus(result.status),
+            convertedContent: result.convertedCode,
+            dataTypeMapping: result.dataTypeMapping,
+            issues: result.issues,
+            performanceMetrics: result.performance
+          };
+        } else {
+          return { ...f, conversionStatus: 'failed' };
+        }
+      })
+    );
+
+    setConversionResults(prev => [
+      ...prev,
+      ...results
+        .filter(r => r.status === 'success')
+        .map(r => {
+          const { result } = r;
+          return {
+            id: result.id,
+            originalFile: {
+              id: result.originalFile.id,
+              name: result.originalFile.name,
+              content: result.originalFile.content,
+              type: result.originalFile.type,
+              status: 'pending'
+            },
+            convertedCode: result.convertedCode,
+            issues: result.issues,
+            dataTypeMapping: result.dataTypeMapping,
+            performance: result.performance,
+            status: result.status
+          };
+        })
+    ]);
 
     setConvertingFileIds([]);
     setIsConverting(false);
