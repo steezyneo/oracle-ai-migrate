@@ -72,6 +72,13 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
+        {files.length > 0 && (
+          <div className="flex justify-end mb-2">
+            <Button variant="destructive" onClick={onUploadRedirect}>
+              Clear
+            </Button>
+          </div>
+        )}
         <FileTreeView
           files={files}
           onFileSelect={onFileSelect}
