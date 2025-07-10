@@ -9,7 +9,7 @@ import AIModelSelector from '@/components/AIModelSelector';
 import ReportViewer from '@/components/ReportViewer';
 import ConnectionForm from '@/components/ConnectionForm';
 import HomeButton from '@/components/HomeButton';
-import { convertSybaseToOracle, convertMultipleFiles, generateConversionReport } from '@/utils/conversionUtils';
+import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { Database as DatabaseIcon, Code, FileSearch, FileWarning, Check, RefreshCw, Play, Download, ChevronLeft } from 'lucide-react';
 import JSZip from 'jszip';
 
@@ -222,34 +222,35 @@ const Index = () => {
     setResults([]);
     
     try {
-      // Mark all files as converting
-      setFiles(prevFiles => 
-        prevFiles.map(f => 
-          filesToConvert.find(file => file.id === f.id) 
-            ? { ...f, status: 'converting' } 
-            : f
-        )
-      );
+      const newResults: ConversionResult[] = [];
       
-      // Convert all files in parallel for much faster processing
-      const newResults = await convertMultipleFiles(filesToConvert, selectedAIModel);
-      
-      // Update all file statuses at once
-      setFiles(prevFiles => 
-        prevFiles.map(f => {
-          const result = newResults.find(r => r.originalFile.id === f.id);
-          return result 
-            ? { ...f, status: result.status === 'error' ? 'error' : 'success' }
-            : f;
-        })
-      );
+      for (const file of filesToConvert) {
+        setFiles(prevFiles => 
+          prevFiles.map(f => 
+            f.id === file.id ? { ...f, status: 'converting' } : f
+          )
+        );
+        
+        const result = await convertSybaseToOracle(file, selectedAIModel);
+        newResults.push(result);
+        
+        setFiles(prevFiles => 
+          prevFiles.map(f => 
+            f.id === file.id ? 
+              { ...f, status: result.status === 'error' ? 'error' : 'success' } : 
+              f
+          )
+        );
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
       
       setResults(newResults);
       handleConversionComplete();
       
       toast({
         title: 'Conversion Complete',
-        description: `Successfully processed ${newResults.length} files in parallel.`,
+        description: `Successfully processed ${newResults.length} files.`,
       });
     } catch (error) {
       toast({
