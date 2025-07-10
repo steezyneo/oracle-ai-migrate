@@ -218,14 +218,7 @@ const Dashboard = () => {
         onShowHelp={() => setShowHelp(true)}
         extra={<Button size="sm" onClick={() => setShowWizard(true)}>Show Wizard</Button>}
       />
-
       <main className="container mx-auto px-4 py-8">
-        {/* Add Reset Button */}
-        <div className="flex justify-end mb-4">
-          <Button variant="destructive" onClick={handleResetMigration}>
-            Reset Migration
-          </Button>
-        </div>
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending')}>
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
@@ -252,21 +245,28 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="conversion">
-            <ConversionPanel
-                    files={files}
-              selectedFile={selectedFile}
-              isConverting={isConverting}
-              convertingFileIds={convertingFileIds}
-              onFileSelect={handleFileSelect}
-                    onConvertFile={handleConvertFile}
-                    onConvertAllByType={handleConvertAllByType}
-                    onConvertAll={handleConvertAll}
-                    onFixFile={handleFixFile}
-                        onManualEdit={handleManualEdit}
-                        onDismissIssue={handleDismissIssue}
-              onGenerateReport={handleGenerateReportWrapper}
-              onUploadRedirect={() => setActiveTab('upload')}
-            />
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-end">
+                <Button variant="destructive" onClick={handleResetMigration}>
+                  Reset Migration
+                </Button>
+              </div>
+              <ConversionPanel
+                files={files}
+                selectedFile={selectedFile}
+                isConverting={isConverting}
+                convertingFileIds={convertingFileIds}
+                onFileSelect={handleFileSelect}
+                onConvertFile={handleConvertFile}
+                onConvertAllByType={handleConvertAllByType}
+                onConvertAll={handleConvertAll}
+                onFixFile={handleFixFile}
+                onManualEdit={handleManualEdit}
+                onDismissIssue={handleDismissIssue}
+                onGenerateReport={handleGenerateReportWrapper}
+                onUploadRedirect={() => setActiveTab('upload')}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="pending">
