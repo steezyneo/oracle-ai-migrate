@@ -161,6 +161,20 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  // Add this function to reset the migration state
+  const handleResetMigration = async () => {
+    setFiles([]);
+    setConversionResults([]);
+    setSelectedFile(null);
+    setReport(null);
+    setActiveTab('upload');
+    await handleCodeUpload([]); // This will start a new migration session
+    toast({
+      title: 'Migration Reset',
+      description: 'The current migration has been reset. You can start a new conversion.',
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,6 +219,12 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
+        {/* Add Reset Button */}
+        <div className="flex justify-end mb-4">
+          <Button variant="destructive" onClick={handleResetMigration}>
+            Reset Migration
+          </Button>
+        </div>
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending')}>
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
