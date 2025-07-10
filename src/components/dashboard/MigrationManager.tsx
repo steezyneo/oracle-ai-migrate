@@ -24,7 +24,8 @@ export const useMigrationManager = () => {
 
   const startNewMigration = useCallback(async () => {
     if (!user) return;
-
+    // Only create a migration when the user explicitly starts a new migration session
+    // Do not create migration history after conversion, upload, or deploy
     try {
       const { data, error } = await supabase
         .from('migrations')

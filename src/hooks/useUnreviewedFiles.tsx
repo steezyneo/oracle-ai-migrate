@@ -117,34 +117,7 @@ export const useUnreviewedFiles = () => {
         const file = unreviewedFiles.find(f => f.id === id);
         origCode = file?.original_code || '';
       }
-      // First, add to migration history
-      const { data: migration, error: migrationError } = await supabase
-        .from('migrations')
-        .insert({
-          user_id: user.id,
-          project_name: `Reviewed: ${fileName}`
-        })
-        .select()
-        .single();
-
-      if (migrationError) throw migrationError;
-
-      // Add to migration files
-      const { error: fileError } = await supabase
-        .from('migration_files')
-        .insert({
-          migration_id: migration.id,
-          file_name: fileName,
-          file_path: fileName,
-          file_type: 'other',
-          converted_content: convertedCode,
-          original_content: origCode,
-          conversion_status: 'success'
-        });
-
-      if (fileError) throw fileError;
-
-      // Update the unreviewed file status
+      // Only update the unreviewed file status to 'reviewed', do not create migration history here
       const success = await updateUnreviewedFile({
         id,
         status: 'reviewed'
@@ -153,7 +126,7 @@ export const useUnreviewedFiles = () => {
       if (success) {
         toast({
           title: "File Reviewed",
-          description: `${fileName} has been marked as reviewed and added to history.`,
+          description: `${fileName} has been marked as reviewed.`,
         });
       }
 
