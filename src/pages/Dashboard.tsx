@@ -16,6 +16,7 @@ import PendingActionsPanel from '@/components/PendingActionsPanel';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
+import { supabase } from '@/lib/supabaseClient';
 
 interface FileItem {
   id: string;
@@ -51,7 +52,7 @@ const Dashboard = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
 
-  const { handleCodeUpload } = useMigrationManager();
+  const { handleCodeUpload, currentMigrationId, startNewMigration } = useMigrationManager();
   const { unreviewedFiles } = useUnreviewedFiles();
   const {
     isConverting,
@@ -161,6 +162,52 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  // Add this function to reset the migration/conversion state
+  const handleResetMigration = async () => {
+    // Delete all migration_files for the current migration from Supabase
+    if (currentMigrationId) {
+      const { error: fileError } = await supabase
+        .from('migration_files')
+        .delete()
+        .eq('migration_id', currentMigrationId);
+      if (fileError) {
+        toast({
+          title: 'Server Reset Failed',
+          description: 'Could not delete migration files from the server.',
+          variant: 'destructive',
+        });
+      } else {
+        // Now delete the migration record itself
+        const { error: migrationError } = await supabase
+          .from('migrations')
+          .delete()
+          .eq('id', currentMigrationId);
+        if (migrationError) {
+          toast({
+            title: 'Migration Record Not Deleted',
+            description: 'Files were deleted, but the migration record could not be removed.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Migration Reset',
+            description: 'The current migration, all files, and the migration record have been reset.',
+          });
+        }
+      }
+    } else {
+      toast({
+        title: 'Migration Reset',
+        description: 'The current migration has been reset.',
+      });
+    }
+    setFiles([]);
+    setConversionResults([]);
+    setSelectedFile(null);
+    setReport(null);
+    setActiveTab('upload');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,6 +252,12 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
+        {/* Add Reset Button at the top of the conversion panel */}
+        <div className="flex justify-end mb-4">
+          <Button variant="destructive" onClick={handleResetMigration} disabled={isConverting}>
+            Reset Migration
+          </Button>
+        </div>
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending')}>
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
