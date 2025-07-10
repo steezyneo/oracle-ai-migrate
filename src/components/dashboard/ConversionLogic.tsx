@@ -269,7 +269,10 @@ export const useConversionLogic = (
    */
   const handleConvertSelected = useCallback(async (fileIds: string[]) => {
     console.log('[handleConvertSelected] Called with fileIds:', fileIds);
-    const selectedFiles = files.filter(f => fileIds.includes(f.id) && f.conversionStatus === 'pending');
+    // Enforce strict order: use fileIds order, not files array order
+    const selectedFiles = fileIds
+      .map(id => files.find(f => f.id === id && f.conversionStatus === 'pending'))
+      .filter(Boolean) as FileItem[];
     if (selectedFiles.length === 0) return;
 
     setIsConverting(true);
@@ -279,11 +282,13 @@ export const useConversionLogic = (
     let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
 
-    // This pool logic ensures only 3 files are processed at a time.
+    // This pool logic ensures only 3 files are processed at a time, in strict order
     const runNext = async () => {
       if (currentIndex >= selectedFiles.length) return;
       const file = selectedFiles[currentIndex++];
       convertingIds.add(file.id);
+      // Set status to 'converting' immediately for UI feedback
+      setFiles(prev => prev.map(f => f.id === file.id ? { ...f, conversionStatus: 'converting' } : f));
       setConvertingFileIds(Array.from(convertingIds));
       try {
         console.log(`[CONVERT] Starting: ${file.name}`);
@@ -293,6 +298,7 @@ export const useConversionLogic = (
           converted_content: result.convertedCode
         }).eq('id', file.id);
         results.push({ fileId: file.id, result, status: 'success' });
+        // Show converted code immediately
         setFiles(prev =>
           prev.map(f =>
             f.id === file.id
