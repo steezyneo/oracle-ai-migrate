@@ -268,6 +268,7 @@ export const useConversionLogic = (
    * As soon as a slot is free, the next file starts, until all are processed.
    */
   const handleConvertSelected = useCallback(async (fileIds: string[]) => {
+    console.log('[handleConvertSelected] Called with fileIds:', fileIds);
     const selectedFiles = files.filter(f => fileIds.includes(f.id) && f.conversionStatus === 'pending');
     if (selectedFiles.length === 0) return;
 
@@ -278,6 +279,7 @@ export const useConversionLogic = (
     let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
 
+    // This pool logic ensures only 3 files are processed at a time.
     const runNext = async () => {
       if (currentIndex >= selectedFiles.length) return;
       const file = selectedFiles[currentIndex++];
@@ -339,13 +341,14 @@ export const useConversionLogic = (
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
+        // Always try to process the next file if any remain
         if (currentIndex < selectedFiles.length) {
           await runNext();
         }
       }
     };
 
-    // Start initial pool
+    // Start initial pool of up to 3 files
     for (let i = 0; i < Math.min(concurrencyLimit, selectedFiles.length); i++) {
       running.push(runNext());
     }
