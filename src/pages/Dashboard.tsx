@@ -162,50 +162,18 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  // Add this function to reset the migration/conversion state
+  // Add this function to reset the migration state
   const handleResetMigration = async () => {
-    // Delete all migration_files for the current migration from Supabase
-    if (currentMigrationId) {
-      const { error: fileError } = await supabase
-        .from('migration_files')
-        .delete()
-        .eq('migration_id', currentMigrationId);
-      if (fileError) {
-        toast({
-          title: 'Server Reset Failed',
-          description: 'Could not delete migration files from the server.',
-          variant: 'destructive',
-        });
-      } else {
-        // Now delete the migration record itself
-        const { error: migrationError } = await supabase
-          .from('migrations')
-          .delete()
-          .eq('id', currentMigrationId);
-        if (migrationError) {
-          toast({
-            title: 'Migration Record Not Deleted',
-            description: 'Files were deleted, but the migration record could not be removed.',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Migration Reset',
-            description: 'The current migration, all files, and the migration record have been reset.',
-          });
-        }
-      }
-    } else {
-      toast({
-        title: 'Migration Reset',
-        description: 'The current migration has been reset.',
-      });
-    }
     setFiles([]);
     setConversionResults([]);
     setSelectedFile(null);
     setReport(null);
     setActiveTab('upload');
+    await handleCodeUpload([]); // This will start a new migration session
+    toast({
+      title: 'Migration Reset',
+      description: 'The current migration has been reset. You can start a new conversion.',
+    });
   };
 
   if (loading) {
@@ -252,9 +220,9 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Add Reset Button at the top of the conversion panel */}
+        {/* Add Reset Button */}
         <div className="flex justify-end mb-4">
-          <Button variant="destructive" onClick={handleResetMigration} disabled={isConverting}>
+          <Button variant="destructive" onClick={handleResetMigration}>
             Reset Migration
           </Button>
         </div>
