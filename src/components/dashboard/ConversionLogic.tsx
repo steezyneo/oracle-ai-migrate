@@ -162,7 +162,7 @@ export const useConversionLogic = (
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    const concurrencyLimit = 5;
+    const concurrencyLimit = 4;
     let currentIndex = 0;
     const results: any[] = [];
     let running: Promise<void>[] = [];
