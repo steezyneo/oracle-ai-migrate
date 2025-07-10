@@ -164,20 +164,69 @@ export const useConversionLogic = (
     let currentIndex = 0;
     const totalFiles = pendingFiles.length;
 
-    async function processBatch() {
+    while (currentIndex < totalFiles) {
       const batch = pendingFiles.slice(currentIndex, currentIndex + concurrencyLimit);
-      await Promise.all(
+
+      // Collect results for this batch
+      const batchResults = await Promise.all(
         batch.map(async (file) => {
           setConvertingFileId(file.id);
           try {
             const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
-            const conversionResult: ConversionResult = {
+            await supabase.from('migration_files').update({
+              conversion_status: mapConversionStatus(result.status),
+              converted_content: result.convertedCode
+            }).eq('id', file.id);
+            return {
+              fileId: file.id,
+              result,
+              status: 'success'
+            };
+          } catch (error) {
+            console.error(`Conversion failed for ${file.name}:`, error);
+            return {
+              fileId: file.id,
+              error,
+              status: 'failed'
+            };
+          }
+        })
+      );
+
+      // Batch update state after all conversions in this batch
+      setFiles(prev =>
+        prev.map(f => {
+          const batchResult = batchResults.find(r => r.fileId === f.id);
+          if (!batchResult) return f;
+          if (batchResult.status === 'success') {
+            const { result } = batchResult;
+            return {
+              ...f,
+              conversionStatus: mapConversionStatus(result.status),
+              convertedContent: result.convertedCode,
+              dataTypeMapping: result.dataTypeMapping,
+              issues: result.issues,
+              performanceMetrics: result.performance
+            };
+          } else {
+            return { ...f, conversionStatus: 'failed' };
+          }
+        })
+      );
+
+      setConversionResults(prev => [
+        ...prev,
+        ...batchResults
+          .filter(r => r.status === 'success')
+          .map(r => {
+            const { result } = r;
+            return {
               id: result.id,
               originalFile: {
-                id: file.id,
-                name: file.name,
-                content: file.content,
-                type: file.type,
+                id: result.originalFile.id,
+                name: result.originalFile.name,
+                content: result.originalFile.content,
+                type: result.originalFile.type,
                 status: 'pending'
               },
               convertedCode: result.convertedCode,
@@ -186,36 +235,10 @@ export const useConversionLogic = (
               performance: result.performance,
               status: result.status
             };
-            setConversionResults(prev => [...prev, conversionResult]);
-            setFiles(prev => prev.map(f =>
-              f.id === file.id
-                ? {
-                    ...f,
-                    conversionStatus: mapConversionStatus(result.status),
-                    convertedContent: result.convertedCode,
-                    dataTypeMapping: result.dataTypeMapping,
-                    issues: result.issues,
-                    performanceMetrics: result.performance
-                  }
-                : f
-            ));
-            await supabase.from('migration_files').update({
-              conversion_status: mapConversionStatus(result.status),
-              converted_content: result.convertedCode
-            }).eq('id', file.id);
-          } catch (error) {
-            console.error(`Conversion failed for ${file.name}:`, error);
-            setFiles(prev => prev.map(f =>
-              f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
-            ));
-          }
-        })
-      );
-      currentIndex += concurrencyLimit;
-    }
+          })
+      ]);
 
-    while (currentIndex < totalFiles) {
-      await processBatch();
+      currentIndex += concurrencyLimit;
     }
 
     setConvertingFileId(null);
