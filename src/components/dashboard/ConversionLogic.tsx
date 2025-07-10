@@ -162,12 +162,13 @@ export const useConversionLogic = (
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    const concurrencyLimit = 4;
+    const concurrencyLimit = 10; // Increased from 4 to 10
     let currentIndex = 0;
     const results: any[] = [];
     let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
 
+    // Helper to process the next file in the queue
     const runNext = async () => {
       if (currentIndex >= pendingFiles.length) return;
       const file = pendingFiles[currentIndex++];
@@ -220,17 +221,18 @@ export const useConversionLogic = (
         console.error(`[CONVERT] Error: ${file.name}`, error);
         toast({
           title: 'Conversion Failed',
-          description: `Failed to convert ${file.name}.`,
+          description: `Failed to convert ${file.name}: ${error?.message || error}`,
           variant: 'destructive',
         });
         setFiles(prev =>
           prev.map(f =>
-            f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+            f.id === file.id ? { ...f, conversionStatus: 'failed', errorMessage: error?.message || String(error) } : f
           )
         );
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
+        // Always try to process the next file if any remain
         if (currentIndex < pendingFiles.length) {
           await runNext();
         }
@@ -245,6 +247,20 @@ export const useConversionLogic = (
 
     setConvertingFileIds([]);
     setIsConverting(false);
+    // Optionally, show a summary toast
+    const failedCount = results.filter(r => r.status === 'failed').length;
+    if (failedCount > 0) {
+      toast({
+        title: 'Batch Conversion Complete',
+        description: `${pendingFiles.length - failedCount} succeeded, ${failedCount} failed.`,
+        variant: failedCount > 0 ? 'destructive' : 'default',
+      });
+    } else {
+      toast({
+        title: 'Batch Conversion Complete',
+        description: `All ${pendingFiles.length} files converted successfully!`,
+      });
+    }
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
