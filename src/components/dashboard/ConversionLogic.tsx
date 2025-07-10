@@ -82,10 +82,11 @@ export const useConversionLogic = (
           : f
       ));
 
-      await supabase.from('migration_files').update({
-        conversion_status: mapConversionStatus(result.status),
-        converted_content: result.convertedCode
-      }).eq('id', file.id);
+      // REMOVE: Do not update migration_files in the database here
+      // await supabase.from('migration_files').update({
+      //   conversion_status: mapConversionStatus(result.status),
+      //   converted_content: result.convertedCode
+      // }).eq('id', file.id);
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
@@ -139,10 +140,11 @@ export const useConversionLogic = (
             : f
         ));
 
-        await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
-        }).eq('id', file.id);
+        // REMOVE: Do not update migration_files in the database here
+        // await supabase.from('migration_files').update({
+        //   conversion_status: mapConversionStatus(result.status),
+        //   converted_content: result.convertedCode
+        // }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
@@ -177,10 +179,11 @@ export const useConversionLogic = (
       try {
         console.log(`[CONVERT] Starting: ${file.name}`);
         const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
-        await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
-        }).eq('id', file.id);
+        // REMOVE: Do not update migration_files in the database here
+        // await supabase.from('migration_files').update({
+        //   conversion_status: mapConversionStatus(result.status),
+        //   converted_content: result.convertedCode
+        // }).eq('id', file.id);
         results.push({ fileId: file.id, result, status: 'success' });
         console.log(`[CONVERT] Success: ${file.name}`);
         // Update UI immediately after conversion
@@ -293,10 +296,11 @@ export const useConversionLogic = (
       try {
         console.log(`[CONVERT] Starting: ${file.name}`);
         const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
-        await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
-        }).eq('id', file.id);
+        // REMOVE: Do not update migration_files in the database here
+        // await supabase.from('migration_files').update({
+        //   conversion_status: mapConversionStatus(result.status),
+        //   converted_content: result.convertedCode
+        // }).eq('id', file.id);
         results.push({ fileId: file.id, result, status: 'success' });
         // Show converted code immediately
         setFiles(prev =>
@@ -417,10 +421,11 @@ export const useConversionLogic = (
             }
           : f
       ));
-      await supabase.from('migration_files').update({
-        conversion_status: mapConversionStatus(result.status),
-        converted_content: result.convertedCode
-      }).eq('id', fileId);
+      // REMOVE: Do not update migration_files in the database here
+      // await supabase.from('migration_files').update({
+      //   conversion_status: mapConversionStatus(result.status),
+      //   converted_content: result.convertedCode
+      // }).eq('id', fileId);
       toast({
         title: 'File Fixed',
         description: `Successfully fixed ${fileToFix.name}`,

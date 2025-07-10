@@ -13,6 +13,7 @@ import { ChartContainer } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -38,6 +39,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(() => report.results.map(r => r.id));
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'impact' | 'full'>('overview');
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [migrationCompleted, setMigrationCompleted] = useState(false);
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
@@ -164,14 +167,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           },
           result.convertedCode
         );
-        const { error: updateError } = await supabase.from('migration_files').update({
-          conversion_status: deployResult.success ? 'success' : 'failed',
-        }).eq('id', result.id);
-        if (updateError) {
-          console.error('Error updating file status:', updateError);
-        } else {
-          console.log(`Updated file ${result.originalFile.name} to status: ${deployResult.success ? 'success' : 'failed'}`);
-        }
+        // REMOVE: Do not update migration_files in the database here
+        // const { error: updateError } = await supabase.from('migration_files').update({
+        //   conversion_status: deployResult.success ? 'success' : 'failed',
+        // }).eq('id', result.id);
+        // if (updateError) {
+        //   console.error('Error updating file status:', updateError);
+        // } else {
+        //   console.log(`Updated file ${result.originalFile.name} to status: ${deployResult.success ? 'success' : 'failed'}`);
+        // }
         if (!deployResult.success) allSuccess = false;
       }
       // Save deployment log to Supabase
@@ -241,6 +245,55 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     XLSX.utils.book_append_sheet(wb, ws, 'Report');
     XLSX.writeFile(wb, `oracle-migration-report-${report.timestamp.split('T')[0]}.xlsx`);
     toast({ title: 'Excel Exported', description: 'The migration report has been exported as Excel.' });
+  };
+
+  const handleCompleteMigration = async () => {
+    if (!user || migrationCompleted) return;
+    setIsCompleting(true);
+    try {
+      // 1. Create migration entry
+      const { data: migration, error: migrationError } = await supabase
+        .from('migrations')
+        .insert({
+          user_id: user.id,
+          project_name: `Migration_${new Date(report.timestamp).toLocaleString()}`
+        })
+        .select()
+        .single();
+      if (migrationError) throw migrationError;
+      // 2. Add all files to migration_files
+      const filesPayload = report.results.map(r => ({
+        migration_id: migration.id,
+        file_name: r.originalFile.name,
+        file_path: r.originalFile.name,
+        file_type: r.originalFile.type,
+        original_content: r.originalFile.content,
+        converted_content: r.convertedCode,
+        conversion_status: r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending',
+        error_message: r.issues?.map(i => i.message).join('; ') || null,
+        data_type_mapping: r.dataTypeMapping || null,
+        performance_metrics: r.performance || null,
+        issues: r.issues || null,
+      }));
+      const { error: filesError } = await supabase
+        .from('migration_files')
+        .insert(filesPayload);
+      if (filesError) throw filesError;
+      setMigrationCompleted(true);
+      toast({
+        title: 'Migration Completed',
+        description: 'Migration history has been saved. You can now view it in History.',
+      });
+    } catch (error) {
+      console.error('Error completing migration:', error);
+      toast({
+        title: 'Migration Failed',
+        description: 'Could not save migration history.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   return (
@@ -482,10 +535,20 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             <Button variant="outline" onClick={onBack}>
               Back to Results
             </Button>
-            <Button onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Report
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
+              <Button
+                onClick={handleCompleteMigration}
+                disabled={isCompleting || migrationCompleted}
+                variant="default"
+                title="Save this migration to history"
+              >
+                {migrationCompleted ? 'Migration Saved' : isCompleting ? 'Saving...' : 'Complete Migration'}
+              </Button>
+            </div>
           </div>
         </CardFooter>
       </Card>
