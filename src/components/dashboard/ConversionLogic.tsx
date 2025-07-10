@@ -174,14 +174,22 @@ export const useConversionLogic = (
       convertingIds.add(file.id);
       setConvertingFileIds(Array.from(convertingIds));
       try {
-        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
+        console.log(`[CONVERT] Starting: ${file.name}`);
+        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
         await supabase.from('migration_files').update({
           conversion_status: mapConversionStatus(result.status),
           converted_content: result.convertedCode
         }).eq('id', file.id);
         results.push({ fileId: file.id, result, status: 'success' });
+        console.log(`[CONVERT] Success: ${file.name}`);
       } catch (error) {
         results.push({ fileId: file.id, error, status: 'failed' });
+        console.error(`[CONVERT] Error: ${file.name}`, error);
+        toast({
+          title: 'Conversion Failed',
+          description: `Failed to convert ${file.name}.`,
+          variant: 'destructive',
+        });
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
@@ -244,7 +252,7 @@ export const useConversionLogic = (
 
     setConvertingFileIds([]);
     setIsConverting(false);
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
