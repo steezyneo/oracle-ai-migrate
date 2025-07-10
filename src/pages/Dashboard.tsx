@@ -139,6 +139,13 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  const handleResetAndUpload = () => {
+    setFiles([]);
+    setSelectedFile(null);
+    setConversionResults([]);
+    setActiveTab('upload');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -209,19 +216,19 @@ const Dashboard = () => {
 
           <TabsContent value="conversion">
             <ConversionPanel
-                    files={files}
+              files={files}
               selectedFile={selectedFile}
               isConverting={isConverting}
               convertingFileId={convertingFileId}
               onFileSelect={handleFileSelect}
-                    onConvertFile={handleConvertFile}
-                    onConvertAllByType={handleConvertAllByType}
-                    onConvertAll={handleConvertAll}
-                    onFixFile={handleFixFile}
-                        onManualEdit={handleManualEdit}
-                        onDismissIssue={handleDismissIssue}
+              onConvertFile={handleConvertFile}
+              onConvertAllByType={handleConvertAllByType}
+              onConvertAll={handleConvertAll}
+              onFixFile={handleFixFile}
+              onManualEdit={handleManualEdit}
+              onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
-              onUploadRedirect={() => setActiveTab('upload')}
+              onUploadRedirect={handleResetAndUpload}
             />
           </TabsContent>
 

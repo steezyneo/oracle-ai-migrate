@@ -74,7 +74,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       <div className="col-span-4">
         {files.length > 0 && (
           <div className="flex justify-end mb-2">
-            <Button variant="outline" onClick={onUploadRedirect}>
+            <Button variant="destructive" onClick={onUploadRedirect}>
               Reset & Upload New Files
             </Button>
           </div>
