@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CodeFile, ConversionResult, DatabaseConnection } from '@/types';
 import CodeDiffViewer from './CodeDiffViewer';
 import { generateConversionReport } from '@/utils/conversionUtils';
+import { supabase } from '@/lib/supabaseClient';
 
 interface ConversionResultsProps {
   results: ConversionResult[];
@@ -97,6 +98,48 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
     success: results.filter(r => r.status === 'success').length,
     warning: results.filter(r => r.status === 'warning').length,
     error: results.filter(r => r.status === 'error').length,
+  };
+
+  const handleCompleteMigration = async () => {
+    // Only create migration history here
+    try {
+      // Create a new migration entry
+      const { data: migration, error: migrationError } = await supabase
+        .from('migrations')
+        .insert({
+          user_id: oracleConnection.user_id, // or get from auth context
+          project_name: `Migration_${new Date().toISOString()}`
+        })
+        .select()
+        .single();
+      if (migrationError) throw migrationError;
+      // Add all converted files to migration_files
+      const filesToSave = results.filter(r => r.status === 'success');
+      for (const result of filesToSave) {
+        await supabase.from('migration_files').insert({
+          migration_id: migration.id,
+          file_name: result.originalFile.name,
+          file_path: result.originalFile.name,
+          file_type: result.originalFile.type,
+          original_content: result.originalFile.content,
+          converted_content: result.convertedCode,
+          conversion_status: 'success',
+        });
+      }
+      // Optionally show a toast or update UI
+      toast({
+        title: 'Migration Completed',
+        description: 'Migration history has been updated.',
+      });
+      if (onComplete) onComplete();
+    } catch (error) {
+      console.error('Error completing migration:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update migration history.',
+        variant: 'destructive',
+      });
+    }
   };
   
   return (
@@ -362,7 +405,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
         
         <CardFooter>
           <div className="w-full flex justify-end">
-            <Button onClick={onComplete}>
+            <Button onClick={handleCompleteMigration}>
               Complete Migration
             </Button>
           </div>
