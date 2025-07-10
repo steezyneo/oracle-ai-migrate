@@ -20,6 +20,7 @@ interface Migration {
   success_count: number;
   failed_count: number;
   pending_count: number;
+  deployed_count: number;
 }
 
 interface MigrationFile {
@@ -29,7 +30,7 @@ interface MigrationFile {
   file_type: string;
   original_content: string;
   converted_content: string | null;
-  conversion_status: 'pending' | 'success' | 'failed';
+  conversion_status: 'pending' | 'success' | 'failed' | 'deployed';
   error_message: string | null;
   created_at: string;
   review_comments?: Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>;
@@ -99,6 +100,7 @@ const History = () => {
             success_count: files.filter((f: any) => f.conversion_status === 'success').length,
             failed_count: files.filter((f: any) => f.conversion_status === 'failed').length,
             pending_count: files.filter((f: any) => f.conversion_status === 'pending').length,
+            deployed_count: files.filter((f: any) => f.conversion_status === 'deployed').length,
           };
         }) || [];
         
@@ -150,8 +152,8 @@ const History = () => {
       // Map the data to ensure proper typing for conversion_status
       const typedFiles: MigrationFile[] = (data || []).map(file => ({
         ...file,
-        conversion_status: ['pending', 'success', 'failed'].includes(file.conversion_status) 
-          ? file.conversion_status as 'pending' | 'success' | 'failed'
+        conversion_status: ['pending', 'success', 'failed', 'deployed'].includes(file.conversion_status) 
+          ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed'
           : 'pending',
         review_comments: file.review_comments || [],
       }));
@@ -276,6 +278,8 @@ const History = () => {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'pending':
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
+      case 'deployed':
+        return <CheckCircle className="h-4 w-4 text-blue-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -290,6 +294,8 @@ const History = () => {
         return 'bg-red-100 text-red-800';
       case 'pending':
         return 'bg-orange-100 text-orange-800';
+      case 'deployed':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -402,6 +408,7 @@ const History = () => {
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -439,6 +446,11 @@ const History = () => {
                           <td className="px-4 py-3 text-center">
                             <span className="inline-block px-2 py-1 text-sm bg-orange-100 text-orange-800 rounded">
                               {migration.pending_count}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-block px-2 py-1 text-sm bg-blue-100 text-blue-800 rounded">
+                              {migration.deployed_count}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -485,11 +497,6 @@ const History = () => {
                                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
                                         {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
                                       </span>
-                                      {file.conversion_status === 'deployed' ? (
-                                        <span className="ml-2 px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold">Deployed to Oracle</span>
-                                      ) : (
-                                        <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-800 rounded-full text-xs font-semibold">Not Deployed</span>
-                                      )}
                                     </div>
                                   </td>
                                   <td className="px-4 py-2 text-center">

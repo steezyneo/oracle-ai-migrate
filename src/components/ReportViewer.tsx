@@ -149,6 +149,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   };
 
   const handleDeploy = async () => {
+    if (selectedFileIds.length === 0) {
+      toast({
+        title: 'No Files Selected',
+        description: 'Please select at least one file to deploy.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsDeploying(true);
     try {
       // Calculate lines of SQL and file count from the selected files
@@ -156,6 +165,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       const linesOfSql = selectedResults.reduce((sum, r) => sum + (r.convertedCode?.split('\n').length || 0), 0);
       const fileCount = selectedResults.length;
       let allSuccess = true;
+      
       for (const result of selectedResults) {
         const deployResult = await deployToOracle(
           { 
@@ -168,8 +178,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           },
           result.convertedCode
         );
+        
         if (deployResult.success) {
-          // Mark file as deployed in migration_files - use file name to find the record
+          // Update existing migration_files record to mark as deployed
           const { error: updateError } = await supabase.from('migration_files').update({
             conversion_status: 'deployed'
           }).eq('file_name', result.originalFile.name);
@@ -180,6 +191,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         }
         if (!deployResult.success) allSuccess = false;
       }
+      
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
         allSuccess ? 'Success' : 'Failed',
@@ -187,11 +199,13 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         fileCount,
         allSuccess ? undefined : 'One or more files failed to deploy.'
       );
+      
       toast({
         title: allSuccess ? 'Deployment Successful' : 'Deployment Failed',
-        description: allSuccess ? 'All files deployed successfully.' : 'Some files failed to deploy.',
+        description: allSuccess ? 'All selected files deployed successfully.' : 'Some files failed to deploy.',
         variant: allSuccess ? 'default' : 'destructive',
       });
+      
       if (logEntry) {
         console.log('Deployment log saved:', logEntry);
       }
@@ -264,7 +278,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         .single();
       if (migrationError) throw migrationError;
       
-      // 2. For each file, create a migration_files entry with final status
+      // 2. Update existing migration_files records with final status (don't create new ones)
       for (const r of report.results) {
         // Check if this file was deployed by looking for deployment logs
         const { data: deploymentData } = await supabase
@@ -276,19 +290,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         
         const wasDeployed = deploymentData && deploymentData.length > 0;
         
-        await supabase.from('migration_files').insert({
+        // Update existing record instead of inserting new one
+        await supabase.from('migration_files').update({
           migration_id: migration.id,
-          file_name: r.originalFile.name,
-          file_path: r.originalFile.name,
-          file_type: r.originalFile.type,
-          original_content: r.originalFile.content,
-          converted_content: r.convertedCode,
           conversion_status: wasDeployed ? 'deployed' : (r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending'),
-          error_message: r.issues?.map(i => i.message).join('; ') || null,
+          error_message: r.issues?.map(i => i.description).join('; ') || null,
           data_type_mapping: r.dataTypeMapping || null,
           performance_metrics: r.performance || null,
           issues: r.issues || null,
-        });
+        }).eq('file_name', r.originalFile.name);
       }
       
       setMigrationCompleted(true);
@@ -484,14 +494,19 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-medium">Deployment Logs</h3>
-              <Button 
-                onClick={handleDeploy} 
-                disabled={isDeploying}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {selectedFileIds.length} of {report.results.length} files selected
+                </span>
+                <Button 
+                  onClick={handleDeploy} 
+                  disabled={isDeploying || selectedFileIds.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {isDeploying ? 'Deploying...' : `Deploy ${selectedFileIds.length} Files to Oracle`}
+                </Button>
+              </div>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
               <ScrollArea className="h-[300px] p-4">

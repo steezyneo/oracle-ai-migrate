@@ -82,16 +82,26 @@ export const useConversionLogic = (
           : f
       ));
 
-      // REMOVE: Do not update migration_files in the database here
-      // await supabase.from('migration_files').update({
-      //   conversion_status: mapConversionStatus(result.status),
-      //   converted_content: result.convertedCode
-      // }).eq('id', file.id);
+               // Update existing migration_files record with conversion results
+         await supabase.from('migration_files').update({
+           conversion_status: mapConversionStatus(result.status),
+           converted_content: result.convertedCode,
+           error_message: result.issues?.map(i => i.description).join('; ') || null,
+           data_type_mapping: result.dataTypeMapping || null,
+           performance_metrics: result.performance || null,
+           issues: result.issues || null,
+         }).eq('id', file.id);
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
+      
+      // Update status to failed in database
+      await supabase.from('migration_files').update({
+        conversion_status: 'failed',
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+      }).eq('id', file.id);
     } finally {
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
@@ -140,16 +150,26 @@ export const useConversionLogic = (
             : f
         ));
 
-        // REMOVE: Do not update migration_files in the database here
-        // await supabase.from('migration_files').update({
-        //   conversion_status: mapConversionStatus(result.status),
-        //   converted_content: result.convertedCode
-        // }).eq('id', file.id);
+        // Update existing migration_files record with conversion results
+        await supabase.from('migration_files').update({
+          conversion_status: mapConversionStatus(result.status),
+          converted_content: result.convertedCode,
+          error_message: result.issues?.map(i => i.description).join('; ') || null,
+          data_type_mapping: result.dataTypeMapping || null,
+          performance_metrics: result.performance || null,
+          issues: result.issues || null,
+        }).eq('id', file.id);
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
+        
+        // Update status to failed in database
+        await supabase.from('migration_files').update({
+          conversion_status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        }).eq('id', file.id);
       } finally {
         setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));
       }
