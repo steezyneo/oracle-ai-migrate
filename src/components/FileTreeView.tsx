@@ -39,7 +39,7 @@ interface FileTreeViewProps {
   onFixFile: (fileId: string) => void;
   selectedFile: FileItem | null;
   isConverting?: boolean;
-  convertingFileId?: string | null;
+  convertingFileIds?: string[];
   selectedFileIds?: string[];
   onBulkSelect?: (ids: string[]) => void;
 }
@@ -53,7 +53,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onFixFile,
   selectedFile,
   isConverting = false,
-  convertingFileId = null,
+  convertingFileIds = [],
   selectedFileIds = [],
   onBulkSelect
 }) => {
@@ -79,7 +79,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
-    if (convertingFileId === fileId) {
+    if (convertingFileIds && convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
     

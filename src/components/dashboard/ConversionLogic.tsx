@@ -27,7 +27,7 @@ export const useConversionLogic = (
 ) => {
   const { toast } = useToast();
   const [isConverting, setIsConverting] = useState(false);
-  const [convertingFileId, setConvertingFileId] = useState<string | null>(null);
+  const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
   const mapConversionStatus = (status: 'success' | 'warning' | 'error'): 'pending' | 'success' | 'failed' => {
     switch (status) {
@@ -45,7 +45,7 @@ export const useConversionLogic = (
     const file = files.find(f => f.id === fileId);
     if (!file) return;
 
-    setConvertingFileId(fileId);
+    setConvertingFileIds([...convertingFileIds, fileId]);
     setIsConverting(true);
     
     try {
@@ -92,10 +92,10 @@ export const useConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
     } finally {
-      setConvertingFileId(null);
+      setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds]);
 
   const handleConvertAllByType = useCallback(async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
     const typeFiles = files.filter(f => f.type === type && f.conversionStatus === 'pending');
@@ -104,7 +104,7 @@ export const useConversionLogic = (
     setIsConverting(true);
     
     for (const file of typeFiles) {
-      setConvertingFileId(file.id);
+      setConvertingFileIds([...convertingFileIds, file.id]);
       try {
         const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
         
@@ -148,12 +148,14 @@ export const useConversionLogic = (
         setFiles(prev => prev.map(f => 
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
+      } finally {
+        setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));
       }
     }
     
-    setConvertingFileId(null);
+    setConvertingFileIds([]);
     setIsConverting(false);
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds]);
 
   const handleConvertAll = useCallback(async () => {
     const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
@@ -167,10 +169,10 @@ export const useConversionLogic = (
     while (currentIndex < totalFiles) {
       const batch = pendingFiles.slice(currentIndex, currentIndex + concurrencyLimit);
 
+      setConvertingFileIds(batch.map(f => f.id));
       // Collect results for this batch
       const batchResults = await Promise.all(
         batch.map(async (file) => {
-          setConvertingFileId(file.id);
           try {
             const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
             await supabase.from('migration_files').update({
@@ -241,13 +243,13 @@ export const useConversionLogic = (
       currentIndex += concurrencyLimit;
     }
 
-    setConvertingFileId(null);
+    setConvertingFileIds([]);
     setIsConverting(false);
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
-    setConvertingFileId(fileId);
+    setConvertingFileIds([...convertingFileIds, fileId]);
     try {
       const fileToFix = files.find(file => file.id === fileId);
       if (!fileToFix) {
@@ -301,10 +303,10 @@ export const useConversionLogic = (
         variant: 'destructive',
       });
     } finally {
-      setConvertingFileId(null);
+      setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, mapConversionStatus]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, mapConversionStatus, convertingFileIds, setConvertingFileIds]);
 
   const handleGenerateReport = useCallback(async (): Promise<ConversionReport> => {
     const conversionResults: ConversionResult[] = files.map(file => ({
@@ -339,7 +341,7 @@ export const useConversionLogic = (
 
   return {
     isConverting,
-    convertingFileId,
+    convertingFileIds,
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,

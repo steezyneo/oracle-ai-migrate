@@ -24,7 +24,7 @@ interface ConversionPanelProps {
   files: FileItem[];
   selectedFile: FileItem | null;
   isConverting: boolean;
-  convertingFileId: string | null;
+  convertingFileIds: string[];
   onFileSelect: (file: FileItem) => void;
   onConvertFile: (fileId: string) => void;
   onConvertAllByType: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
@@ -40,7 +40,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   files,
   selectedFile,
   isConverting,
-  convertingFileId,
+  convertingFileIds,
   onFileSelect,
   onConvertFile,
   onConvertAllByType,
@@ -141,7 +141,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onFixFile={onFixFile}
           selectedFile={selectedFile}
           isConverting={isConverting}
-          convertingFileId={convertingFileId}
+          convertingFileIds={convertingFileIds}
           selectedFileIds={selectedFileIds}
           onBulkSelect={setSelectedFileIds}
         />

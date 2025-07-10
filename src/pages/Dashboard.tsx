@@ -55,7 +55,7 @@ const Dashboard = () => {
   const { unreviewedFiles } = useUnreviewedFiles();
   const {
     isConverting,
-    convertingFileId,
+    convertingFileIds,
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,
@@ -235,7 +235,7 @@ const Dashboard = () => {
                     files={files}
               selectedFile={selectedFile}
               isConverting={isConverting}
-              convertingFileId={convertingFileId}
+              convertingFileIds={convertingFileIds}
               onFileSelect={handleFileSelect}
                     onConvertFile={handleConvertFile}
                     onConvertAllByType={handleConvertAllByType}
