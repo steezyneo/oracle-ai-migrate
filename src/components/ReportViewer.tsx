@@ -249,7 +249,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     if (!user || migrationCompleted) return;
     setIsCompleting(true);
     try {
-      // 1. Create migration entry
+      // 1. Create migration entry if not already created
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
@@ -259,24 +259,22 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         .select()
         .single();
       if (migrationError) throw migrationError;
-      // 2. Add all files to migration_files
-      const filesPayload = report.results.map(r => ({
-        migration_id: migration.id,
-        file_name: r.originalFile.name,
-        file_path: r.originalFile.name,
-        file_type: r.originalFile.type,
-        original_content: r.originalFile.content,
-        converted_content: r.convertedCode,
-        conversion_status: r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending',
-        error_message: r.issues?.map(i => i.message).join('; ') || null,
-        data_type_mapping: r.dataTypeMapping || null,
-        performance_metrics: r.performance || null,
-        issues: r.issues || null,
-      }));
-      const { error: filesError } = await supabase
-        .from('migration_files')
-        .insert(filesPayload);
-      if (filesError) throw filesError;
+      // 2. For each file, update the existing migration_files row (do not insert new rows)
+      for (const r of report.results) {
+        await supabase.from('migration_files').update({
+          file_name: r.originalFile.name,
+          file_path: r.originalFile.name,
+          file_type: r.originalFile.type,
+          original_content: r.originalFile.content,
+          converted_content: r.convertedCode,
+          conversion_status: r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending',
+          error_message: r.issues?.map(i => i.message).join('; ') || null,
+          data_type_mapping: r.dataTypeMapping || null,
+          performance_metrics: r.performance || null,
+          issues: r.issues || null,
+          migration_id: migration.id
+        }).eq('id', r.id);
+      }
       setMigrationCompleted(true);
       toast({
         title: 'Migration Completed',
