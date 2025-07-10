@@ -41,6 +41,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'impact' | 'full'>('overview');
   const [isCompleting, setIsCompleting] = useState(false);
   const [migrationCompleted, setMigrationCompleted] = useState(false);
+  const [migrationStep, setMigrationStep] = useState<'review' | 'deploy' | 'complete'>('review');
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
@@ -537,14 +538,34 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
                 <Download className="h-4 w-4 mr-2" />
                 Download Report
               </Button>
-              <Button
-                onClick={handleCompleteMigration}
-                disabled={isCompleting || migrationCompleted}
-                variant="default"
-                title="Save this migration to history"
-              >
-                {migrationCompleted ? 'Migration Saved' : isCompleting ? 'Saving...' : 'Complete Migration'}
-              </Button>
+              {migrationStep === 'review' && (
+                <Button
+                  onClick={() => setMigrationStep('deploy')}
+                  variant="default"
+                  title="Continue to deployment step"
+                >
+                  Continue Migration
+                </Button>
+              )}
+              {migrationStep === 'deploy' && (
+                <Button
+                  onClick={() => setMigrationStep('complete')}
+                  variant="default"
+                  title="Mark migration as ready to complete after deployment"
+                >
+                  Finish Deployment
+                </Button>
+              )}
+              {migrationStep === 'complete' && (
+                <Button
+                  onClick={handleCompleteMigration}
+                  disabled={isCompleting || migrationCompleted}
+                  variant="default"
+                  title="Save this migration to history"
+                >
+                  {migrationCompleted ? 'Migration Saved' : isCompleting ? 'Saving...' : 'Complete Migration'}
+                </Button>
+              )}
             </div>
           </div>
         </CardFooter>
