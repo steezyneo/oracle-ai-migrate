@@ -5,7 +5,12 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAiU5Dt6ZEEY
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
-export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
+export const convertSybaseToOracle = async (
+  file: CodeFile,
+  aiModel: string = 'default',
+  customPrompt?: string,
+  skipExplanation: boolean = true
+): Promise<ConversionResult> => {
   console.log(`Converting with ${aiModel} AI model`);
   
   const startTime = Date.now();
@@ -57,12 +62,17 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   };
 };
 
-// Convert multiple files in parallel
+// Convert multiple files in parallel with support for customPrompt and skipExplanation
 export const convertMultipleFiles = async (
   files: CodeFile[],
-  aiModel: string = 'default'
+  aiModel: string = 'default',
+  customPrompt?: string,
+  skipExplanation: boolean = true
 ): Promise<ConversionResult[]> => {
-  const conversionPromises = files.map(file => convertSybaseToOracle(file, aiModel));
+  // Map each file to a conversion promise using the improved convertSybaseToOracle
+  const conversionPromises = files.map(file =>
+    convertSybaseToOracle(file, aiModel, customPrompt, skipExplanation)
+  );
   return Promise.all(conversionPromises);
 };
 
