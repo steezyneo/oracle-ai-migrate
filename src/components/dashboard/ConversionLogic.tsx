@@ -263,6 +263,112 @@ export const useConversionLogic = (
     }
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
 
+  /**
+   * Convert only the selected files, up to 3 at a time, running in parallel.
+   * As soon as a slot is free, the next file starts, until all are processed.
+   */
+  const handleConvertSelected = useCallback(async (fileIds: string[]) => {
+    const selectedFiles = files.filter(f => fileIds.includes(f.id) && f.conversionStatus === 'pending');
+    if (selectedFiles.length === 0) return;
+
+    setIsConverting(true);
+    const concurrencyLimit = 3;
+    let currentIndex = 0;
+    const results: any[] = [];
+    let running: Promise<void>[] = [];
+    let convertingIds = new Set<string>();
+
+    const runNext = async () => {
+      if (currentIndex >= selectedFiles.length) return;
+      const file = selectedFiles[currentIndex++];
+      convertingIds.add(file.id);
+      setConvertingFileIds(Array.from(convertingIds));
+      try {
+        console.log(`[CONVERT] Starting: ${file.name}`);
+        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
+        await supabase.from('migration_files').update({
+          conversion_status: mapConversionStatus(result.status),
+          converted_content: result.convertedCode
+        }).eq('id', file.id);
+        results.push({ fileId: file.id, result, status: 'success' });
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === file.id
+              ? {
+                  ...f,
+                  conversionStatus: mapConversionStatus(result.status),
+                  convertedContent: result.convertedCode,
+                  dataTypeMapping: result.dataTypeMapping,
+                  issues: result.issues,
+                  performanceMetrics: result.performance
+                }
+              : f
+          )
+        );
+        setConversionResults(prev => [
+          ...prev,
+          {
+            id: result.id,
+            originalFile: {
+              id: result.originalFile.id,
+              name: result.originalFile.name,
+              content: result.originalFile.content,
+              type: result.originalFile.type,
+              status: 'pending'
+            },
+            convertedCode: result.convertedCode,
+            issues: result.issues,
+            dataTypeMapping: result.dataTypeMapping,
+            performance: result.performance,
+            status: result.status
+          }
+        ]);
+      } catch (error) {
+        results.push({ fileId: file.id, error, status: 'failed' });
+        console.error(`[CONVERT] Error: ${file.name}`, error);
+        toast({
+          title: 'Conversion Failed',
+          description: `Failed to convert ${file.name}: ${error?.message || error}`,
+          variant: 'destructive',
+        });
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === file.id ? { ...f, conversionStatus: 'failed', errorMessage: error?.message || String(error) } : f
+          )
+        );
+      } finally {
+        convertingIds.delete(file.id);
+        setConvertingFileIds(Array.from(convertingIds));
+        if (currentIndex < selectedFiles.length) {
+          await runNext();
+        }
+      }
+    };
+
+    // Start initial pool
+    for (let i = 0; i < Math.min(concurrencyLimit, selectedFiles.length); i++) {
+      running.push(runNext());
+    }
+    await Promise.all(running);
+
+    setConvertingFileIds([]);
+    setIsConverting(false);
+    // Optionally, show a summary toast
+    const failedCount = results.filter(r => r.status === 'failed').length;
+    if (failedCount > 0) {
+      toast({
+        title: 'Selected Conversion Complete',
+        description: `${selectedFiles.length - failedCount} succeeded, ${failedCount} failed.`,
+        variant: failedCount > 0 ? 'destructive' : 'default',
+      });
+    } else {
+      toast({
+        title: 'Selected Conversion Complete',
+        description: `All ${selectedFiles.length} files converted successfully!`,
+      });
+    }
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
+
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
     setConvertingFileIds([...convertingFileIds, fileId]);
@@ -363,5 +469,6 @@ export const useConversionLogic = (
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
+    handleConvertSelected, // Export the new function
   };
 };

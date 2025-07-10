@@ -62,6 +62,7 @@ const Dashboard = () => {
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
+    handleConvertSelected, // <-- Add this
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
 
   useEffect(() => {
@@ -265,6 +266,7 @@ const Dashboard = () => {
                 onDismissIssue={handleDismissIssue}
                 onGenerateReport={handleGenerateReportWrapper}
                 onUploadRedirect={() => setActiveTab('upload')}
+                onConvertSelected={handleConvertSelected} // <-- Pass the new function
               />
             </div>
           </TabsContent>
