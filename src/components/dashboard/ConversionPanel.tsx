@@ -179,7 +179,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Complete Migration
+                  Continue Migration
                 </Button>
               </div>
             )}
