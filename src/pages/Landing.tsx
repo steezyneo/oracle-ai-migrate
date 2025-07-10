@@ -5,6 +5,7 @@ import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, Hel
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Help from '@/components/Help';
+import UserDropdown from '@/components/UserDropdown';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -52,12 +53,7 @@ const Landing = () => {
                     <History className="h-4 w-4 mr-2" />
                     History
                   </Button>
-                  <Button 
-                    variant="destructive"
-                    onClick={() => signOut(() => navigate('/auth'))}
-                  >
-                    Sign Out
-                  </Button>
+                  <UserDropdown />
                 </>
               ) : (
                 <>

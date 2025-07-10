@@ -622,7 +622,7 @@ END`;
                       });
                     }}>
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Reset Uploaded Files
+                      Clear
                     </Button>
                   </div>
                 )}
