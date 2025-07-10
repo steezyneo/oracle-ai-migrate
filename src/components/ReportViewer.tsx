@@ -41,7 +41,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'impact' | 'full'>('overview');
   const [isCompleting, setIsCompleting] = useState(false);
   const [migrationCompleted, setMigrationCompleted] = useState(false);
-  const [migrationStep, setMigrationStep] = useState<'review' | 'deploy' | 'complete'>('review');
+  const [migrationStep, setMigrationStep] = useState<'review' | 'complete'>('review');
   
   // Fetch deployment logs from Supabase on component mount
   useEffect(() => {
@@ -169,10 +169,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           result.convertedCode
         );
         if (deployResult.success) {
-          // Mark file as deployed in migration_files
-          await supabase.from('migration_files').update({
+          // Mark file as deployed in migration_files - use file name to find the record
+          const { error: updateError } = await supabase.from('migration_files').update({
             conversion_status: 'deployed'
-          }).eq('id', result.id);
+          }).eq('file_name', result.originalFile.name);
+          
+          if (updateError) {
+            console.error('Error updating deployment status:', updateError);
+          }
         }
         if (!deployResult.success) allSuccess = false;
       }
@@ -249,7 +253,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     if (!user || migrationCompleted) return;
     setIsCompleting(true);
     try {
-      // 1. Create migration entry if not already created
+      // 1. Create migration entry
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
@@ -259,22 +263,34 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         .select()
         .single();
       if (migrationError) throw migrationError;
-      // 2. For each file, update the existing migration_files row (do not insert new rows)
+      
+      // 2. For each file, create a migration_files entry with final status
       for (const r of report.results) {
-        await supabase.from('migration_files').update({
+        // Check if this file was deployed by looking for deployment logs
+        const { data: deploymentData } = await supabase
+          .from('deployment_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        const wasDeployed = deploymentData && deploymentData.length > 0;
+        
+        await supabase.from('migration_files').insert({
+          migration_id: migration.id,
           file_name: r.originalFile.name,
           file_path: r.originalFile.name,
           file_type: r.originalFile.type,
           original_content: r.originalFile.content,
           converted_content: r.convertedCode,
-          conversion_status: r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending',
+          conversion_status: wasDeployed ? 'deployed' : (r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending'),
           error_message: r.issues?.map(i => i.message).join('; ') || null,
           data_type_mapping: r.dataTypeMapping || null,
           performance_metrics: r.performance || null,
           issues: r.issues || null,
-          migration_id: migration.id
-        }).eq('id', r.id);
+        });
       }
+      
       setMigrationCompleted(true);
       toast({
         title: 'Migration Completed',
@@ -538,20 +554,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
               </Button>
               {migrationStep === 'review' && (
                 <Button
-                  onClick={() => setMigrationStep('deploy')}
-                  variant="default"
-                  title="Continue to deployment step"
-                >
-                  Continue Migration
-                </Button>
-              )}
-              {migrationStep === 'deploy' && (
-                <Button
                   onClick={() => setMigrationStep('complete')}
                   variant="default"
-                  title="Mark migration as ready to complete after deployment"
+                  title="Continue to complete migration"
                 >
-                  Finish Deployment
+                  Continue Migration
                 </Button>
               )}
               {migrationStep === 'complete' && (
