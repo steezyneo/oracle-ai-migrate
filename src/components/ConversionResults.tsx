@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CodeFile, ConversionResult, DatabaseConnection } from '@/types';
 import CodeDiffViewer from './CodeDiffViewer';
 import { generateConversionReport } from '@/utils/conversionUtils';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ConversionResultsProps {
   results: ConversionResult[];

@@ -16,7 +16,7 @@ import PendingActionsPanel from '@/components/PendingActionsPanel';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FileItem {
   id: string;
