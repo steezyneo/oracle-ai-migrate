@@ -182,6 +182,39 @@ export const useConversionLogic = (
         }).eq('id', file.id);
         results.push({ fileId: file.id, result, status: 'success' });
         console.log(`[CONVERT] Success: ${file.name}`);
+        // Update UI immediately after conversion
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === file.id
+              ? {
+                  ...f,
+                  conversionStatus: mapConversionStatus(result.status),
+                  convertedContent: result.convertedCode,
+                  dataTypeMapping: result.dataTypeMapping,
+                  issues: result.issues,
+                  performanceMetrics: result.performance
+                }
+              : f
+          )
+        );
+        setConversionResults(prev => [
+          ...prev,
+          {
+            id: result.id,
+            originalFile: {
+              id: result.originalFile.id,
+              name: result.originalFile.name,
+              content: result.originalFile.content,
+              type: result.originalFile.type,
+              status: 'pending'
+            },
+            convertedCode: result.convertedCode,
+            issues: result.issues,
+            dataTypeMapping: result.dataTypeMapping,
+            performance: result.performance,
+            status: result.status
+          }
+        ]);
       } catch (error) {
         results.push({ fileId: file.id, error, status: 'failed' });
         console.error(`[CONVERT] Error: ${file.name}`, error);
@@ -190,6 +223,11 @@ export const useConversionLogic = (
           description: `Failed to convert ${file.name}.`,
           variant: 'destructive',
         });
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+          )
+        );
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
@@ -204,51 +242,6 @@ export const useConversionLogic = (
       running.push(runNext());
     }
     await Promise.all(running);
-
-    // Batch update state after all conversions
-    setFiles(prev =>
-      prev.map(f => {
-        const batchResult = results.find(r => r.fileId === f.id);
-        if (!batchResult) return f;
-        if (batchResult.status === 'success') {
-          const { result } = batchResult;
-          return {
-            ...f,
-            conversionStatus: mapConversionStatus(result.status),
-            convertedContent: result.convertedCode,
-            dataTypeMapping: result.dataTypeMapping,
-            issues: result.issues,
-            performanceMetrics: result.performance
-          };
-        } else {
-          return { ...f, conversionStatus: 'failed' };
-        }
-      })
-    );
-
-    setConversionResults(prev => [
-      ...prev,
-      ...results
-        .filter(r => r.status === 'success')
-        .map(r => {
-          const { result } = r;
-          return {
-            id: result.id,
-            originalFile: {
-              id: result.originalFile.id,
-              name: result.originalFile.name,
-              content: result.originalFile.content,
-              type: result.originalFile.type,
-              status: 'pending'
-            },
-            convertedCode: result.convertedCode,
-            issues: result.issues,
-            dataTypeMapping: result.dataTypeMapping,
-            performance: result.performance,
-            status: result.status
-          };
-        })
-    ]);
 
     setConvertingFileIds([]);
     setIsConverting(false);
