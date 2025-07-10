@@ -612,6 +612,21 @@ END`;
                   </TabsTrigger>
                 </TabsList>
                 
+                {files.length > 0 && (
+                  <div className="flex justify-end mb-4">
+                    <Button variant="destructive" onClick={() => {
+                      setFiles([]);
+                      toast({
+                        title: 'Files Reset',
+                        description: 'All uploaded files have been removed.'
+                      });
+                    }}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Reset Uploaded Files
+                    </Button>
+                  </div>
+                )}
+
                 {(['tables', 'procedures', 'triggers', 'other'] as const).map(tabValue => (
                   <TabsContent key={tabValue} value={tabValue}>
                     <ScrollArea className="h-[300px] rounded-md border p-4">
