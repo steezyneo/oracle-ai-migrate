@@ -485,6 +485,11 @@ const History = () => {
                                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
                                         {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
                                       </span>
+                                      {file.conversion_status === 'deployed' ? (
+                                        <span className="ml-2 px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold">Deployed to Oracle</span>
+                                      ) : (
+                                        <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-800 rounded-full text-xs font-semibold">Not Deployed</span>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="px-4 py-2 text-center">
