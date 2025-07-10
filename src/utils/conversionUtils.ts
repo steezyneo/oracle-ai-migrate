@@ -57,6 +57,15 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
   };
 };
 
+// Convert multiple files in parallel
+export const convertMultipleFiles = async (
+  files: CodeFile[],
+  aiModel: string = 'default'
+): Promise<ConversionResult[]> => {
+  const conversionPromises = files.map(file => convertSybaseToOracle(file, aiModel));
+  return Promise.all(conversionPromises);
+};
+
 // Helper: extract data type mappings from code
 const extractDataTypeMappings = (code: string): DataTypeMapping[] => {
   const mappings: DataTypeMapping[] = [];
