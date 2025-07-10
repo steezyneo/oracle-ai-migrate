@@ -412,7 +412,7 @@ const History = () => {
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
+                  <tbody className="bg-white divide-y divide-gray-200">
                     {migrations.map((migration) => (
                       <React.Fragment key={migration.id}>
                         <tr
@@ -479,7 +479,7 @@ const History = () => {
                         </tr>
                         
                         {/* Show files if this migration is selected */}
-                        {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
+                        {selectedMigrationId === migration.id && (
                           migrationFiles
                             .map((file) => (
                               <React.Fragment key={file.id}>
@@ -521,9 +521,9 @@ const History = () => {
                                   </td>
                                 </tr>
                                 {/* Comments bullet list under file row */}
-                                <tr className="bg-gray-50">
-                                  <td colSpan={7} className="px-16 pb-2 pt-0">
-                                    {file.review_comments && file.review_comments.length > 0 ? (
+                                {file.review_comments && file.review_comments.length > 0 && (
+                                  <tr>
+                                    <td colSpan={8} className="px-16 pb-2 pt-0">
                                       <ul className="list-disc ml-6 space-y-1">
                                         {file.review_comments.map((c, idx) => (
                                           <li key={c.id || idx} className="text-sm text-gray-700">
@@ -532,18 +532,16 @@ const History = () => {
                                           </li>
                                         ))}
                                       </ul>
-                                    ) : (
-                                      <div className="text-gray-400 text-sm ml-6">No comments yet.</div>
-                                    )}
-                                  </td>
-                                </tr>
+                                    </td>
+                                  </tr>
+                                )}
                               </React.Fragment>
                             ))
                         )}
                         
                         {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
                           <tr className="bg-gray-50">
-                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                               No files found for this migration
                             </td>
                           </tr>
