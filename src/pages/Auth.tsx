@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Loader2 } from 'lucide-react';
+import { Database, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -19,9 +18,12 @@ const Auth = () => {
     password: '' 
   });
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,6 +75,40 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    if (!loginData.email) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address to reset your password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(loginData.email);
+      if (error) {
+        toast({
+          title: 'Reset Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Reset Email Sent',
+          description: 'Check your email for a password reset link.',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: 'Reset Failed',
+        description: 'An error occurred while sending the reset email.',
+        variant: 'destructive',
+      });
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -112,13 +148,29 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="login-password"
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                        onClick={() => setShowLoginPassword((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="button" variant="link" className="px-0" onClick={handleForgotPassword}>
+                      Forgot Password?
+                    </Button>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -151,13 +203,24 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignupPassword ? 'text' : 'password'}
+                        value={signupData.password}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                        onClick={() => setShowSignupPassword((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
