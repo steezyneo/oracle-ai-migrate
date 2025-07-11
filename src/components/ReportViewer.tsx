@@ -180,11 +180,12 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         );
         
         if (deployResult.success) {
-          // Update existing migration_files record to mark as deployed
+          // Update existing migration_files record to mark as deployed and set deployment timestamp
+          const deploymentTimestamp = new Date().toISOString();
           const { error: updateError } = await supabase.from('migration_files').update({
-            conversion_status: 'deployed'
-          }).eq('file_name', result.originalFile.name);
-          
+            conversion_status: 'deployed',
+            deployment_timestamp: deploymentTimestamp
+          }).eq('file_name', result.originalFile.name).eq('migration_id', currentMigrationId);
           if (updateError) {
             console.error('Error updating deployment status:', updateError);
           }

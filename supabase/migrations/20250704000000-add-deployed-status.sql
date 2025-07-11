@@ -18,6 +18,9 @@ ALTER TABLE public.migration_files
 ADD CONSTRAINT migration_files_conversion_status_check 
 CHECK (conversion_status IN ('pending', 'success', 'failed', 'deployed'));
 
+-- Add deployment_timestamp column to migration_files if not exists
+ALTER TABLE public.migration_files ADD COLUMN IF NOT EXISTS deployment_timestamp TIMESTAMP WITH TIME ZONE;
+
 -- Update the deployment_logs table to include user_id if not already present
 DO $$ 
 BEGIN
