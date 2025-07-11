@@ -244,10 +244,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       if (migrationError) throw migrationError;
       
       setCurrentMigrationId(migration.id);
-      
-      // 2. Create migration_files entries for each file
-      // SKIP: Do not insert files here, as they are now inserted after conversion.
-      // If needed, check for missing files and insert only those (not implemented here).
+      // Update all migration_files rows for this user and project to have the correct migration_id
+      await supabase.from('migration_files').update({ migration_id: migration.id })
+        .is('migration_id', null)
+        .eq('file_name', report.results.map(r => r.originalFile.name));
     } catch (error) {
       console.error('Error completing migration:', error);
       toast({

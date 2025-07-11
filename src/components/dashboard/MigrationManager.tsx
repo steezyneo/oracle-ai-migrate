@@ -84,7 +84,15 @@ export const useMigrationManager = () => {
         return [];
       }
       for (const file of uploadedFiles) {
-        // Do NOT insert into migration_files here. Only add to local state for conversion.
+        // Insert into migration_files as soon as uploaded
+        await supabase.from('migration_files').insert({
+          migration_id: migrationId,
+          file_name: file.name,
+          file_path: file.name,
+          file_type: file.type,
+          original_content: file.content,
+          conversion_status: 'pending',
+        });
         convertedFiles.push({
           id: file.id || file.name, // Use file.id if available, else fallback to name
           name: file.name,
