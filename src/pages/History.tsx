@@ -338,6 +338,27 @@ const History = () => {
     return null;
   }
 
+  // Group migrationFiles by file_name, prefer success > deployed > pending > failed
+  const groupedFiles = Object.values(
+    migrationFiles.reduce((acc, file) => {
+      const existing = acc[file.file_name];
+      if (!existing) {
+        acc[file.file_name] = file;
+      } else {
+        // Prefer success > deployed > pending > failed
+        const statusOrder = { success: 3, deployed: 2, pending: 1, failed: 0 };
+        if (statusOrder[file.conversion_status] > statusOrder[existing.conversion_status]) {
+          acc[file.file_name] = file;
+        } else if (statusOrder[file.conversion_status] === statusOrder[existing.conversion_status]) {
+          // If same status, prefer latest
+          if (new Date(file.created_at) > new Date(existing.created_at)) {
+            acc[file.file_name] = file;
+          }
+        }
+      }
+      return acc;
+    }, {} as Record<string, MigrationFile>));
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -480,7 +501,7 @@ const History = () => {
                         
                         {/* Show files if this migration is selected */}
                         {selectedMigrationId === migration.id && (
-                          migrationFiles
+                          groupedFiles
                             .map((file) => (
                               <React.Fragment key={file.id}>
                                 <tr className="bg-gray-50 hover:bg-blue-100">
@@ -539,7 +560,7 @@ const History = () => {
                             ))
                         )}
                         
-                        {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
+                        {selectedMigrationId === migration.id && groupedFiles.length === 0 && (
                           <tr className="bg-gray-50">
                             <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                               No files found for this migration
