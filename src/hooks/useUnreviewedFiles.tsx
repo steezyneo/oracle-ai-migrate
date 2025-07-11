@@ -48,7 +48,7 @@ export const useUnreviewedFiles = () => {
           ...fileData,
           user_id: user.id,
           status: 'unreviewed',
-          original_code: fileData.original_code || ''
+          original_code: fileData.original_code,
         });
 
       if (error) throw error;
@@ -107,17 +107,47 @@ export const useUnreviewedFiles = () => {
   };
 
   // Mark a file as reviewed and move to history
-  const markAsReviewed = async (id: string, fileName: string, convertedCode: string, originalCode?: string) => {
+  const markAsReviewed = async (id: string, fileName: string, convertedCode: string) => {
     if (!user) return false;
 
     try {
-      // Fallback: get original_code from state if not provided
-      let origCode = originalCode;
-      if (!origCode) {
-        const file = unreviewedFiles.find(f => f.id === id);
-        origCode = file?.original_code || '';
-      }
-      // Only update the unreviewed file status to 'reviewed', do not create migration history here
+      // Fetch the unreviewed file to get the original_code
+      const { data: unreviewedFileData, error: fetchError } = await supabase
+        .from('unreviewed_files')
+        .select('original_code')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+      const originalCode = unreviewedFileData?.original_code || '';
+
+      // First, add to migration history
+      const { data: migration, error: migrationError } = await supabase
+        .from('migrations')
+        .insert({
+          user_id: user.id,
+          project_name: `Reviewed: ${fileName}`
+        })
+        .select()
+        .single();
+
+      if (migrationError) throw migrationError;
+
+      // Add to migration files
+      const { error: fileError } = await supabase
+        .from('migration_files')
+        .insert({
+          migration_id: migration.id,
+          file_name: fileName,
+          file_path: fileName,
+          file_type: 'other',
+          converted_content: convertedCode,
+          original_content: originalCode,
+          conversion_status: 'success'
+        });
+
+      if (fileError) throw fileError;
+
+      // Update the unreviewed file status
       const success = await updateUnreviewedFile({
         id,
         status: 'reviewed'
@@ -126,7 +156,7 @@ export const useUnreviewedFiles = () => {
       if (success) {
         toast({
           title: "File Reviewed",
-          description: `${fileName} has been marked as reviewed.`,
+          description: `${fileName} has been marked as reviewed and added to history.`,
         });
       }
 

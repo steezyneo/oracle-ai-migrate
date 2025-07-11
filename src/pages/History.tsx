@@ -20,7 +20,6 @@ interface Migration {
   success_count: number;
   failed_count: number;
   pending_count: number;
-  deployed_count: number;
 }
 
 interface MigrationFile {
@@ -30,10 +29,9 @@ interface MigrationFile {
   file_type: string;
   original_content: string;
   converted_content: string | null;
-  conversion_status: 'pending' | 'success' | 'failed' | 'deployed';
+  conversion_status: 'pending' | 'success' | 'failed';
   error_message: string | null;
   created_at: string;
-  review_comments?: Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>;
 }
 
 const History = () => {
@@ -100,7 +98,6 @@ const History = () => {
             success_count: files.filter((f: any) => f.conversion_status === 'success').length,
             failed_count: files.filter((f: any) => f.conversion_status === 'failed').length,
             pending_count: files.filter((f: any) => f.conversion_status === 'pending').length,
-            deployed_count: files.filter((f: any) => f.conversion_status === 'deployed').length,
           };
         }) || [];
         
@@ -152,10 +149,9 @@ const History = () => {
       // Map the data to ensure proper typing for conversion_status
       const typedFiles: MigrationFile[] = (data || []).map(file => ({
         ...file,
-        conversion_status: ['pending', 'success', 'failed', 'deployed'].includes(file.conversion_status) 
-          ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed'
-          : 'pending',
-        review_comments: file.review_comments || [],
+        conversion_status: ['pending', 'success', 'failed'].includes(file.conversion_status) 
+          ? file.conversion_status as 'pending' | 'success' | 'failed'
+          : 'pending'
       }));
       
       setMigrationFiles(typedFiles);
@@ -278,8 +274,6 @@ const History = () => {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'pending':
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
-      case 'deployed':
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -294,8 +288,6 @@ const History = () => {
         return 'bg-red-100 text-red-800';
       case 'pending':
         return 'bg-orange-100 text-orange-800';
-      case 'deployed':
-        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -337,29 +329,6 @@ const History = () => {
   if (!user || !profile) {
     return null;
   }
-
-  // Only include files that have been converted (converted_content is not null)
-  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content);
-  // Group filteredMigrationFiles by file_name, prefer success > deployed > pending > failed
-  const groupedFiles = Object.values(
-    filteredMigrationFiles.reduce((acc, file) => {
-      const existing = acc[file.file_name];
-      if (!existing) {
-        acc[file.file_name] = file;
-      } else {
-        // Prefer success > deployed > pending > failed
-        const statusOrder = { success: 3, deployed: 2, pending: 1, failed: 0 };
-        if (statusOrder[file.conversion_status] > statusOrder[existing.conversion_status]) {
-          acc[file.file_name] = file;
-        } else if (statusOrder[file.conversion_status] === statusOrder[existing.conversion_status]) {
-          // If same status, prefer latest
-          if (new Date(file.created_at) > new Date(existing.created_at)) {
-            acc[file.file_name] = file;
-          }
-        }
-      }
-      return acc;
-    }, {} as Record<string, MigrationFile>));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -431,11 +400,10 @@ const History = () => {
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-gray-100">
                     {migrations.map((migration) => (
                       <React.Fragment key={migration.id}>
                         <tr
@@ -472,11 +440,6 @@ const History = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="inline-block px-2 py-1 text-sm bg-blue-100 text-blue-800 rounded">
-                              {migration.deployed_count}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
                             <div className="flex gap-1 justify-center">
                               <Button 
                                 size="sm" 
@@ -502,69 +465,51 @@ const History = () => {
                         </tr>
                         
                         {/* Show files if this migration is selected */}
-                        {selectedMigrationId === migration.id && (
-                          groupedFiles
-                            .map((file) => (
-                              <React.Fragment key={file.id}>
-                                <tr className="bg-gray-50 hover:bg-blue-100">
-                                  <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                    <span className="truncate max-w-xs">{file.file_name}</span>
-                                  </td>
-                                  <td className="px-4 py-2 text-center text-xs text-gray-600">
-                                    {file.file_type}
-                                  </td>
-                                  <td className="px-4 py-2 text-center" colSpan={2}>
-                                    <div className="flex items-center justify-center gap-2">
-                                      {getStatusIcon(file.conversion_status)}
-                                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
-                                        {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-2 text-center">
-                                    <div className="flex gap-1 justify-center">
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost"
-                                        onClick={(e) => handleViewFile(e, file)}
-                                        title="View Code"
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost"
-                                        onClick={(e) => handleDownloadFile(e, file)}
-                                        title="Download File"
-                                      >
-                                        <Download className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {/* Comments bullet list under file row */}
-                                {file.review_comments && file.review_comments.length > 0 && (
-                                  <tr>
-                                    <td colSpan={8} className="px-16 pb-2 pt-0">
-                                      <ul className="list-disc ml-6 space-y-1">
-                                        {file.review_comments.map((c, idx) => (
-                                          <li key={c.id || idx} className="text-sm text-gray-700">
-                                            <span className="font-semibold">{c.userName || c.userId}:</span> {c.comment}
-                                            <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </td>
-                                  </tr>
-                                )}
-                              </React.Fragment>
-                            ))
+                        {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
+                          migrationFiles.map((file) => (
+                            <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
+                              <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <span className="truncate max-w-xs">{file.file_name}</span>
+                              </td>
+                              <td className="px-4 py-2 text-center text-xs text-gray-600">
+                                {file.file_type}
+                              </td>
+                              <td className="px-4 py-2 text-center" colSpan={2}>
+                                <div className="flex items-center justify-center gap-2">
+                                  {getStatusIcon(file.conversion_status)}
+                                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(file.conversion_status)}`}>
+                                    {file.conversion_status.charAt(0).toUpperCase() + file.conversion_status.slice(1)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                <div className="flex gap-1 justify-center">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => handleViewFile(e, file)}
+                                    title="View Code"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={(e) => handleDownloadFile(e, file)}
+                                    title="Download File"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
                         )}
                         
-                        {selectedMigrationId === migration.id && groupedFiles.length === 0 && (
+                        {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
                           <tr className="bg-gray-50">
-                            <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                               No files found for this migration
                             </td>
                           </tr>
