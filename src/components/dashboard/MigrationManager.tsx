@@ -51,10 +51,8 @@ export const useMigrationManager = () => {
   }, [user, toast]);
 
   const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
-    // Ensure a migration exists before uploading files
-    if (!currentMigrationId) {
-      await startNewMigration();
-    }
+    // Always start a new migration before uploading files
+    await startNewMigration();
     const migrationId = currentMigrationId || (await (async () => {
       const { data } = await supabase
         .from('migrations')
@@ -111,7 +109,7 @@ export const useMigrationManager = () => {
       });
     }
     return convertedFiles;
-  }, [currentMigrationId, toast, startNewMigration, user]);
+  }, [currentMigrationId, startNewMigration, toast, user]);
 
   return {
     currentMigrationId,
