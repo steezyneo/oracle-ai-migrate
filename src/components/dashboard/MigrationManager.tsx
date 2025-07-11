@@ -22,6 +22,12 @@ export const useMigrationManager = () => {
   const { toast } = useToast();
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (currentMigrationId) {
+      localStorage.setItem('currentMigrationId', currentMigrationId);
+    }
+  }, [currentMigrationId]);
+
   const startNewMigration = useCallback(async () => {
     if (!user) return;
     // Only create a migration when the user explicitly starts a new migration session

@@ -63,7 +63,7 @@ const Dashboard = () => {
     handleFixFile,
     handleGenerateReport,
     handleConvertSelected, // <-- Add this
-  } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
+  } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt, currentMigrationId);
 
   useEffect(() => {
     if (!loading && !user) {

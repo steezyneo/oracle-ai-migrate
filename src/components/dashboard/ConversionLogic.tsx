@@ -23,7 +23,8 @@ export const useConversionLogic = (
   setFiles: React.Dispatch<React.SetStateAction<FileItem[]>>,
   setConversionResults: React.Dispatch<React.SetStateAction<ConversionResult[]>>,
   selectedAiModel: string,
-  customPrompt?: string
+  customPrompt?: string,
+  migrationId?: string // <-- Add migrationId as a parameter
 ) => {
   const { toast } = useToast();
   const [isConverting, setIsConverting] = useState(false);
@@ -83,7 +84,6 @@ export const useConversionLogic = (
       ));
 
       // Insert into migration_files after successful conversion
-      let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
       if (migrationId) {
         await supabase.from('migration_files').insert({
           migration_id: migrationId,
@@ -116,7 +116,7 @@ export const useConversionLogic = (
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds, migrationId]);
 
   const handleConvertAllByType = useCallback(async (type: 'table' | 'procedure' | 'trigger' | 'other') => {
     const typeFiles = files.filter(f => f.type === type && f.conversionStatus === 'pending');
@@ -161,7 +161,6 @@ export const useConversionLogic = (
         ));
 
         // Insert into migration_files after successful conversion
-        let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
         if (migrationId) {
           await supabase.from('migration_files').insert({
             migration_id: migrationId,
@@ -197,7 +196,7 @@ export const useConversionLogic = (
     
     setConvertingFileIds([]);
     setIsConverting(false);
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds, migrationId]);
 
   const handleConvertAll = useCallback(async () => {
     const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
@@ -261,7 +260,6 @@ export const useConversionLogic = (
         ]);
 
         // Insert into migration_files after successful conversion
-        let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
         if (migrationId) {
           await supabase.from('migration_files').insert({
             migration_id: migrationId,
@@ -324,7 +322,7 @@ export const useConversionLogic = (
         description: `All ${pendingFiles.length} files converted successfully!`,
       });
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, migrationId]);
 
   /**
    * Convert only the selected files, up to 3 at a time, running in parallel.
@@ -440,7 +438,7 @@ export const useConversionLogic = (
         description: `All ${selectedFiles.length} files converted successfully!`,
       });
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, migrationId]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
@@ -502,7 +500,7 @@ export const useConversionLogic = (
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
     }
-  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, mapConversionStatus, convertingFileIds, setConvertingFileIds]);
+  }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, mapConversionStatus, convertingFileIds, setConvertingFileIds, migrationId]);
 
   const handleGenerateReport = useCallback(async (): Promise<ConversionReport> => {
     const conversionResults: ConversionResult[] = files.map(file => ({
