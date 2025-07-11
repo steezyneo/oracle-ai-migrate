@@ -245,38 +245,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       setCurrentMigrationId(migration.id);
       
       // 2. Create migration_files entries for each file
-      for (const r of report.results) {
-        // Check if this file was deployed by looking for deployment logs
-        const { data: deploymentData } = await supabase
-          .from('deployment_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        
-        const wasDeployed = deploymentData && deploymentData.length > 0;
-        
-        // Create new migration_files entry
-        await supabase.from('migration_files').insert({
-          migration_id: migration.id,
-          file_name: r.originalFile.name,
-          file_path: r.originalFile.name,
-          file_type: r.originalFile.type,
-          original_content: r.originalFile.content,
-          converted_content: r.convertedCode,
-          conversion_status: wasDeployed ? 'deployed' : (r.status === 'success' ? 'success' : r.status === 'error' ? 'failed' : 'pending'),
-          error_message: r.issues?.map(i => i.description).join('; ') || null,
-          data_type_mapping: r.dataTypeMapping || null,
-          performance_metrics: r.performance || null,
-          issues: r.issues || null,
-        });
-      }
-      
-      setMigrationCompleted(true);
-      toast({
-        title: 'Migration Completed',
-        description: 'Migration history has been saved. You can now view it in History.',
-      });
+      // SKIP: Do not insert files here, as they are now inserted after conversion.
+      // If needed, check for missing files and insert only those (not implemented here).
     } catch (error) {
       console.error('Error completing migration:', error);
       toast({

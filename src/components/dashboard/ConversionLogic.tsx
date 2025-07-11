@@ -82,15 +82,25 @@ export const useConversionLogic = (
           : f
       ));
 
-               // Update existing migration_files record with conversion results
-         await supabase.from('migration_files').update({
-           conversion_status: mapConversionStatus(result.status),
-           converted_content: result.convertedCode,
-           error_message: result.issues?.map(i => i.description).join('; ') || null,
-           data_type_mapping: result.dataTypeMapping || null,
-           performance_metrics: result.performance || null,
-           issues: result.issues || null,
-         }).eq('id', file.id);
+      // Insert into migration_files after successful conversion
+      let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
+      if (migrationId) {
+        await supabase.from('migration_files').insert({
+          migration_id: migrationId,
+          file_name: file.name,
+          file_path: file.name,
+          file_type: file.type,
+          original_content: file.content,
+          converted_content: result.convertedCode,
+          conversion_status: mapConversionStatus(result.status),
+          error_message: result.issues?.map(i => i.description).join('; ') || null,
+          data_type_mapping: result.dataTypeMapping || null,
+          performance_metrics: result.performance || null,
+          issues: result.issues || null,
+        });
+      } else {
+        console.warn('No migrationId found for conversion. File will not be added to history.');
+      }
     } catch (error) {
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
@@ -150,15 +160,25 @@ export const useConversionLogic = (
             : f
         ));
 
-        // Update existing migration_files record with conversion results
-        await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode,
-          error_message: result.issues?.map(i => i.description).join('; ') || null,
-          data_type_mapping: result.dataTypeMapping || null,
-          performance_metrics: result.performance || null,
-          issues: result.issues || null,
-        }).eq('id', file.id);
+        // Insert into migration_files after successful conversion
+        let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
+        if (migrationId) {
+          await supabase.from('migration_files').insert({
+            migration_id: migrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: result.convertedCode,
+            conversion_status: mapConversionStatus(result.status),
+            error_message: result.issues?.map(i => i.description).join('; ') || null,
+            data_type_mapping: result.dataTypeMapping || null,
+            performance_metrics: result.performance || null,
+            issues: result.issues || null,
+          });
+        } else {
+          console.warn('No migrationId found for conversion. File will not be added to history.');
+        }
       } catch (error) {
         console.error(`Conversion failed for ${file.name}:`, error);
         setFiles(prev => prev.map(f => 
@@ -239,6 +259,26 @@ export const useConversionLogic = (
             status: result.status
           }
         ]);
+
+        // Insert into migration_files after successful conversion
+        let migrationId = localStorage.getItem('currentMigrationId'); // TODO: Replace with proper context or prop
+        if (migrationId) {
+          await supabase.from('migration_files').insert({
+            migration_id: migrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: result.convertedCode,
+            conversion_status: mapConversionStatus(result.status),
+            error_message: result.issues?.map(i => i.description).join('; ') || null,
+            data_type_mapping: result.dataTypeMapping || null,
+            performance_metrics: result.performance || null,
+            issues: result.issues || null,
+          });
+        } else {
+          console.warn('No migrationId found for conversion. File will not be added to history.');
+        }
       } catch (error) {
         results.push({ fileId: file.id, error, status: 'failed' });
         console.error(`[CONVERT] Error: ${file.name}`, error);

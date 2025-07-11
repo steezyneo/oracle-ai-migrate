@@ -78,25 +78,9 @@ export const useMigrationManager = () => {
         return [];
       }
       for (const file of uploadedFiles) {
-        const { data, error } = await supabase.from('migration_files').insert({
-          migration_id: migrationId,
-          file_name: file.name,
-          file_path: file.name,
-          file_type: file.type,
-          original_content: file.content,
-          conversion_status: 'pending',
-        }).select().single();
-        if (error) {
-          console.error('Error saving file to Supabase:', error);
-          toast({
-            title: "Upload Failed",
-            description: `Failed to save file ${file.name}`,
-            variant: "destructive",
-          });
-          continue;
-        }
+        // Do NOT insert into migration_files here. Only add to local state for conversion.
         convertedFiles.push({
-          id: data.id, // Use the real DB id
+          id: file.id || file.name, // Use file.id if available, else fallback to name
           name: file.name,
           path: file.name,
           type: file.type,
