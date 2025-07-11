@@ -84,15 +84,23 @@ export const useMigrationManager = () => {
         return [];
       }
       for (const file of uploadedFiles) {
-        // Insert into migration_files as soon as uploaded
-        await supabase.from('migration_files').insert({
-          migration_id: migrationId,
-          file_name: file.name,
-          file_path: file.name,
-          file_type: file.type,
-          original_content: file.content,
-          conversion_status: 'pending',
-        });
+        // Check if file already exists for this migration
+        const { data: existing, error: fetchError } = await supabase
+          .from('migration_files')
+          .select('id')
+          .eq('migration_id', migrationId)
+          .eq('file_name', file.name)
+          .single();
+        if (!existing) {
+          await supabase.from('migration_files').insert({
+            migration_id: migrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            conversion_status: 'pending',
+          });
+        }
         convertedFiles.push({
           id: file.id || file.name, // Use file.id if available, else fallback to name
           name: file.name,
