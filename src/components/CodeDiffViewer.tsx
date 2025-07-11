@@ -37,7 +37,7 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
           <TabsContent value="split">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium mb-2">Original (Sybase)</h3>
+                <h3 className="text-sm font-medium mb-2 text-muted-foreground">Original (Sybase)</h3>
                 <CodeEditor 
                   initialCode={originalCode} 
                   readOnly={true} 
@@ -46,7 +46,7 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
                 />
               </div>
               <div>
-                <h3 className="text-sm font-medium mb-2">Converted (Oracle)</h3>
+                <h3 className="text-sm font-medium mb-2 text-muted-foreground">Converted (Oracle)</h3>
                 <CodeEditor 
                   initialCode={convertedCode} 
                   readOnly={false} 
@@ -59,7 +59,7 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="original">
-            <h3 className="text-sm font-medium mb-2">Original (Sybase)</h3>
+            <h3 className="text-sm font-medium mb-2 text-muted-foreground">Original (Sybase)</h3>
             <CodeEditor 
               initialCode={originalCode} 
               readOnly={true} 
@@ -69,7 +69,7 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="converted">
-            <h3 className="text-sm font-medium mb-2">Converted (Oracle)</h3>
+            <h3 className="text-sm font-medium mb-2 text-muted-foreground">Converted (Oracle)</h3>
             <CodeEditor 
               initialCode={convertedCode} 
               readOnly={false} 
