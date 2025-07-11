@@ -330,8 +330,11 @@ const History = () => {
     return null;
   }
 
-  // Only include files that have been converted (converted_content is not null)
-  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content);
+  // Filter out migrations with 0 files
+  const filteredMigrations = migrations.filter(m => m.file_count > 0);
+
+  // Only include files that have been converted (success or failed, not pending)
+  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content && f.conversion_status !== 'pending');
   // Group filteredMigrationFiles by file_name, pick the most recent (latest created_at) for each file
   const groupedFiles = Object.values(
     filteredMigrationFiles.reduce((acc, file) => {
@@ -376,7 +379,7 @@ const History = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Conversion History ({migrations.length})
+              Conversion History ({filteredMigrations.length})
             </CardTitle>
             <Button
               variant="destructive"
@@ -388,7 +391,7 @@ const History = () => {
             </Button>
           </CardHeader>
           <CardContent>
-            {migrations.length === 0 ? (
+            {filteredMigrations.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -416,7 +419,7 @@ const History = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {migrations.map((migration) => (
+                    {filteredMigrations.map((migration) => (
                       <React.Fragment key={migration.id}>
                         <tr
                           className={`cursor-pointer hover:bg-blue-50 transition ${
