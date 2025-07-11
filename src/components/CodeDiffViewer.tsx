@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CodeEditor from './CodeEditor';
@@ -15,13 +15,19 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
   convertedCode,
   onUpdateConvertedCode,
 }) => {
+  const [tab, setTab] = useState('split');
+
+  useEffect(() => {
+    setTab('split');
+  }, [originalCode, convertedCode]);
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-lg">Code Comparison</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="split">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="split">Split View</TabsTrigger>
             <TabsTrigger value="original">Original (Sybase)</TabsTrigger>
