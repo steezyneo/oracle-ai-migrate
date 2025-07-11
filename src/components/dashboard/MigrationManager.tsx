@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,16 +22,9 @@ export const useMigrationManager = () => {
   const { toast } = useToast();
   const [currentMigrationId, setCurrentMigrationId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (currentMigrationId) {
-      localStorage.setItem('currentMigrationId', currentMigrationId);
-    }
-  }, [currentMigrationId]);
-
   const startNewMigration = useCallback(async () => {
     if (!user) return;
-    // Only create a migration when the user explicitly starts a new migration session
-    // Do not create migration history after conversion, upload, or deploy
+
     try {
       const { data, error } = await supabase
         .from('migrations')
@@ -72,7 +65,19 @@ export const useMigrationManager = () => {
         .single();
       return data?.id;
     })());
-    const convertedFiles: FileItem[] = [];
+    const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
+      id: file.id,
+      name: file.name,
+      path: file.name,
+      type: file.type,
+      content: file.content,
+      conversionStatus: 'pending' as const,
+      dataTypeMapping: [],
+      issues: [],
+      performanceMetrics: undefined,
+      convertedContent: undefined,
+      errorMessage: undefined,
+    }));
     try {
       if (!migrationId) {
         console.error('No migration ID available');
@@ -81,55 +86,31 @@ export const useMigrationManager = () => {
           description: "No migration ID available",
           variant: "destructive",
         });
-        return [];
+        return convertedFiles;
       }
-      for (const file of uploadedFiles) {
-        // Check if file already exists for this migration
-        const { data: existing, error: fetchError } = await supabase
-          .from('migration_files')
-          .select('id')
-          .eq('migration_id', migrationId)
-          .eq('file_name', file.name)
-          .single();
-        if (!existing) {
-          await supabase.from('migration_files').insert({
-            migration_id: migrationId,
-            file_name: file.name,
-            file_path: file.name,
-            file_type: file.type,
-            original_content: file.content,
-            conversion_status: 'pending',
-          });
-        }
-        convertedFiles.push({
-          id: file.id || file.name, // Use file.id if available, else fallback to name
-          name: file.name,
-          path: file.name,
-          type: file.type,
-          content: file.content,
-          conversionStatus: 'pending',
-          dataTypeMapping: [],
-          issues: [],
-          performanceMetrics: undefined,
-          convertedContent: undefined,
-          errorMessage: undefined,
+      for (const file of convertedFiles) {
+        await supabase.from('migration_files').insert({
+          migration_id: migrationId,
+          file_name: file.name,
+          file_path: file.path,
+          file_type: file.type,
+          original_content: file.content,
+          conversion_status: 'pending',
         });
       }
       toast({
         title: "Files Uploaded",
-        description: `${convertedFiles.length} files uploaded successfully!`,
-        variant: "success",
+        description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
       });
-      return convertedFiles;
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('Error saving files to Supabase:', error);
       toast({
         title: "Upload Failed",
-        description: "An error occurred during file upload.",
+        description: "Failed to save the uploaded files",
         variant: "destructive",
       });
-      return [];
     }
+    return convertedFiles;
   }, [currentMigrationId, toast, startNewMigration, user]);
 
   return {
