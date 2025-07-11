@@ -338,9 +338,11 @@ const History = () => {
     return null;
   }
 
-  // Group migrationFiles by file_name, prefer success > deployed > pending > failed
+  // Only include files that have been converted (converted_content is not null)
+  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content);
+  // Group filteredMigrationFiles by file_name, prefer success > deployed > pending > failed
   const groupedFiles = Object.values(
-    migrationFiles.reduce((acc, file) => {
+    filteredMigrationFiles.reduce((acc, file) => {
       const existing = acc[file.file_name];
       if (!existing) {
         acc[file.file_name] = file;
