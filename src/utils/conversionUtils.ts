@@ -1,7 +1,7 @@
 import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyCOUaG53lQvaQefclT366p8FVa3xHfqxfk";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyActrO-euMO1utUMK2lj6cmeqhunp--qiU";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
