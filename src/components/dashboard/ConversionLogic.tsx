@@ -223,11 +223,32 @@ export const useConversionLogic = (
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    const concurrencyLimit = 10; // Increased from 4 to 10
+    const concurrencyLimit = 5; // Only 5 at a time
     let currentIndex = 0;
     const results: any[] = [];
     let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
+
+    // Helper to delay between retries or between slots
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+    // Helper to convert a file with retry logic
+    const convertWithRetry = async (file: FileItem, maxRetries = 3) => {
+      let attempt = 0;
+      let lastError = null;
+      while (attempt < maxRetries) {
+        try {
+          return await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
+        } catch (error) {
+          lastError = error;
+          attempt++;
+          if (attempt < maxRetries) {
+            await delay(2500); // Wait 2.5 seconds before retry
+          }
+        }
+      }
+      throw lastError;
+    };
 
     // Helper to process the next file in the queue
     const runNext = async () => {
@@ -236,16 +257,8 @@ export const useConversionLogic = (
       convertingIds.add(file.id);
       setConvertingFileIds(Array.from(convertingIds));
       try {
-        console.log(`[CONVERT] Starting: ${file.name}`);
-        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
-        // REMOVE: Do not update migration_files in the database here
-        // await supabase.from('migration_files').update({
-        //   conversion_status: mapConversionStatus(result.status),
-        //   converted_content: result.convertedCode
-        // }).eq('id', file.id);
+        const result = await convertWithRetry(file, 3);
         results.push({ fileId: file.id, result, status: 'success' });
-        console.log(`[CONVERT] Success: ${file.name}`);
-        // Update UI immediately after conversion
         setFiles(prev =>
           prev.map(f =>
             f.id === file.id
@@ -278,7 +291,6 @@ export const useConversionLogic = (
             status: result.status
           }
         ]);
-
         // Upsert into migration_files after successful conversion
         if (migrationId) {
           await supabase.from('migration_files').insert({
@@ -299,12 +311,6 @@ export const useConversionLogic = (
         }
       } catch (error) {
         results.push({ fileId: file.id, error, status: 'failed' });
-        console.error(`[CONVERT] Error: ${file.name}`, error);
-        toast({
-          title: 'Conversion Failed',
-          description: `Failed to convert ${file.name}: ${error?.message || error}`,
-          variant: 'destructive',
-        });
         setFiles(prev =>
           prev.map(f =>
             f.id === file.id ? { ...f, conversionStatus: 'failed', errorMessage: error?.message || String(error) } : f
@@ -315,6 +321,7 @@ export const useConversionLogic = (
         setConvertingFileIds(Array.from(convertingIds));
         // Always try to process the next file if any remain
         if (currentIndex < pendingFiles.length) {
+          await delay(2500); // Wait 2.5 seconds before starting the next file
           await runNext();
         }
       }
