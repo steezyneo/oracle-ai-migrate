@@ -40,6 +40,7 @@ interface FileTreeViewProps {
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileId?: string | null;
+  onClear?: () => void;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -51,7 +52,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onFixFile,
   selectedFile,
   isConverting = false,
-  convertingFileId = null
+  convertingFileId = null,
+  onClear
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['tables', 'procedures', 'triggers'])
@@ -215,15 +217,22 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Project Structure</CardTitle>
-          {totalPending > 0 && (
-            <Button
-              onClick={onConvertAll}
-              className="text-xs px-3 py-1 h-7"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Convert All ({totalPending})
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {onClear && files.length > 0 && (
+              <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
+                Clear
+              </Button>
+            )}
+            {totalPending > 0 && (
+              <Button
+                onClick={onConvertAll}
+                className="text-xs px-3 py-1 h-7"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Convert All ({totalPending})
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
