@@ -138,7 +138,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               size="sm"
               variant="outline"
               onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
-              className="text-xs px-2 py-1 h-6 ml-2"
+              className="text-xs px-2 py-1 h-6"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Convert All ({pendingCount})
