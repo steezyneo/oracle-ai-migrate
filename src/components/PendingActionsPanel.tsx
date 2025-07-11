@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, Check, Edit3, Trash2, FileText } from 'lucide-react';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { UnreviewedFile } from '@/types/unreviewedFiles';
+import CodeDiffViewer from './CodeDiffViewer';
 
 const PendingActionsPanel: React.FC = () => {
   const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile } = useUnreviewedFiles();
@@ -133,36 +134,11 @@ const PendingActionsPanel: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Original Code:
-                    </label>
-                    <ScrollArea className="h-[120px] w-full rounded-md border mb-2">
-                      <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                        {file.original_code}
-                      </pre>
-                    </ScrollArea>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Converted Code:
-                    </label>
-                    {editingFile === file.id ? (
-                      <Textarea
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                        placeholder="Edit your converted code..."
-                      />
-                    ) : (
-                      <ScrollArea className="h-[200px] w-full rounded-md border">
-                        <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                          {file.converted_code}
-                        </pre>
-                      </ScrollArea>
-                    )}
-                  </div>
-
+                  <CodeDiffViewer
+                    originalCode={file.original_code}
+                    convertedCode={editingFile === file.id ? editedContent : file.converted_code}
+                    onUpdateConvertedCode={editingFile === file.id ? (updated => setEditedContent(updated)) : undefined}
+                  />
                   <div className="flex items-center gap-2 pt-2">
                     {editingFile === file.id ? (
                       <>
@@ -201,20 +177,19 @@ const PendingActionsPanel: React.FC = () => {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleMarkAsReviewed(file)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Mark as Reviewed & Save
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(file.id)}
-                          className="ml-auto"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkAsReviewed(file)}
+                          className="bg-green-600 hover:bg-green-700 ml-auto"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Mark as Reviewed
                         </Button>
                       </>
                     )}
