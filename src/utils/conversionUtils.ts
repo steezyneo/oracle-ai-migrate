@@ -5,29 +5,41 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
-export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'default'): Promise<ConversionResult> => {
-  console.log(`Converting with ${aiModel} AI model`);
-  
+export const convertSybaseToOracle = async (
+  file: CodeFile,
+  aiModel: string = 'default',
+  customPrompt?: string,
+  skipExplanation: boolean = true
+): Promise<ConversionResult> => {
+  console.log(`[CONVERT] Starting conversion for file: ${file.name} with model: ${aiModel}`);
   const startTime = Date.now();
-  
+
   // Extract data type mappings from original code
   const dataTypeMapping = extractDataTypeMappings(file.content);
-  
+
   // Analyze code complexity before conversion
   const originalComplexity = analyzeCodeComplexity(file.content);
-  
-  // Use Gemini for the entire conversion
-  const prompt = `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
+
+  // Use custom prompt if provided, otherwise use default
+  const prompt = customPrompt && customPrompt.trim().length > 0
+    ? `${customPrompt}\n\nSybase code:\n${file.content}`
+    : `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const convertedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+  let convertedCode = '';
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    convertedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+  } catch (e) {
+    console.error(`[CONVERT] Error converting file: ${file.name}`, e);
+    throw new Error(`Conversion failed for file: ${file.name}`);
+  }
 
   const conversionTime = Date.now() - startTime;
-  
+
   // Analyze converted code complexity
   const convertedComplexity = analyzeCodeComplexity(convertedCode);
-  
+
   // Generate quantitative performance analysis
   const performanceMetrics = generatePerformanceMetrics(
     originalComplexity,
@@ -45,6 +57,21 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
     convertedCode
   );
 
+  // Optionally skip AI explanation for speed
+  let explanations: string[] = [];
+  if (!skipExplanation) {
+    try {
+      const explanationPrompt = `Explain the main changes and rationale for converting the following Sybase SQL code to Oracle PL/SQL. Highlight any complex rewrites, data type changes, and best practices applied.\n\nSybase code:\n${file.content}\n\nOracle code:\n${convertedCode}`;
+      const explanationResult = await model.generateContent(explanationPrompt);
+      const explanationResponse = await explanationResult.response;
+      const explanationText = explanationResponse.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+      explanations = [explanationText];
+    } catch (e) {
+      explanations = ["Explanation not available due to an error."];
+    }
+  }
+
+  console.log(`[CONVERT] Success for file: ${file.name} in ${conversionTime}ms`);
   return {
     id: crypto.randomUUID(),
     originalFile: file,
@@ -53,8 +80,23 @@ export const convertSybaseToOracle = async (file: CodeFile, aiModel: string = 'd
     dataTypeMapping,
     performance: performanceMetrics,
     status: issues.some(i => i.severity === 'error') ? 'error' : 
-            issues.length > 0 ? 'warning' : 'success'
+            issues.length > 0 ? 'warning' : 'success',
+    explanations,
   };
+};
+
+// Convert multiple files in parallel with support for customPrompt and skipExplanation
+export const convertMultipleFiles = async (
+  files: CodeFile[],
+  aiModel: string = 'default',
+  customPrompt?: string,
+  skipExplanation: boolean = true
+): Promise<ConversionResult[]> => {
+  // Map each file to a conversion promise using the improved convertSybaseToOracle
+  const conversionPromises = files.map(file =>
+    convertSybaseToOracle(file, aiModel, customPrompt, skipExplanation)
+  );
+  return Promise.all(conversionPromises);
 };
 
 // Helper: extract data type mappings from code

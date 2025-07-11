@@ -26,6 +26,7 @@ export interface ConversionResult {
   dataTypeMapping?: DataTypeMapping[];
   performance?: PerformanceMetrics;
   status: 'success' | 'warning' | 'error';
+  explanations?: string[];
 }
 
 export interface ConversionIssue {
