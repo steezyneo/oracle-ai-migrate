@@ -51,8 +51,10 @@ export const useMigrationManager = () => {
   }, [user, toast]);
 
   const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
-    // Always start a new migration before uploading files
-    await startNewMigration();
+    // Ensure a migration exists before uploading files
+    if (!currentMigrationId) {
+      await startNewMigration();
+    }
     const migrationId = currentMigrationId || (await (async () => {
       const { data } = await supabase
         .from('migrations')
@@ -87,37 +89,14 @@ export const useMigrationManager = () => {
         return convertedFiles;
       }
       for (const file of convertedFiles) {
-        // Check if a record already exists for this migration and file name
-        const { data: existing, error: fetchError } = await supabase
-          .from('migration_files')
-          .select('id')
-          .eq('migration_id', migrationId)
-          .eq('file_name', file.name)
-          .single();
-        if (existing && existing.id) {
-          // Update the existing record
-          await supabase.from('migration_files').update({
-            file_path: file.path,
-            file_type: file.type,
-            original_content: file.content,
-            conversion_status: 'pending',
-            converted_content: null,
-            error_message: null,
-            data_type_mapping: null,
-            performance_metrics: null,
-            issues: null,
-          }).eq('id', existing.id);
-        } else {
-          // Insert a new record
-          await supabase.from('migration_files').insert({
-            migration_id: migrationId,
-            file_name: file.name,
-            file_path: file.path,
-            file_type: file.type,
-            original_content: file.content,
-            conversion_status: 'pending',
-          });
-        }
+        await supabase.from('migration_files').insert({
+          migration_id: migrationId,
+          file_name: file.name,
+          file_path: file.path,
+          file_type: file.type,
+          original_content: file.content,
+          conversion_status: 'pending',
+        });
       }
       toast({
         title: "Files Uploaded",
@@ -132,7 +111,7 @@ export const useMigrationManager = () => {
       });
     }
     return convertedFiles;
-  }, [currentMigrationId, startNewMigration, toast, user]);
+  }, [currentMigrationId, toast, startNewMigration, user]);
 
   return {
     currentMigrationId,
