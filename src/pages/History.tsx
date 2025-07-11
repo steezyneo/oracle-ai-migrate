@@ -330,6 +330,18 @@ const History = () => {
     return null;
   }
 
+  // Only include files that have been converted (converted_content is not null)
+  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content);
+  // Group filteredMigrationFiles by file_name, pick the most recent (latest created_at) for each file
+  const groupedFiles = Object.values(
+    filteredMigrationFiles.reduce((acc, file) => {
+      const existing = acc[file.file_name];
+      if (!existing || new Date(file.created_at) > new Date(existing.created_at)) {
+        acc[file.file_name] = file;
+      }
+      return acc;
+    }, {} as Record<string, MigrationFile>));
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -465,8 +477,8 @@ const History = () => {
                         </tr>
                         
                         {/* Show files if this migration is selected */}
-                        {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
-                          migrationFiles.map((file) => (
+                        {selectedMigrationId === migration.id && groupedFiles.length > 0 && (
+                          groupedFiles.map((file) => (
                             <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
                               <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
                                 <FileText className="h-4 w-4 text-gray-500" />
@@ -507,7 +519,7 @@ const History = () => {
                           ))
                         )}
                         
-                        {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
+                        {selectedMigrationId === migration.id && groupedFiles.length === 0 && (
                           <tr className="bg-gray-50">
                             <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                               No files found for this migration
