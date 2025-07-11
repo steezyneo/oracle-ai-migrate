@@ -74,6 +74,15 @@ const Dashboard = () => {
     }
   }, [files, selectedFile]);
 
+  useEffect(() => {
+    if (selectedFile && files.length > 0) {
+      const updated = files.find(f => f.id === selectedFile.id);
+      if (updated && updated !== selectedFile) {
+        setSelectedFile(updated);
+      }
+    }
+  }, [files, selectedFile]);
+
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
     setFiles(convertedFiles);
