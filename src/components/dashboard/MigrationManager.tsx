@@ -2,8 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { FileItem } from '@/types';
 
+interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  type: 'table' | 'procedure' | 'trigger' | 'other';
+  content: string;
+  conversionStatus: 'pending' | 'success' | 'failed';
+  convertedContent?: string;
+  errorMessage?: string;
+  dataTypeMapping?: any[];
+  issues?: any[];
+  performanceMetrics?: any;
+}
 
 export const useMigrationManager = () => {
   const { user } = useAuth();
@@ -57,7 +69,6 @@ export const useMigrationManager = () => {
       id: file.id,
       name: file.name,
       path: file.name,
-      database: file.database || 'Default', // Default database name if not provided
       type: file.type,
       content: file.content,
       conversionStatus: 'pending' as const,

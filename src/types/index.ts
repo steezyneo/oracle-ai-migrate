@@ -18,21 +18,6 @@ export interface CodeFile {
   status?: 'pending' | 'converting' | 'success' | 'error';
 }
 
-export interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  database: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: DataTypeMapping[];
-  issues?: ConversionIssue[];
-  performanceMetrics?: PerformanceMetrics;
-}
-
 export interface ConversionResult {
   id: string;
   originalFile: CodeFile;
@@ -51,7 +36,6 @@ export interface ConversionIssue {
   severity: 'info' | 'warning' | 'error';
   suggestedFix?: string;
   originalCode?: string;
-  category: string;
 }
 
 export interface DataTypeMapping {

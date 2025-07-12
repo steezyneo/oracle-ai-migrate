@@ -18,8 +18,17 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { FileItem } from '@/types';
 
+interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  type: 'table' | 'procedure' | 'trigger' | 'other';
+  content: string;
+  conversionStatus: 'pending' | 'success' | 'failed';
+  convertedContent?: string;
+  errorMessage?: string;
+}
 
 interface FileTreeViewProps {
   files: FileItem[];
@@ -60,19 +69,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     setExpandedSections(newExpanded);
   };
 
-  const getFilesByDatabase = () => {
-    const databases = new Map<string, FileItem[]>();
-    files.forEach(file => {
-      if (!databases.has(file.database)) {
-        databases.set(file.database, []);
-      }
-      databases.get(file.database)!.push(file);
-    });
-    return databases;
-  };
-
-  const getFilesByDatabaseAndType = (database: string, type: string) => {
-    return files.filter(file => file.database === database && file.type === type);
+  const getFilesByType = (type: string) => {
+    return files.filter(file => file.type === type);
   };
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
@@ -111,28 +109,25 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return files.filter(f => f.conversionStatus === 'pending').length;
   };
 
-  const renderTypeSection = (database: string, sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
-    const sectionId = `${database}-${sectionKey}`;
-    const isExpanded = expandedSections.has(sectionId);
+  const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
+    const isExpanded = expandedSections.has(sectionKey);
     const pendingCount = getPendingFilesCount(sectionFiles);
     const typeKey = sectionKey === 'tables' ? 'table' : 
                    sectionKey === 'procedures' ? 'procedure' : 
                    sectionKey === 'triggers' ? 'trigger' : 'other';
     
-    if (sectionFiles.length === 0) return null;
-    
     return (
-      <div key={sectionId} className="mb-1">
+      <div key={sectionKey} className="mb-2">
         <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => toggleSection(sectionId)}
-            className="flex-1 justify-start p-0 h-auto font-medium text-sm"
+            onClick={() => toggleSection(sectionKey)}
+            className="flex-1 justify-start p-0 h-auto font-medium"
           >
             {isExpanded ? 
-              <ChevronDown className="h-3 w-3 mr-2" /> : 
-              <ChevronRight className="h-3 w-3 mr-2" />
+              <ChevronDown className="h-4 w-4 mr-2" /> : 
+              <ChevronRight className="h-4 w-4 mr-2" />
             }
             {getSectionIcon(sectionKey)}
             <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
@@ -152,7 +147,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         </div>
         
         {isExpanded && (
-          <div className="ml-6 space-y-1">
+          <div className="ml-4 space-y-1">
             {sectionFiles.map((file) => (
               <div
                 key={file.id}
@@ -163,7 +158,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 onClick={() => onFileSelect(file)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <FileText className="h-3 w-3 text-gray-500 flex-shrink-0" />
+                  <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className={cn(
                     "text-sm truncate",
                     file.conversionStatus === 'success' && "text-green-700",
@@ -211,44 +206,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     );
   };
 
-  const renderDatabaseSection = (database: string, databaseFiles: FileItem[]) => {
-    const isExpanded = expandedSections.has(database);
-    const tables = databaseFiles.filter(f => f.type === 'table');
-    const procedures = databaseFiles.filter(f => f.type === 'procedure');
-    const triggers = databaseFiles.filter(f => f.type === 'trigger');
-    const others = databaseFiles.filter(f => f.type === 'other');
-    
-    return (
-      <div key={database} className="mb-3">
-        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded bg-gray-100">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleSection(database)}
-            className="flex-1 justify-start p-0 h-auto font-semibold"
-          >
-            {isExpanded ? 
-              <FolderOpen className="h-4 w-4 mr-2 text-blue-600" /> : 
-              <Folder className="h-4 w-4 mr-2 text-blue-600" />
-            }
-            <Database className="h-4 w-4 mr-2 text-blue-600" />
-            <span className="ml-1">{database} ({databaseFiles.length} files)</span>
-          </Button>
-        </div>
-        
-        {isExpanded && (
-          <div className="ml-2 space-y-1 mt-2">
-            {renderTypeSection(database, 'tables', 'Tables', tables)}
-            {renderTypeSection(database, 'procedures', 'Procedures', procedures)}
-            {renderTypeSection(database, 'triggers', 'Triggers', triggers)}
-            {others.length > 0 && renderTypeSection(database, 'other', 'Other Files', others)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const databaseFiles = getFilesByDatabase();
+  const tables = getFilesByType('table');
+  const procedures = getFilesByType('procedure');
+  const triggers = getFilesByType('trigger');
+  const others = getFilesByType('other');
   const totalPending = getTotalPendingFiles();
 
   return (
@@ -275,16 +236,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="space-y-2 px-4 pb-4">
-          {Array.from(databaseFiles.entries()).map(([database, dbFiles]) => 
-            renderDatabaseSection(database, dbFiles)
-          )}
-          {files.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Database className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p>No database files uploaded yet</p>
-            </div>
-          )}
+        <div className="space-y-1 px-4 pb-4">
+          {renderSection('tables', 'Tables', tables)}
+          {renderSection('procedures', 'Procedures', procedures)}
+          {renderSection('triggers', 'Triggers', triggers)}
+          {others.length > 0 && renderSection('other', 'Other Files', others)}
         </div>
       </CardContent>
     </Card>

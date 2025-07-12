@@ -2,8 +2,21 @@ import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { ConversionResult, ConversionReport, FileItem } from '@/types';
+import { ConversionResult, ConversionReport } from '@/types';
 
+interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  type: 'table' | 'procedure' | 'trigger' | 'other';
+  content: string;
+  conversionStatus: 'pending' | 'success' | 'failed';
+  convertedContent?: string;
+  errorMessage?: string;
+  dataTypeMapping?: any[];
+  issues?: any[];
+  performanceMetrics?: any;
+}
 
 export const useConversionLogic = (
   files: FileItem[],
