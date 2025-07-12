@@ -79,27 +79,35 @@ export const useMigrationManager = () => {
     }
   }, [user, toast]);
 
-  // Get or create migration ID
+  // Get or create migration ID with improved deduplication
   const getOrCreateMigrationId = useCallback(async (): Promise<string | null> => {
     if (currentMigrationId) {
       return currentMigrationId;
     }
 
-    // Try to get the most recent migration for this user
+    // Try to get the most recent active migration for this user (created within last 24 hours)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentMigration } = await supabase
       .from('migrations')
-      .select('id')
+      .select('id, created_at, migration_files(id)')
       .eq('user_id', user?.id)
+      .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (recentMigration?.id) {
+    // If we have a recent migration with files, use it
+    if (recentMigration?.id && recentMigration.migration_files?.length > 0) {
       setCurrentMigrationId(recentMigration.id);
       return recentMigration.id;
     }
 
-    // Create new migration if none exists
+    // If we have a recent migration but no files, delete it and create a new one
+    if (recentMigration?.id && (!recentMigration.migration_files || recentMigration.migration_files.length === 0)) {
+      await supabase.from('migrations').delete().eq('id', recentMigration.id);
+    }
+
+    // Create new migration
     return await startNewMigration();
   }, [currentMigrationId, user?.id, startNewMigration]);
 
@@ -140,8 +148,21 @@ export const useMigrationManager = () => {
     }));
 
     try {
-      // Save files to migration_files table
+      // Check for existing files in this migration to prevent duplicates
+      const { data: existingFiles } = await supabase
+        .from('migration_files')
+        .select('file_name')
+        .eq('migration_id', migrationId);
+
+      const existingFileNames = new Set((existingFiles || []).map(f => f.file_name.toLowerCase()));
+
+      // Save files to migration_files table, skipping duplicates
       for (const file of convertedFiles) {
+        if (existingFileNames.has(file.name.toLowerCase())) {
+          console.log(`Skipping duplicate file: ${file.name}`);
+          continue;
+        }
+
         const { error: insertError } = await supabase.from('migration_files').insert({
           migration_id: migrationId,
           file_name: file.name,
@@ -153,6 +174,8 @@ export const useMigrationManager = () => {
 
         if (insertError) {
           console.error(`Error saving file ${file.name}:`, insertError);
+        } else {
+          existingFileNames.add(file.name.toLowerCase());
         }
       }
 
@@ -249,6 +272,33 @@ export const useMigrationManager = () => {
       return false;
     }
   }, []);
+
+  // Clean up old empty migrations
+  const cleanupEmptyMigrations = useCallback(async () => {
+    try {
+      // Find migrations older than 24 hours with no files
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { data: emptyMigrations } = await supabase
+        .from('migrations')
+        .select('id, migration_files(id)')
+        .eq('user_id', user?.id)
+        .lt('created_at', twentyFourHoursAgo);
+
+      if (emptyMigrations) {
+        const migrationsToDelete = emptyMigrations
+          .filter(m => !m.migration_files || m.migration_files.length === 0)
+          .map(m => m.id);
+
+        if (migrationsToDelete.length > 0) {
+          await supabase.from('migrations').delete().in('id', migrationsToDelete);
+          console.log(`Cleaned up ${migrationsToDelete.length} empty migrations`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up empty migrations:', error);
+    }
+  }, [user?.id]);
 
   // Save deployment log
   const saveDeploymentLog = useCallback(async (
@@ -453,6 +503,7 @@ export const useMigrationManager = () => {
     deleteMigration,
     getUserMigrations,
     getMigrationStats,
+    cleanupEmptyMigrations,
     
     // Setters
     setCurrentMigrationId,

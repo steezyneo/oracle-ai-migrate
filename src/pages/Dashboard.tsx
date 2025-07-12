@@ -78,7 +78,7 @@ const Dashboard = () => {
     );
   }
 
-  const { handleCodeUpload, currentMigrationId, startNewMigration } = migrationManager;
+  const { handleCodeUpload, currentMigrationId, startNewMigration, cleanupEmptyMigrations } = migrationManager;
   const { unreviewedFiles: unreviewedFilesData } = unreviewedFiles;
   const {
     isConverting,
@@ -123,6 +123,13 @@ const Dashboard = () => {
       localStorage.setItem('wizardSeen', '1');
     }
   }, []);
+
+  // Clean up old empty migrations when dashboard loads
+  useEffect(() => {
+    if (user && !loading) {
+      cleanupEmptyMigrations();
+    }
+  }, [user, loading, cleanupEmptyMigrations]);
 
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     try {

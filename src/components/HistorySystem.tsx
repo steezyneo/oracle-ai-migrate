@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Clock,
   Play,
-  Settings
+  Settings,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -24,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Types
 interface Migration {
@@ -36,6 +38,7 @@ interface Migration {
   failed_count: number;
   pending_count: number;
   deployed_count: number;
+  has_converted_files: boolean;
 }
 
 interface MigrationFile {
@@ -106,6 +109,7 @@ export const HistorySystem: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('migrations');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed' | 'deployed'>('all');
   const isFetchingFiles = useRef(false);
 
   // Get the return tab from location state
@@ -123,7 +127,7 @@ export const HistorySystem: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  // Fetch migration history
+  // Fetch migration history with improved filtering
   const fetchHistory = async () => {
     try {
       setIsLoading(true);
@@ -137,7 +141,8 @@ export const HistorySystem: React.FC = () => {
           updated_at,
           migration_files (
             id,
-            conversion_status
+            conversion_status,
+            converted_content
           )
         `)
         .eq('user_id', user?.id)
@@ -153,16 +158,22 @@ export const HistorySystem: React.FC = () => {
       } else {
         const processedMigrations = migrationsData?.map(migration => {
           const files = migration.migration_files || [];
+          const successFiles = files.filter((f: any) => f.conversion_status === 'success' && f.converted_content);
+          const failedFiles = files.filter((f: any) => f.conversion_status === 'failed');
+          const pendingFiles = files.filter((f: any) => f.conversion_status === 'pending');
+          const deployedFiles = files.filter((f: any) => f.conversion_status === 'deployed');
+          
           return {
             id: migration.id,
             project_name: migration.project_name,
             created_at: migration.created_at,
             updated_at: migration.updated_at,
             file_count: files.length,
-            success_count: files.filter((f: any) => f.conversion_status === 'success').length,
-            failed_count: files.filter((f: any) => f.conversion_status === 'failed').length,
-            pending_count: files.filter((f: any) => f.conversion_status === 'pending').length,
-            deployed_count: files.filter((f: any) => f.conversion_status === 'deployed').length,
+            success_count: successFiles.length,
+            failed_count: failedFiles.length,
+            pending_count: pendingFiles.length,
+            deployed_count: deployedFiles.length,
+            has_converted_files: successFiles.length > 0,
           };
         }) || [];
         
@@ -197,7 +208,7 @@ export const HistorySystem: React.FC = () => {
     }
   };
 
-  // Fetch files for a migration
+  // Fetch files for a migration with deduplication
   const fetchMigrationFiles = async (migrationId: string) => {
     if (isFetchingFiles.current) return;
     isFetchingFiles.current = true;
@@ -219,14 +230,28 @@ export const HistorySystem: React.FC = () => {
         return;
       }
       
-      const typedFiles: MigrationFile[] = (data || []).map(file => ({
-        ...file,
-        conversion_status: ['pending', 'success', 'failed', 'deployed'].includes(file.conversion_status) 
-          ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed'
-          : 'pending'
-      }));
+      // Deduplicate files by name and only show files with actual content
+      const fileMap = new Map<string, MigrationFile>();
+      (data || []).forEach((file: any) => {
+        const key = file.file_name.toLowerCase();
+        const existingFile = fileMap.get(key);
+        
+        // Keep the file with the best conversion status or the most recent one
+        if (!existingFile || 
+            (file.conversion_status === 'success' && existingFile.conversion_status !== 'success') ||
+            (file.conversion_status === existingFile.conversion_status && 
+             new Date(file.updated_at) > new Date(existingFile.updated_at))) {
+          fileMap.set(key, {
+            ...file,
+            conversion_status: ['pending', 'success', 'failed', 'deployed'].includes(file.conversion_status) 
+              ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed'
+              : 'pending'
+          });
+        }
+      });
       
-      setMigrationFiles(typedFiles);
+      const deduplicatedFiles = Array.from(fileMap.values());
+      setMigrationFiles(deduplicatedFiles);
     } catch (err) {
       console.error('Error in fetchMigrationFiles:', err);
       setMigrationFiles([]);
@@ -401,6 +426,28 @@ export const HistorySystem: React.FC = () => {
     navigate('/');
   };
 
+  // Filter migrations based on status
+  const getFilteredMigrations = () => {
+    let filtered = migrations.filter(m => m.file_count > 0 && m.has_converted_files);
+    
+    switch (filterStatus) {
+      case 'success':
+        filtered = filtered.filter(m => m.success_count > 0);
+        break;
+      case 'failed':
+        filtered = filtered.filter(m => m.failed_count > 0);
+        break;
+      case 'deployed':
+        filtered = filtered.filter(m => m.deployed_count > 0);
+        break;
+      default:
+        // Show all migrations with converted files
+        break;
+    }
+    
+    return filtered;
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -416,8 +463,7 @@ export const HistorySystem: React.FC = () => {
     return null;
   }
 
-  // Filter out migrations with 0 files
-  const filteredMigrations = migrations.filter(m => m.file_count > 0);
+  const filteredMigrations = getFilteredMigrations();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -469,7 +515,7 @@ export const HistorySystem: React.FC = () => {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="migrations" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Migrations ({filteredMigrations.length})
+              Clean Migrations ({filteredMigrations.length})
             </TabsTrigger>
             <TabsTrigger value="deployments" className="flex items-center gap-2">
               <Play className="h-4 w-4" />
@@ -480,20 +526,36 @@ export const HistorySystem: React.FC = () => {
           <TabsContent value="migrations">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Conversion History
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Clean Migration History
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Migrations</SelectItem>
+                        <SelectItem value="success">Successful Only</SelectItem>
+                        <SelectItem value="failed">Failed Only</SelectItem>
+                        <SelectItem value="deployed">Deployed Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {filteredMigrations.length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      No migrations yet
+                      No clean migrations yet
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      Start your first migration project to see it here
+                      Start a new migration project and convert files to see clean history here
                     </p>
                     <Button onClick={() => navigate('/migration')}>
                       Start New Migration
@@ -572,7 +634,9 @@ export const HistorySystem: React.FC = () => {
                             
                             {/* Show files if this migration is selected */}
                             {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
-                              migrationFiles.map((file) => (
+                              migrationFiles
+                                .filter(file => file.converted_content) // Only show files with converted content
+                                .map((file) => (
                                 <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
                                   <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
                                     <FileText className="h-4 w-4 text-gray-500" />
@@ -619,10 +683,10 @@ export const HistorySystem: React.FC = () => {
                               ))
                             )}
                             
-                            {selectedMigrationId === migration.id && migrationFiles.length === 0 && (
+                            {selectedMigrationId === migration.id && migrationFiles.filter(f => f.converted_content).length === 0 && (
                               <tr className="bg-gray-50">
                                 <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                                  No files found for this migration
+                                  No converted files found for this migration
                                 </td>
                               </tr>
                             )}
