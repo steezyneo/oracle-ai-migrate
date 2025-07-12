@@ -205,7 +205,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                   )}>
                     {file.name}
                     {file.conversionStatus === 'failed' && <span className="ml-1 text-xs text-red-500">(Error)</span>}
-                    {file.conversionStatus === 'pending' && <span className="ml-1 text-xs text-yellow-600">(Needs Review)</span>}
                     {file.conversionStatus === 'pending_review' && <span className="ml-1 text-xs text-yellow-600">(Marked for Review)</span>}
                   </span>
                 </div>

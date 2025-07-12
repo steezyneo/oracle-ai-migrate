@@ -572,7 +572,6 @@ export const HistorySystem: React.FC = () => {
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Review</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
@@ -602,10 +601,7 @@ export const HistorySystem: React.FC = () => {
                                 <Badge className="bg-red-100 text-red-800">{migration.failed_count}</Badge>
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <Badge className="bg-orange-100 text-orange-800">{migration.pending_count}</Badge>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <Badge className="bg-yellow-100 text-yellow-800">{migration.pending_review_count}</Badge>
+                                <Badge className="bg-orange-100 text-orange-800">{migration.pending_count + migration.pending_review_count}</Badge>
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <div className="flex gap-1 justify-center">

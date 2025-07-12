@@ -302,16 +302,9 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-              <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                {file.content}
-              </pre>
-            </div>
-
             {/* AI Explanations for Explainable AI */}
             {file.explanations && file.explanations.length > 0 && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-2">
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-4">
                 <h4 className="text-blue-800 font-semibold mb-1">AI Explanation</h4>
                 {file.explanations.map((explanation, idx) => (
                   <p key={idx} className="text-blue-900 text-sm mb-1 whitespace-pre-line">{explanation}</p>
@@ -319,38 +312,49 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               </div>
             )}
             
-            {/* Editable converted code section */}
-            {file.convertedContent && (
+            {/* Side-by-side code comparison */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Original Sybase Code */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-green-700">Converted Oracle Code:</h3>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditing(!isEditing)}
-                  >
-                    {isEditing ? 'Cancel' : 'Edit'}
-                  </Button>
-                </div>
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      className="min-h-64 font-mono text-sm"
-                    />
-                    <Button onClick={handleSaveEdit} size="sm">
-                      <Save className="h-4 w-4 mr-1" />
-                      Save Changes
+                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+                  {file.content}
+                </pre>
+              </div>
+
+              {/* Converted Oracle Code */}
+              {file.convertedContent && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-green-700">Converted Oracle Code:</h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditing(!isEditing)}
+                    >
+                      {isEditing ? 'Cancel' : 'Edit'}
                     </Button>
                   </div>
-                ) : (
-                  <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                    {file.convertedContent}
-                  </pre>
-                )}
-              </div>
-            )}
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editedContent}
+                        onChange={(e) => setEditedContent(e.target.value)}
+                        className="min-h-96 font-mono text-sm"
+                      />
+                      <Button onClick={handleSaveEdit} size="sm">
+                        <Save className="h-4 w-4 mr-1" />
+                        Save Changes
+                      </Button>
+                    </div>
+                  ) : (
+                    <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+                      {file.convertedContent}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </div>
             
             {file.errorMessage && (
               <div>
