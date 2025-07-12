@@ -18,10 +18,15 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
   const { toast } = useToast();
 
   const extractDatabaseName = (filePath: string): string => {
-    // Extract database name from path like "Database1/Tables/table1.sql"
+    // filePath: "Parent/Database1/Tables/emptab1.sql"
     const pathParts = filePath.split('/');
-    if (pathParts.length >= 2) {
-      return pathParts[0]; // First folder is the database name
+    // If path is at least 3 parts, use the second part as DB name
+    if (pathParts.length >= 3) {
+      return pathParts[1];
+    }
+    // If only two parts, use the first (for legacy/single folder)
+    if (pathParts.length === 2) {
+      return pathParts[0];
     }
     return 'default';
   };
