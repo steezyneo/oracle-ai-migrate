@@ -37,7 +37,8 @@ const PendingActionsPanel: React.FC = () => {
 
   const handleMarkAsReviewed = async (file: UnreviewedFile) => {
     const codeToSave = editingFile === file.id ? editedContent : file.converted_code;
-    const success = await markAsReviewed(file.id, file.file_name, codeToSave);
+    const originalCode = file.original_code || '';
+    const success = await markAsReviewed(file.id, file.file_name, codeToSave, originalCode);
     
     if (success && editingFile === file.id) {
       setEditingFile(null);
@@ -133,74 +134,81 @@ const PendingActionsPanel: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Original Code:
-                      </label>
-                      <ScrollArea className="h-[200px] w-full rounded-md border mb-2">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Converted Code:
+                    </label>
+                    {editingFile === file.id ? (
+                      <Textarea
+                        value={editedContent}
+                        onChange={(e) => setEditedContent(e.target.value)}
+                        className="min-h-[200px] font-mono text-sm"
+                        placeholder="Edit your converted code..."
+                      />
+                    ) : (
+                      <ScrollArea className="h-[200px] w-full rounded-md border">
                         <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                          {file.original_code}
+                          {file.converted_code}
                         </pre>
                       </ScrollArea>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Converted Code:
-                      </label>
-                      {editingFile === file.id ? (
-                        <>
-                          <Textarea
-                            value={editedContent}
-                            onChange={(e) => setEditedContent(e.target.value)}
-                            className="min-h-[200px] font-mono text-sm mb-2"
-                            placeholder="Edit your converted code..."
-                          />
-                          <div className="flex items-center gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSaveEdit(file)}
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancelEdit}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <ScrollArea className="h-[200px] w-full rounded-md border">
-                            <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                              {file.converted_code}
-                            </pre>
-                          </ScrollArea>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStartEdit(file)}
-                            >
-                              <Edit3 className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleMarkAsReviewed(file)}
-                              className="bg-green-600 hover:bg-green-700 ml-auto"
-                            >
-                              <Check className="h-4 w-4 mr-2" />
-                              Mark as Reviewed & Save
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    {editingFile === file.id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(file)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Save Changes
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkAsReviewed(file)}
+                          className="bg-green-600 hover:bg-green-700 ml-auto"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Mark as Reviewed & Save
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStartEdit(file)}
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkAsReviewed(file)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Mark as Reviewed & Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(file.id)}
+                          className="ml-auto"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
