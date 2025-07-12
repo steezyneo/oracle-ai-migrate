@@ -34,6 +34,7 @@ interface ConversionPanelProps {
   onDismissIssue: (issueId: string) => void;
   onGenerateReport: () => void;
   onUploadRedirect: () => void;
+  onClear: () => void;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -50,6 +51,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onDismissIssue,
   onGenerateReport,
   onUploadRedirect,
+  onClear,
 }) => {
   if (files.length === 0) {
     return (
@@ -89,6 +91,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
+          onClear={onClear}
         />
       </div>
 
