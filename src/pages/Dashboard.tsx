@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, FileText, Upload, Clock } from 'lucide-react';
+import { Database, FileText, Upload, Clock, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
 import PendingActionsPanel from '@/components/PendingActionsPanel';
+import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboard';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
@@ -37,9 +38,9 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'pending') || 'upload';
+  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'pending' | 'metrics') || 'upload';
   
-  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'pending'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'pending' | 'metrics'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
@@ -198,8 +199,8 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending')}>
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending' | 'metrics')}>
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Upload Code
@@ -207,6 +208,10 @@ const Dashboard = () => {
             <TabsTrigger value="conversion" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Conversion
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Performance
             </TabsTrigger>
             <TabsTrigger value="pending" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
@@ -240,6 +245,26 @@ const Dashboard = () => {
               onUploadRedirect={handleResetAndUpload}
               onClear={handleResetAndUpload}
             />
+          </TabsContent>
+
+          <TabsContent value="metrics">
+            {conversionResults.length > 0 ? (
+              <PerformanceMetricsDashboard results={conversionResults} />
+            ) : (
+              <div className="text-center py-12">
+                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Performance Data Available</h3>
+                <p className="text-gray-500 mb-4">
+                  Convert some files first to see performance metrics and optimizations.
+                </p>
+                <button
+                  onClick={() => setActiveTab('conversion')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Go to Conversion
+                </button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="pending">

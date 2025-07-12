@@ -57,6 +57,13 @@ export interface PerformanceMetrics {
     commentRatio: number;
     complexityLevel: 'Low' | 'Medium' | 'High';
   };
+  // Enhanced metrics for performance analysis
+  linesReduced?: number;
+  loopsReduced?: number;
+  originalLines?: number;
+  convertedLines?: number;
+  originalLoops?: number;
+  convertedLoops?: number;
   recommendations?: string[];
   notes?: string[];
 }

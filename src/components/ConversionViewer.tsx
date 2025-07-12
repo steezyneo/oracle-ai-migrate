@@ -397,17 +397,39 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   </Card>
                 )}
 
-                {/* Conversion Time */}
-                {file.performanceMetrics.conversionTimeMs && (
-                  <Card className="p-4">
-                    <div className="text-center">
-                      <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {file.performanceMetrics.conversionTimeMs}ms
-                      </p>
-                    </div>
+                {/* Enhanced Performance Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Lines Reduced */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Lines Reduced</h4>
+                    <p className="text-2xl font-bold text-green-600">
+                      {file.performanceMetrics.linesReduced || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {file.performanceMetrics.originalLines || 0} → {file.performanceMetrics.convertedLines || 0}
+                    </p>
                   </Card>
-                )}
+                  
+                  {/* Loops Reduced */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Loops Reduced</h4>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {file.performanceMetrics.loopsReduced || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {file.performanceMetrics.originalLoops || 0} → {file.performanceMetrics.convertedLoops || 0}
+                    </p>
+                  </Card>
+                  
+                  {/* Conversion Time */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {file.performanceMetrics.conversionTimeMs || 0}ms
+                    </p>
+                    <p className="text-xs text-gray-500">Processing Time</p>
+                  </Card>
+                </div>
                 
                 {/* Recommendations */}
                 {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (

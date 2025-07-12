@@ -210,6 +210,27 @@ const analyzeCodeComplexity = (code: string) => {
   };
 };
 
+// Analyze loops in code
+const analyzeLoops = (code: string) => {
+  const loopPatterns = [
+    /\bwhile\s+/gi,
+    /\bfor\s+/gi,
+    /\bloop\b/gi,
+    /\bcursor\s+for\s+/gi,
+    /\bopen\s+.*\s+for\s+/gi
+  ];
+  
+  let totalLoops = 0;
+  loopPatterns.forEach(pattern => {
+    const matches = code.match(pattern);
+    if (matches) {
+      totalLoops += matches.length;
+    }
+  });
+  
+  return totalLoops;
+};
+
 // Generate quantitative performance metrics
 const generatePerformanceMetrics = (
   originalComplexity: any,
@@ -221,6 +242,16 @@ const generatePerformanceMetrics = (
   const improvementPercentage = Math.round(
     ((originalComplexity.maintainabilityIndex - convertedComplexity.maintainabilityIndex) / originalComplexity.maintainabilityIndex) * 100
   );
+  
+  // Calculate lines reduced
+  const originalLines = originalComplexity.totalLines;
+  const convertedLines = convertedComplexity.totalLines;
+  const linesReduced = originalLines - convertedLines;
+  
+  // Calculate loops reduced
+  const originalLoops = analyzeLoops(originalCode);
+  const convertedLoops = analyzeLoops(convertedCode);
+  const loopsReduced = originalLoops - convertedLoops;
   
   const recommendations = [];
   
@@ -236,6 +267,15 @@ const generatePerformanceMetrics = (
     recommendations.push('Consider modularizing large code blocks');
   }
   
+  // Add specific recommendations based on performance metrics
+  if (linesReduced > 0) {
+    recommendations.push(`Code optimization: ${linesReduced} lines reduced`);
+  }
+  
+  if (loopsReduced > 0) {
+    recommendations.push(`Loop optimization: ${loopsReduced} loops reduced`);
+  }
+  
   const performanceScore = Math.round(
     (convertedComplexity.maintainabilityIndex / 100) * 100
   );
@@ -247,6 +287,13 @@ const generatePerformanceMetrics = (
     conversionTimeMs: conversionTime,
     performanceScore,
     maintainabilityIndex: convertedComplexity.maintainabilityIndex,
+    // Enhanced metrics
+    linesReduced: Math.max(0, linesReduced),
+    loopsReduced: Math.max(0, loopsReduced),
+    originalLines,
+    convertedLines,
+    originalLoops,
+    convertedLoops,
     codeQuality: {
       totalLines: convertedComplexity.totalLines,
       codeLines: convertedComplexity.codeLines,
@@ -296,6 +343,31 @@ export const generateConversionReport = (results: ConversionResult[]): string =>
   const warningCount = results.filter(r => r.status === 'warning').length;
   const errorCount = results.filter(r => r.status === 'error').length;
   
+  // Calculate performance metrics
+  const totalLinesReduced = results.reduce((sum, result) => 
+    sum + (result.performance?.linesReduced || 0), 0
+  );
+  const totalLoopsReduced = results.reduce((sum, result) => 
+    sum + (result.performance?.loopsReduced || 0), 0
+  );
+  const totalConversionTime = results.reduce((sum, result) => 
+    sum + (result.performance?.conversionTimeMs || 0), 0
+  );
+  const averageConversionTime = results.length > 0 ? totalConversionTime / results.length : 0;
+  
+  const totalOriginalLines = results.reduce((sum, result) => 
+    sum + (result.performance?.originalLines || 0), 0
+  );
+  const totalConvertedLines = results.reduce((sum, result) => 
+    sum + (result.performance?.convertedLines || 0), 0
+  );
+  const totalOriginalLoops = results.reduce((sum, result) => 
+    sum + (result.performance?.originalLoops || 0), 0
+  );
+  const totalConvertedLoops = results.reduce((sum, result) => 
+    sum + (result.performance?.convertedLoops || 0), 0
+  );
+  
   return `
 # Code Conversion Report
 
@@ -307,12 +379,30 @@ Generated: ${new Date().toLocaleString()}
 - Warnings: ${warningCount}
 - Errors: ${errorCount}
 
+## Performance Metrics
+- Total Lines Reduced: ${totalLinesReduced}
+- Total Loops Reduced: ${totalLoopsReduced}
+- Average Conversion Time: ${Math.round(averageConversionTime)}ms
+- Total Conversion Time: ${Math.round(totalConversionTime)}ms
+
+### Code Optimization Summary
+- Original Lines: ${totalOriginalLines}
+- Converted Lines: ${totalConvertedLines}
+- Lines Reduction: ${totalOriginalLines > 0 ? Math.round(((totalOriginalLines - totalConvertedLines) / totalOriginalLines) * 100) : 0}%
+- Original Loops: ${totalOriginalLoops}
+- Converted Loops: ${totalConvertedLoops}
+- Loops Reduction: ${totalOriginalLoops > 0 ? Math.round(((totalOriginalLoops - totalConvertedLoops) / totalOriginalLoops) * 100) : 0}%
+
 ## File Details
 ${results.map(result => `
 ### ${result.originalFile.name}
 - Status: ${result.status}
 - Data Types Mapped: ${result.dataTypeMapping?.length || 0}
 - Issues Found: ${result.issues?.length || 0}
+- Lines Reduced: ${result.performance?.linesReduced || 0}
+- Loops Reduced: ${result.performance?.loopsReduced || 0}
+- Conversion Time: ${result.performance?.conversionTimeMs || 0}ms
+- Performance Score: ${result.performance?.performanceScore || 0}/100
 `).join('')}
 
 ## Recommendations
@@ -320,5 +410,6 @@ ${results.map(result => `
 - Test in Oracle environment
 - Validate data integrity
 - Monitor performance
+- Consider the ${totalLinesReduced} lines and ${totalLoopsReduced} loops that were optimized
 `;
 };

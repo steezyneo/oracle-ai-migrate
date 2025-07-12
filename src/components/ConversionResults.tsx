@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, FileWarning, RefreshCw, Download } from 'lucide-react';
+import { Check, AlertTriangle, X, FileWarning, RefreshCw, Download, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CodeFile, ConversionResult, DatabaseConnection } from '@/types';
 import CodeDiffViewer from './CodeDiffViewer';
@@ -313,7 +313,7 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                             <div className="space-y-6">
                               <div>
                                 <h3 className="text-lg font-medium mb-2">Performance Improvements</h3>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                   <div className="p-4 bg-muted rounded-md">
                                     <p className="text-sm text-muted-foreground mb-1">Original Complexity</p>
                                     <p className="text-2xl font-bold">{selectedResult.performance.originalComplexity}</p>
@@ -322,12 +322,35 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
                                     <p className="text-sm text-muted-foreground mb-1">Converted Complexity</p>
                                     <p className="text-2xl font-bold">{selectedResult.performance.convertedComplexity}</p>
                                   </div>
+                                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-md">
+                                    <p className="text-sm text-muted-foreground mb-1">Lines Reduced</p>
+                                    <p className="text-2xl font-bold text-green-600">{selectedResult.performance.linesReduced || 0}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {selectedResult.performance.originalLines || 0} → {selectedResult.performance.convertedLines || 0}
+                                    </p>
+                                  </div>
+                                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                                    <p className="text-sm text-muted-foreground mb-1">Loops Reduced</p>
+                                    <p className="text-2xl font-bold text-blue-600">{selectedResult.performance.loopsReduced || 0}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {selectedResult.performance.originalLoops || 0} → {selectedResult.performance.convertedLoops || 0}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-md flex items-center">
-                                  <Check className="h-6 w-6 text-green-500 mr-3" />
-                                  <div>
-                                    <p className="text-sm font-medium">Performance Improvement</p>
-                                    <p className="text-2xl font-bold">{selectedResult.performance.improvementPercentage}%</p>
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-md flex items-center">
+                                    <Check className="h-6 w-6 text-green-500 mr-3" />
+                                    <div>
+                                      <p className="text-sm font-medium">Performance Improvement</p>
+                                      <p className="text-2xl font-bold">{selectedResult.performance.improvementPercentage}%</p>
+                                    </div>
+                                  </div>
+                                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-md flex items-center">
+                                    <Clock className="h-6 w-6 text-orange-500 mr-3" />
+                                    <div>
+                                      <p className="text-sm font-medium">Conversion Time</p>
+                                      <p className="text-2xl font-bold">{selectedResult.performance.conversionTimeMs || 0}ms</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
