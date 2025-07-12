@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversionResult, ConversionReport } from '@/types';
@@ -27,6 +28,7 @@ export const useConversionLogic = (
   migrationId?: string // <-- Add migrationId as a parameter
 ) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isConverting, setIsConverting] = useState(false);
   const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
@@ -41,6 +43,46 @@ export const useConversionLogic = (
         return 'pending';
     }
   };
+
+  // Create a new migration for failed files (separate from main migration)
+  const createFailedFileMigration = useCallback(async (fileName: string): Promise<string | null> => {
+    try {
+      const projectName = `Failed: ${fileName}`;
+
+      const { data, error } = await supabase
+        .from('migrations')
+        .insert({ 
+          user_id: user?.id,
+          project_name: projectName
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating failed file migration:', error);
+        toast({
+          title: "Migration Error",
+          description: "Failed to create migration for failed file",
+          variant: "destructive",
+        });
+        return null;
+      } else {
+        toast({
+          title: "Failed File Migration Created",
+          description: `Created separate migration for failed file: ${fileName}`,
+        });
+        return data.id;
+      }
+    } catch (error) {
+      console.error('Error creating failed file migration:', error);
+      toast({
+        title: "Migration Error",
+        description: "An unexpected error occurred while creating failed file migration",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [user?.id, toast]);
 
   const handleConvertFile = useCallback(async (fileId: string) => {
     const file = files.find(f => f.id === fileId);
@@ -127,35 +169,20 @@ export const useConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
       
-      // Save failed file to database
-      if (migrationId) {
-        // Check if file already exists for this migration
-        const { data: existing, error: fetchError } = await supabase
-          .from('migration_files')
-          .select('id')
-          .eq('migration_id', migrationId)
-          .eq('file_name', file.name)
-          .single();
-        
-        if (existing && existing.id) {
-          // Update existing record
-          await supabase.from('migration_files').update({
-            conversion_status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error'
-          }).eq('id', existing.id);
-        } else {
-          // Insert new failed file record
-          await supabase.from('migration_files').insert({
-            migration_id: migrationId,
-            file_name: file.name,
-            file_path: file.name,
-            file_type: file.type,
-            original_content: file.content,
-            converted_content: null,
-            conversion_status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
+      // Save failed file to separate migration
+      const failedMigrationId = await createFailedFileMigration(file.name);
+      if (failedMigrationId) {
+        // Insert failed file into the new migration
+        await supabase.from('migration_files').insert({
+          migration_id: failedMigrationId,
+          file_name: file.name,
+          file_path: file.name,
+          file_type: file.type,
+          original_content: file.content,
+          converted_content: null,
+          conversion_status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     } finally {
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
@@ -229,35 +256,20 @@ export const useConversionLogic = (
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
         
-        // Save failed file to database
-        if (migrationId) {
-          // Check if file already exists for this migration
-          const { data: existing, error: fetchError } = await supabase
-            .from('migration_files')
-            .select('id')
-            .eq('migration_id', migrationId)
-            .eq('file_name', file.name)
-            .single();
-          
-          if (existing && existing.id) {
-            // Update existing record
-            await supabase.from('migration_files').update({
-              conversion_status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error'
-            }).eq('id', existing.id);
-          } else {
-            // Insert new failed file record
-            await supabase.from('migration_files').insert({
-              migration_id: migrationId,
-              file_name: file.name,
-              file_path: file.name,
-              file_type: file.type,
-              original_content: file.content,
-              converted_content: null,
-              conversion_status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error'
-            });
-          }
+        // Save failed file to separate migration
+        const failedMigrationId = await createFailedFileMigration(file.name);
+        if (failedMigrationId) {
+          // Insert failed file into the new migration
+          await supabase.from('migration_files').insert({
+            migration_id: failedMigrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       } finally {
         setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));

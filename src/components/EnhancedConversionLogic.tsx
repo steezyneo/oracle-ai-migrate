@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { useMigrationManager, FileItem } from './MigrationManager';
 import { ConversionResult, ConversionReport } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useEnhancedConversionLogic = (
   files: FileItem[],
@@ -122,42 +123,20 @@ export const useEnhancedConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
       
-      // Save failed file to database
-      const migrationId = await migrationManager.getOrCreateMigrationId();
-      if (migrationId) {
-        const { data: existing } = await migrationManager.getMigrationDetails(migrationId);
-        const existingFile = existing?.migration_files?.find((f: any) => f.file_name === file.name);
-        
-        if (existingFile) {
-          // Update existing file
-          await migrationManager.updateFileStatus(
-            existingFile.id,
-            'failed',
-            undefined,
-            error instanceof Error ? error.message : 'Unknown error'
-          );
-        } else {
-          // Insert new failed file record
-          await migrationManager.handleCodeUpload([{
-            id: file.id,
-            name: file.name,
-            type: file.type,
-            content: file.content
-          }]);
-          
-          // Update the newly created file with failed status
-          const updatedMigration = await migrationManager.getMigrationDetails(migrationId);
-          const newFile = updatedMigration?.migration_files?.find((f: any) => f.file_name === file.name);
-          
-          if (newFile) {
-            await migrationManager.updateFileStatus(
-              newFile.id,
-              'failed',
-              undefined,
-              error instanceof Error ? error.message : 'Unknown error'
-            );
-          }
-        }
+      // Save failed file to separate migration
+      const failedMigrationId = await migrationManager.createFailedFileMigration(file.name);
+      if (failedMigrationId) {
+        // Insert failed file into the new migration
+        await supabase.from('migration_files').insert({
+          migration_id: failedMigrationId,
+          file_name: file.name,
+          file_path: file.name,
+          file_type: file.type,
+          original_content: file.content,
+          converted_content: null,
+          conversion_status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     } finally {
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
@@ -254,42 +233,20 @@ export const useEnhancedConversionLogic = (
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
         
-        // Save failed file to database
-        const migrationId = await migrationManager.getOrCreateMigrationId();
-        if (migrationId) {
-          const { data: existing } = await migrationManager.getMigrationDetails(migrationId);
-          const existingFile = existing?.migration_files?.find((f: any) => f.file_name === file.name);
-          
-          if (existingFile) {
-            // Update existing file
-            await migrationManager.updateFileStatus(
-              existingFile.id,
-              'failed',
-              undefined,
-              error instanceof Error ? error.message : 'Unknown error'
-            );
-          } else {
-            // Insert new failed file record
-            await migrationManager.handleCodeUpload([{
-              id: file.id,
-              name: file.name,
-              type: file.type,
-              content: file.content
-            }]);
-            
-            // Update the newly created file with failed status
-            const updatedMigration = await migrationManager.getMigrationDetails(migrationId);
-            const newFile = updatedMigration?.migration_files?.find((f: any) => f.file_name === file.name);
-            
-            if (newFile) {
-              await migrationManager.updateFileStatus(
-                newFile.id,
-                'failed',
-                undefined,
-                error instanceof Error ? error.message : 'Unknown error'
-              );
-            }
-          }
+        // Save failed file to separate migration
+        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name);
+        if (failedMigrationId) {
+          // Insert failed file into the new migration
+          await supabase.from('migration_files').insert({
+            migration_id: failedMigrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       } finally {
         setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));
@@ -423,42 +380,20 @@ export const useEnhancedConversionLogic = (
           )
         );
         
-        // Save failed file to database
-        const migrationId = await migrationManager.getOrCreateMigrationId();
-        if (migrationId) {
-          const { data: existing } = await migrationManager.getMigrationDetails(migrationId);
-          const existingFile = existing?.migration_files?.find((f: any) => f.file_name === file.name);
-          
-          if (existingFile) {
-            // Update existing file
-            await migrationManager.updateFileStatus(
-              existingFile.id,
-              'failed',
-              undefined,
-              error instanceof Error ? error.message : 'Unknown error'
-            );
-          } else {
-            // Insert new failed file record
-            await migrationManager.handleCodeUpload([{
-              id: file.id,
-              name: file.name,
-              type: file.type,
-              content: file.content
-            }]);
-            
-            // Update the newly created file with failed status
-            const updatedMigration = await migrationManager.getMigrationDetails(migrationId);
-            const newFile = updatedMigration?.migration_files?.find((f: any) => f.file_name === file.name);
-            
-            if (newFile) {
-              await migrationManager.updateFileStatus(
-                newFile.id,
-                'failed',
-                undefined,
-                error instanceof Error ? error.message : 'Unknown error'
-              );
-            }
-          }
+        // Save failed file to separate migration
+        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name);
+        if (failedMigrationId) {
+          // Insert failed file into the new migration
+          await supabase.from('migration_files').insert({
+            migration_id: failedMigrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       } finally {
         convertingIds.delete(file.id);
@@ -631,42 +566,20 @@ export const useEnhancedConversionLogic = (
           )
         );
         
-        // Save failed file to database
-        const migrationId = await migrationManager.getOrCreateMigrationId();
-        if (migrationId) {
-          const { data: existing } = await migrationManager.getMigrationDetails(migrationId);
-          const existingFile = existing?.migration_files?.find((f: any) => f.file_name === file.name);
-          
-          if (existingFile) {
-            // Update existing file
-            await migrationManager.updateFileStatus(
-              existingFile.id,
-              'failed',
-              undefined,
-              error instanceof Error ? error.message : 'Unknown error'
-            );
-          } else {
-            // Insert new failed file record
-            await migrationManager.handleCodeUpload([{
-              id: file.id,
-              name: file.name,
-              type: file.type,
-              content: file.content
-            }]);
-            
-            // Update the newly created file with failed status
-            const updatedMigration = await migrationManager.getMigrationDetails(migrationId);
-            const newFile = updatedMigration?.migration_files?.find((f: any) => f.file_name === file.name);
-            
-            if (newFile) {
-              await migrationManager.updateFileStatus(
-                newFile.id,
-                'failed',
-                undefined,
-                error instanceof Error ? error.message : 'Unknown error'
-              );
-            }
-          }
+        // Save failed file to separate migration
+        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name);
+        if (failedMigrationId) {
+          // Insert failed file into the new migration
+          await supabase.from('migration_files').insert({
+            migration_id: failedMigrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       } finally {
         convertingIds.delete(file.id);

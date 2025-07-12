@@ -111,6 +111,59 @@ export const useMigrationManager = () => {
     return await startNewMigration();
   }, [currentMigrationId, user?.id, startNewMigration]);
 
+  // Create a new migration for failed files (separate from main migration)
+  const createFailedFileMigration = useCallback(async (fileName: string): Promise<string | null> => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create migration",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      setIsCreatingMigration(true);
+      
+      const projectName = `Failed: ${fileName}`;
+
+      const { data, error } = await supabase
+        .from('migrations')
+        .insert({ 
+          user_id: user.id,
+          project_name: projectName
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating failed file migration:', error);
+        toast({
+          title: "Migration Error",
+          description: "Failed to create migration for failed file",
+          variant: "destructive",
+        });
+        return null;
+      } else {
+        toast({
+          title: "Failed File Migration Created",
+          description: `Created separate migration for failed file: ${fileName}`,
+        });
+        return data.id;
+      }
+    } catch (error) {
+      console.error('Error creating failed file migration:', error);
+      toast({
+        title: "Migration Error",
+        description: "An unexpected error occurred while creating failed file migration",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsCreatingMigration(false);
+    }
+  }, [user, toast]);
+
   // Handle file upload and save to migration
   const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
     if (!user) {
@@ -494,6 +547,7 @@ export const useMigrationManager = () => {
     // Actions
     startNewMigration,
     getOrCreateMigrationId,
+    createFailedFileMigration,
     handleCodeUpload,
     updateFileStatus,
     markFileAsDeployed,
