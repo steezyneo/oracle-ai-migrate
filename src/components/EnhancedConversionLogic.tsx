@@ -256,16 +256,14 @@ export const useEnhancedConversionLogic = (
     setIsConverting(false);
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds, migrationManager]);
 
-  // Convert all files with history tracking
+  // Convert all files with history tracking - SEQUENTIAL BATCH PROCESSING
   const handleConvertAll = useCallback(async () => {
     const pendingFiles = files.filter(f => f.conversionStatus === 'pending');
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    const concurrencyLimit = 5;
-    let currentIndex = 0;
+    const batchSize = 5; // Process 5 files at a time
     const results: any[] = [];
-    let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
 
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -287,13 +285,12 @@ export const useEnhancedConversionLogic = (
       throw lastError;
     };
 
-    const runNext = async () => {
-      if (currentIndex >= pendingFiles.length) return;
-      const file = pendingFiles[currentIndex++];
+    const convertFile = async (file: FileItem) => {
       convertingIds.add(file.id);
       setConvertingFileIds(Array.from(convertingIds));
       
       try {
+        console.log(`[BATCH CONVERT] Starting: ${file.name}`);
         const result = await convertWithRetry(file, 3);
         results.push({ fileId: file.id, result, status: 'success' });
         
@@ -371,7 +368,10 @@ export const useEnhancedConversionLogic = (
             }
           }
         }
+        
+        console.log(`[BATCH CONVERT] Completed: ${file.name}`);
       } catch (error) {
+        console.error(`[BATCH CONVERT] Failed: ${file.name}`, error);
         results.push({ fileId: file.id, error, status: 'failed' });
         setFiles(prev =>
           prev.map(f =>
@@ -397,17 +397,28 @@ export const useEnhancedConversionLogic = (
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
-        if (currentIndex < pendingFiles.length) {
-          await delay(2500);
-          await runNext();
-        }
       }
     };
 
-    for (let i = 0; i < Math.min(concurrencyLimit, pendingFiles.length); i++) {
-      running.push(runNext());
+    // Process files in sequential batches
+    for (let i = 0; i < pendingFiles.length; i += batchSize) {
+      const currentBatch = pendingFiles.slice(i, i + batchSize);
+      console.log(`[BATCH CONVERT] Starting batch ${Math.floor(i / batchSize) + 1} with ${currentBatch.length} files`);
+      
+      // Convert all files in the current batch in parallel
+      const batchPromises = currentBatch.map(file => convertFile(file));
+      
+      // Wait for ALL files in this batch to complete before moving to next batch
+      await Promise.all(batchPromises);
+      
+      console.log(`[BATCH CONVERT] Completed batch ${Math.floor(i / batchSize) + 1}`);
+      
+      // Add a small delay between batches (optional)
+      if (i + batchSize < pendingFiles.length) {
+        console.log(`[BATCH CONVERT] Waiting 2 seconds before next batch...`);
+        await delay(2000);
+      }
     }
-    await Promise.all(running);
 
     setConvertingFileIds([]);
     setIsConverting(false);
@@ -415,19 +426,19 @@ export const useEnhancedConversionLogic = (
     const failedCount = results.filter(r => r.status === 'failed').length;
     if (failedCount > 0) {
       toast({
-        title: 'Batch Conversion Complete',
+        title: 'Sequential Batch Conversion Complete',
         description: `${pendingFiles.length - failedCount} succeeded, ${failedCount} failed.`,
         variant: failedCount > 0 ? 'destructive' : 'default',
       });
     } else {
       toast({
-        title: 'Batch Conversion Complete',
+        title: 'Sequential Batch Conversion Complete',
         description: `All ${pendingFiles.length} files converted successfully!`,
       });
     }
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, migrationManager]);
 
-  // Convert selected files with history tracking
+  // Convert selected files with history tracking - SEQUENTIAL BATCH PROCESSING
   const handleConvertSelected = useCallback(async (fileIds: string[]) => {
     console.log('[handleConvertSelected] Called with fileIds:', fileIds);
     const selectedFiles = fileIds
@@ -436,22 +447,37 @@ export const useEnhancedConversionLogic = (
     if (selectedFiles.length === 0) return;
 
     setIsConverting(true);
-    const concurrencyLimit = 3;
-    let currentIndex = 0;
+    const batchSize = 5; // Process 5 files at a time
     const results: any[] = [];
-    let running: Promise<void>[] = [];
     let convertingIds = new Set<string>();
 
-    const runNext = async () => {
-      if (currentIndex >= selectedFiles.length) return;
-      const file = selectedFiles[currentIndex++];
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+    const convertWithRetry = async (file: FileItem, maxRetries = 3) => {
+      let attempt = 0;
+      let lastError = null;
+      while (attempt < maxRetries) {
+        try {
+          return await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
+        } catch (error) {
+          lastError = error;
+          attempt++;
+          if (attempt < maxRetries) {
+            await delay(2500);
+          }
+        }
+      }
+      throw lastError;
+    };
+
+    const convertFile = async (file: FileItem) => {
       convertingIds.add(file.id);
       setFiles(prev => prev.map(f => f.id === file.id ? { ...f, conversionStatus: 'converting' } : f));
       setConvertingFileIds(Array.from(convertingIds));
       
       try {
-        console.log(`[CONVERT] Starting: ${file.name}`);
-        const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt, true);
+        console.log(`[SELECTED BATCH CONVERT] Starting: ${file.name}`);
+        const result = await convertWithRetry(file, 3);
         results.push({ fileId: file.id, result, status: 'success' });
         
         setFiles(prev =>
@@ -528,7 +554,10 @@ export const useEnhancedConversionLogic = (
             }
           }
         }
+        
+        console.log(`[SELECTED BATCH CONVERT] Completed: ${file.name}`);
       } catch (error) {
+        console.error(`[SELECTED BATCH CONVERT] Failed: ${file.name}`, error);
         results.push({ fileId: file.id, error, status: 'failed' });
         setFiles(prev =>
           prev.map(f =>
@@ -554,16 +583,28 @@ export const useEnhancedConversionLogic = (
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
-        if (currentIndex < selectedFiles.length) {
-          await runNext();
-        }
       }
     };
 
-    for (let i = 0; i < Math.min(concurrencyLimit, selectedFiles.length); i++) {
-      running.push(runNext());
+    // Process selected files in sequential batches
+    for (let i = 0; i < selectedFiles.length; i += batchSize) {
+      const currentBatch = selectedFiles.slice(i, i + batchSize);
+      console.log(`[SELECTED BATCH CONVERT] Starting batch ${Math.floor(i / batchSize) + 1} with ${currentBatch.length} files`);
+      
+      // Convert all files in the current batch in parallel
+      const batchPromises = currentBatch.map(file => convertFile(file));
+      
+      // Wait for ALL files in this batch to complete before moving to next batch
+      await Promise.all(batchPromises);
+      
+      console.log(`[SELECTED BATCH CONVERT] Completed batch ${Math.floor(i / batchSize) + 1}`);
+      
+      // Add a small delay between batches (optional)
+      if (i + batchSize < selectedFiles.length) {
+        console.log(`[SELECTED BATCH CONVERT] Waiting 2 seconds before next batch...`);
+        await delay(2000);
+      }
     }
-    await Promise.all(running);
 
     setConvertingFileIds([]);
     setIsConverting(false);
@@ -571,13 +612,13 @@ export const useEnhancedConversionLogic = (
     const failedCount = results.filter(r => r.status === 'failed').length;
     if (failedCount > 0) {
       toast({
-        title: 'Selected Files Conversion Complete',
+        title: 'Selected Files Sequential Batch Conversion Complete',
         description: `${selectedFiles.length - failedCount} succeeded, ${failedCount} failed.`,
         variant: 'destructive',
       });
     } else {
       toast({
-        title: 'Selected Files Conversion Complete',
+        title: 'Selected Files Sequential Batch Conversion Complete',
         description: `All ${selectedFiles.length} selected files converted successfully!`,
       });
     }

@@ -13,8 +13,8 @@ import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
 import PendingActionsPanel from '@/components/PendingActionsPanel';
-import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
-import { useMigrationManager } from '@/components/dashboard/MigrationManager';
+import { useEnhancedConversionLogic } from '@/components/EnhancedConversionLogic';
+import { useMigrationManager } from '@/components/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -60,10 +60,9 @@ const Dashboard = () => {
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,
-    handleFixFile,
     handleGenerateReport,
-    handleConvertSelected, // <-- Add this
-  } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt, currentMigrationId);
+    handleConvertSelected,
+  } = useEnhancedConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
 
   useEffect(() => {
     if (!loading && !user) {
