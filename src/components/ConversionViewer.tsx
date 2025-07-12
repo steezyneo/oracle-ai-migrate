@@ -73,6 +73,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const { addUnreviewedFile } = useUnreviewedFiles();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [isMarkedUnreviewed, setIsMarkedUnreviewed] = useState(false);
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
@@ -124,6 +125,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         title: "File Marked as Unreviewed",
         description: `${file.name} has been added to your pending actions for review.`,
       });
+      setIsMarkedUnreviewed(true);
     }
   };
 
@@ -149,12 +151,13 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 />
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant={isMarkedUnreviewed ? "secondary" : "outline"}
                   onClick={handleMarkAsUnreviewed}
-                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                  className={isMarkedUnreviewed ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"}
+                  disabled={isMarkedUnreviewed}
                 >
                   <Clock className="h-4 w-4 mr-1" />
-                  Mark as Unreviewed
+                  {isMarkedUnreviewed ? "Marked as Unreviewed" : "Mark as Unreviewed"}
                 </Button>
               </>
             )}
@@ -186,29 +189,48 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
-                  <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                    {file.convertedContent}
-                  </pre>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      {isEditing ? 'Cancel' : 'Edit'}
-                    </Button>
-                    {isEditing && (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={handleSaveEdit}
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                    )}
-                  </div>
+                  {isEditing ? (
+                    <>
+                      <Textarea
+                        value={editedContent}
+                        onChange={e => setEditedContent(e.target.value)}
+                        className="min-h-64 font-mono text-sm mb-2"
+                      />
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={handleSaveEdit}
+                        >
+                          <Save className="h-4 w-4 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsEditing(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
