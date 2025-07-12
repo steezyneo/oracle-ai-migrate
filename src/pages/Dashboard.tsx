@@ -33,6 +33,8 @@ interface FileItem {
 }
 
 const Dashboard = () => {
+  console.log("Dashboard component rendering...");
+  
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,8 +54,32 @@ const Dashboard = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
 
-  const { handleCodeUpload, currentMigrationId, startNewMigration } = useMigrationManager();
-  const { unreviewedFiles } = useUnreviewedFiles();
+  // Try to initialize hooks with error handling
+  let migrationManager;
+  let unreviewedFiles;
+  let conversionLogic;
+  
+  try {
+    migrationManager = useMigrationManager();
+    unreviewedFiles = useUnreviewedFiles();
+    conversionLogic = useEnhancedConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
+  } catch (error) {
+    console.error('Error initializing hooks:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Database className="h-8 w-8 mx-auto mb-4" />
+          <p>Error initializing dashboard. Please refresh the page.</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { handleCodeUpload, currentMigrationId, startNewMigration } = migrationManager;
+  const { unreviewedFiles: unreviewedFilesData } = unreviewedFiles;
   const {
     isConverting,
     convertingFileIds,
@@ -62,9 +88,10 @@ const Dashboard = () => {
     handleConvertAll,
     handleGenerateReport,
     handleConvertSelected,
-  } = useEnhancedConversionLogic(files, setFiles, setConversionResults, selectedAiModel, customPrompt);
+  } = conversionLogic;
 
   useEffect(() => {
+    console.log("Dashboard useEffect - user:", user, "loading:", loading);
     if (!loading && !user) {
       navigate('/auth');
       return;
@@ -98,9 +125,18 @@ const Dashboard = () => {
   }, []);
 
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
-    const convertedFiles = await handleCodeUpload(uploadedFiles);
-    setFiles(convertedFiles);
-    setActiveTab('conversion');
+    try {
+      const convertedFiles = await handleCodeUpload(uploadedFiles);
+      setFiles(convertedFiles);
+      setActiveTab('conversion');
+    } catch (error) {
+      console.error('Error in handleCodeUploadWrapper:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload files. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileSelect = (file: FileItem) => {
@@ -139,6 +175,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleFixFile = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+    
+    try {
+      await handleConvertFile(fileId);
+      toast({
+        title: "File Fix Attempted",
+        description: "The file has been sent for reconversion to fix issues.",
+      });
+    } catch (error) {
+      console.error('Error fixing file:', error);
+      toast({
+        title: "Fix Failed",
+        description: "Failed to fix the file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleGenerateReportWrapper = async () => {
     try {
       const newReport = await handleGenerateReport();
@@ -169,14 +225,26 @@ const Dashboard = () => {
     setSelectedFile(null);
     setReport(null);
     setActiveTab('upload');
-    await handleCodeUpload([]); // This will start a new migration session
-    toast({
-      title: 'Migration Reset',
-      description: 'The current migration has been reset. You can start a new conversion.',
-    });
+    try {
+      await handleCodeUpload([]); // This will start a new migration session
+      toast({
+        title: 'Migration Reset',
+        description: 'The current migration has been reset. You can start a new conversion.',
+      });
+    } catch (error) {
+      console.error('Error resetting migration:', error);
+      toast({
+        title: 'Reset Error',
+        description: 'Failed to reset migration. Please try again.',
+        variant: "destructive",
+      });
+    }
   };
 
+  console.log("Dashboard render - loading:", loading, "user:", user, "profile:", profile);
+
   if (loading) {
+    console.log("Dashboard showing loading state");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -188,6 +256,7 @@ const Dashboard = () => {
   }
 
   if (!user || !profile) {
+    console.log("Dashboard - no user or profile, returning null");
     return null;
   }
 
@@ -210,6 +279,7 @@ const Dashboard = () => {
     );
   }
 
+  console.log("Dashboard rendering main content");
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader
@@ -232,9 +302,9 @@ const Dashboard = () => {
             <TabsTrigger value="pending" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
               Pending Actions
-              {unreviewedFiles.length > 0 && (
+              {unreviewedFilesData.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {unreviewedFiles.length}
+                  {unreviewedFilesData.length}
                 </span>
               )}
             </TabsTrigger>
@@ -265,7 +335,7 @@ const Dashboard = () => {
                 onDismissIssue={handleDismissIssue}
                 onGenerateReport={handleGenerateReportWrapper}
                 onUploadRedirect={() => setActiveTab('upload')}
-                onConvertSelected={handleConvertSelected} // <-- Pass the new function
+                onConvertSelected={handleConvertSelected}
               />
             </div>
           </TabsContent>
