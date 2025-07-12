@@ -4,15 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Folder, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface FileStructure {
-  name: string;
-  path: string;
-  type: 'file' | 'folder';
-  content?: string;
-  children?: FileStructure[];
-  [key: string]: any;
-}
+import { FileStructure } from '@/types';
 
 interface FolderUploaderProps {
   onFolderUpload: (files: FileStructure[], projectName: string) => void;
@@ -25,13 +17,74 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const extractDatabaseName = (filePath: string): string => {
+    // Extract database name from path like "Database1/Tables/table1.sql"
+    const pathParts = filePath.split('/');
+    if (pathParts.length >= 2) {
+      return pathParts[0]; // First folder is the database name
+    }
+    return 'default';
+  };
+
+  const determineFileType = (fileName: string, path: string): 'table' | 'procedure' | 'trigger' | 'other' => {
+    const lowerPath = path.toLowerCase();
+    const lowerName = fileName.toLowerCase();
+    
+    // Check path first (more reliable)
+    if (lowerPath.includes('/tables/') || lowerPath.includes('\\tables\\')) {
+      return 'table';
+    }
+    if (lowerPath.includes('/procedures/') || lowerPath.includes('\\procedures\\')) {
+      return 'procedure';
+    }
+    if (lowerPath.includes('/triggers/') || lowerPath.includes('\\triggers\\')) {
+      return 'trigger';
+    }
+    
+    // Check file extension and name
+    if (lowerName.endsWith('.tab') || lowerName.includes('table')) {
+      return 'table';
+    }
+    if (lowerName.endsWith('.prc') || lowerName.includes('proc')) {
+      return 'procedure';
+    }
+    if (lowerName.endsWith('.trg') || lowerName.includes('trigger')) {
+      return 'trigger';
+    }
+    
+    return 'other';
+  };
+
+  const processFileStructure = (files: FileList): { fileStructure: FileStructure[], databases: Set<string> } => {
+    const fileStructure: FileStructure[] = [];
+    const databases = new Set<string>();
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const path = file.webkitRelativePath || file.name;
+      const databaseName = extractDatabaseName(path);
+      databases.add(databaseName);
+      
+      const fileObj: FileStructure = {
+        name: file.name,
+        path: path,
+        type: 'file',
+        databaseName: databaseName,
+        content: '' // Will be filled later
+      };
+      
+      fileStructure.push(fileObj);
+    }
+    
+    return { fileStructure, databases };
+  };
+
   const handleFileSelect = async (files: FileList | null, uploadType: 'files' | 'folder' = 'files') => {
     if (!files || files.length === 0) return;
 
     setIsProcessing(true);
     
     try {
-      const fileStructure: FileStructure[] = [];
       let projectName = '';
       
       if (uploadType === 'folder') {
@@ -40,25 +93,24 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
         projectName = `Files_${new Date().toISOString().split('T')[0]}`;
       }
       
+      // Process file structure first
+      const { fileStructure, databases } = processFileStructure(files);
+      
+      // Read file contents
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const content = await readFileContent(file);
-        
-        const fileObj: FileStructure = {
-          name: file.name,
-          path: file.webkitRelativePath || file.name,
-          type: 'file',
-          content: content
-        };
-        
-        fileStructure.push(fileObj);
+        fileStructure[i].content = content;
       }
       
       onFolderUpload(fileStructure, projectName);
       
+      const dbCount = databases.size;
+      const fileCount = files.length;
+      
       toast({
         title: "Files Uploaded",
-        description: `Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
+        description: `Successfully uploaded ${fileCount} file${fileCount > 1 ? 's' : ''} from ${dbCount} database${dbCount > 1 ? 's' : ''}`,
       });
     } catch (error) {
       console.error('Error processing files:', error);
@@ -74,7 +126,8 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
 
   const extractProjectName = (files: FileList): string => {
     if (files.length > 0 && files[0].webkitRelativePath) {
-      return files[0].webkitRelativePath.split('/')[0];
+      const pathParts = files[0].webkitRelativePath.split('/');
+      return pathParts[0]; // Use the root folder name as project name
     }
     return `Project_${new Date().toISOString().split('T')[0]}`;
   };
@@ -136,7 +189,7 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
           Upload Code Files
         </CardTitle>
         <CardDescription>
-          Select files or folder containing your Sybase code files to begin migration
+          Select files or folder containing your Sybase code files organized by database structure
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -160,7 +213,10 @@ const FolderUploader: React.FC<FolderUploaderProps> = ({ onFolderUpload }) => {
                 {isProcessing ? 'Processing Files...' : 'Drop files here or choose upload option'}
               </h3>
               <p className="text-gray-600 mb-4">
-                Upload .sql, .proc, .trig files and more
+                Upload .sql, .proc, .trig files organized by database folders
+              </p>
+              <p className="text-sm text-gray-500">
+                Expected structure: DatabaseName/Tables/, DatabaseName/Procedures/, DatabaseName/Triggers/
               </p>
             </div>
 

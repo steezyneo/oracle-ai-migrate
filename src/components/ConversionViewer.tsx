@@ -44,19 +44,7 @@ interface PerformanceMetrics {
   conversionTimeMs?: number;
 }
 
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: DataTypeMapping[];
-  issues?: ConversionIssue[];
-  performanceMetrics?: PerformanceMetrics;
-}
+import { FileItem } from '@/types';
 
 interface ConversionViewerProps {
   file: FileItem;

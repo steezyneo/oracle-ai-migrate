@@ -2,20 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: any[];
-  issues?: any[];
-  performanceMetrics?: any;
-}
+import { FileItem, FileStructure } from '@/types';
 
 export const useMigrationManager = () => {
   const { user } = useAuth();
@@ -50,7 +37,7 @@ export const useMigrationManager = () => {
     }
   }, [user, toast]);
 
-  const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
+  const handleCodeUpload = useCallback(async (uploadedFiles: FileStructure[]): Promise<FileItem[]> => {
     // Ensure a migration exists before uploading files
     if (!currentMigrationId) {
       await startNewMigration();
@@ -65,12 +52,17 @@ export const useMigrationManager = () => {
         .single();
       return data?.id;
     })());
+
+    // Extract unique databases
+    const databases = new Set(uploadedFiles.map(file => file.databaseName || 'default'));
+    
     const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
-      id: file.id,
+      id: file.id || crypto.randomUUID(),
       name: file.name,
-      path: file.name,
-      type: file.type,
-      content: file.content,
+      path: file.path,
+      databaseName: file.databaseName || 'default',
+      type: file.type || 'other',
+      content: file.content || '',
       conversionStatus: 'pending' as const,
       dataTypeMapping: [],
       issues: [],
@@ -78,6 +70,7 @@ export const useMigrationManager = () => {
       convertedContent: undefined,
       errorMessage: undefined,
     }));
+
     try {
       if (!migrationId) {
         console.error('No migration ID available');
@@ -88,19 +81,34 @@ export const useMigrationManager = () => {
         });
         return convertedFiles;
       }
+
+      // Insert databases first
+      for (const dbName of databases) {
+        await supabase.from('migration_databases').insert({
+          migration_id: migrationId,
+          database_name: dbName,
+        }).onConflict('migration_id,database_name').ignore();
+      }
+
+      // Insert files with database names
       for (const file of convertedFiles) {
         await supabase.from('migration_files').insert({
           migration_id: migrationId,
           file_name: file.name,
           file_path: file.path,
           file_type: file.type,
+          database_name: file.databaseName,
           original_content: file.content,
           conversion_status: 'pending',
         });
       }
+
+      const dbCount = databases.size;
+      const fileCount = convertedFiles.length;
+      
       toast({
         title: "Files Uploaded",
-        description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
+        description: `Successfully uploaded ${fileCount} file${fileCount > 1 ? 's' : ''} from ${dbCount} database${dbCount > 1 ? 's' : ''}`,
       });
     } catch (error) {
       console.error('Error saving files to Supabase:', error);
