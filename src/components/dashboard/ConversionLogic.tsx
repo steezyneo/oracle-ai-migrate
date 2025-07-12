@@ -26,7 +26,7 @@ export const useConversionLogic = (
 ) => {
   const { toast } = useToast();
   const [isConverting, setIsConverting] = useState(false);
-  const [convertingFileId, setConvertingFileId] = useState<string | null>(null);
+  const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
   const mapConversionStatus = (status: 'success' | 'warning' | 'error'): 'pending' | 'success' | 'failed' => {
     switch (status) {
@@ -44,7 +44,7 @@ export const useConversionLogic = (
     const file = files.find(f => f.id === fileId);
     if (!file) return;
 
-    setConvertingFileId(fileId);
+    setConvertingFileIds([fileId]);
     setIsConverting(true);
     
     try {
@@ -91,7 +91,7 @@ export const useConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
     } finally {
-      setConvertingFileId(null);
+      setConvertingFileIds([]);
       setIsConverting(false);
     }
   }, [files, selectedAiModel, setFiles, setConversionResults]);
@@ -103,7 +103,7 @@ export const useConversionLogic = (
     setIsConverting(true);
     
     for (const file of typeFiles) {
-      setConvertingFileId(file.id);
+      setConvertingFileIds([file.id]);
       try {
         const result = await convertSybaseToOracle(file, selectedAiModel);
         
@@ -150,7 +150,7 @@ export const useConversionLogic = (
       }
     }
     
-    setConvertingFileId(null);
+    setConvertingFileIds([]);
     setIsConverting(false);
   }, [files, selectedAiModel, setFiles, setConversionResults]);
 
@@ -162,9 +162,9 @@ export const useConversionLogic = (
 
     // Helper to process a batch of files in parallel
     const processBatch = async (batch: FileItem[]) => {
+      setConvertingFileIds(batch.map(f => f.id));
       await Promise.all(
         batch.map(async (file) => {
-          setConvertingFileId(file.id);
           try {
             const result = await convertSybaseToOracle(file, selectedAiModel);
 
@@ -211,6 +211,7 @@ export const useConversionLogic = (
           }
         })
       );
+      setConvertingFileIds([]);
     };
 
     // Process in batches of 5
@@ -219,13 +220,12 @@ export const useConversionLogic = (
       await processBatch(batch);
     }
 
-    setConvertingFileId(null);
     setIsConverting(false);
   }, [files, selectedAiModel, setFiles, setConversionResults]);
 
   const handleFixFile = useCallback(async (fileId: string) => {
     setIsConverting(true);
-    setConvertingFileId(fileId);
+    setConvertingFileIds([fileId]);
     try {
       const fileToFix = files.find(file => file.id === fileId);
       if (!fileToFix) {
@@ -279,7 +279,7 @@ export const useConversionLogic = (
         variant: 'destructive',
       });
     } finally {
-      setConvertingFileId(null);
+      setConvertingFileIds([]);
       setIsConverting(false);
     }
   }, [files, selectedAiModel, setFiles, setConversionResults, toast, mapConversionStatus]);
@@ -317,7 +317,7 @@ export const useConversionLogic = (
 
   return {
     isConverting,
-    convertingFileId,
+    convertingFileIds,
     handleConvertFile,
     handleConvertAllByType,
     handleConvertAll,
