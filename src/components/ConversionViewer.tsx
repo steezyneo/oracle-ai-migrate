@@ -151,13 +151,12 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 />
                 <Button
                   size="sm"
-                  variant={isMarkedUnreviewed ? "secondary" : "outline"}
+                  variant="outline"
                   onClick={handleMarkAsUnreviewed}
-                  className={isMarkedUnreviewed ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"}
-                  disabled={isMarkedUnreviewed}
+                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
                 >
                   <Clock className="h-4 w-4 mr-1" />
-                  {isMarkedUnreviewed ? "Marked as Unreviewed" : "Mark as Unreviewed"}
+                  Mark as Unreviewed
                 </Button>
               </>
             )}
