@@ -204,9 +204,27 @@ const Dashboard = () => {
 
   const handleGenerateReportWrapper = async () => {
     try {
+      console.log('Starting report generation...');
+      console.log('Current files:', files);
+      console.log('Files with success status:', files.filter(f => f.conversionStatus === 'success'));
+      
       const newReport = await handleGenerateReport();
-      setReport(newReport);
-      setShowReport(true);
+      console.log('Generated report:', newReport);
+      
+      if (newReport) {
+        setReport(newReport);
+        setShowReport(true);
+        toast({
+          title: "Report Generated",
+          description: "Migration report has been generated successfully",
+        });
+      } else {
+        toast({
+          title: "Report Generation Failed",
+          description: "No report was generated. Please ensure you have converted files.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error generating report:', error);
       toast({

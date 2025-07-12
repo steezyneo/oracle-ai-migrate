@@ -1,4 +1,4 @@
-import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
+import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping, ConversionReport } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBbhyMmUtGdJhDDUHh7ecI1qsYjR9WQSXU";
@@ -277,12 +277,12 @@ const generateQuantitativeIssues = (
   return issues;
 };
 
-export const generateConversionReport = (results: ConversionResult[]): string => {
+export const generateConversionReport = (results: ConversionResult[]): ConversionReport => {
   const successCount = results.filter(r => r.status === 'success').length;
   const warningCount = results.filter(r => r.status === 'warning').length;
   const errorCount = results.filter(r => r.status === 'error').length;
   
-  return `
+  const summary = `
 # Code Conversion Report
 
 Generated: ${new Date().toLocaleString()}
@@ -307,4 +307,14 @@ ${results.map(result => `
 - Validate data integrity
 - Monitor performance
 `;
+  
+  return {
+    timestamp: new Date().toISOString(),
+    filesProcessed: results.length,
+    successCount,
+    warningCount,
+    errorCount,
+    results,
+    summary
+  };
 };

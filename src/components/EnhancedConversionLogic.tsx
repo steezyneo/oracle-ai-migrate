@@ -625,14 +625,42 @@ export const useEnhancedConversionLogic = (
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, toast, migrationManager]);
 
   // Generate and save conversion report
-  const handleGenerateReport = useCallback(async (conversionResults: ConversionResult[]) => {
+  const handleGenerateReport = useCallback(async () => {
     try {
-      const report = await generateConversionReport(conversionResults);
+      // Get successful files from the current files state
+      const successfulFiles = files.filter(f => f.conversionStatus === 'success' && f.convertedContent);
+      
+      if (successfulFiles.length === 0) {
+        toast({
+          title: 'No Converted Files',
+          description: 'Please convert some files before generating a report',
+          variant: 'destructive',
+        });
+        return null;
+      }
+      
+      // Create conversion results from successful files
+      const fileConversionResults: ConversionResult[] = successfulFiles.map(file => ({
+        id: crypto.randomUUID(),
+        originalFile: {
+          id: file.id,
+          name: file.name,
+          content: file.content,
+          type: file.type,
+          status: 'success'
+        },
+        convertedCode: file.convertedContent || '',
+        issues: file.issues || [],
+        dataTypeMapping: file.dataTypeMapping || [],
+        performance: file.performanceMetrics,
+        status: 'success'
+      }));
+      
+      const report = await generateConversionReport(fileConversionResults);
       
       // Save report to migration history
       const migrationId = await migrationManager.getOrCreateMigrationId();
       if (migrationId) {
-        // You can extend this to save reports to a separate table if needed
         console.log('Report generated and ready to save to migration:', report);
       }
       
@@ -646,7 +674,7 @@ export const useEnhancedConversionLogic = (
       });
       return null;
     }
-  }, [migrationManager, toast]);
+  }, [files, migrationManager, toast]);
 
   return {
     isConverting,
