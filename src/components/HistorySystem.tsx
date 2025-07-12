@@ -38,7 +38,6 @@ interface Migration {
   failed_count: number;
   pending_count: number;
   pending_review_count: number;
-  deployed_count: number;
   has_converted_files: boolean;
 }
 
@@ -49,7 +48,7 @@ interface MigrationFile {
   file_type: 'table' | 'procedure' | 'trigger' | 'other';
   original_content: string;
   converted_content: string | null;
-  conversion_status: 'pending' | 'success' | 'failed' | 'deployed' | 'pending_review';
+  conversion_status: 'pending' | 'success' | 'failed' | 'pending_review';
   error_message: string | null;
   deployment_timestamp: string | null;
   data_type_mapping: any;
@@ -110,7 +109,7 @@ export const HistorySystem: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<MigrationFile | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('migrations');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed' | 'deployed'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed' | 'pending_review'>('all');
   const isFetchingFiles = useRef(false);
 
   // Get the return tab from location state
@@ -163,7 +162,6 @@ export const HistorySystem: React.FC = () => {
           const failedFiles = files.filter((f: any) => f.conversion_status === 'failed');
           const pendingFiles = files.filter((f: any) => f.conversion_status === 'pending');
           const pendingReviewFiles = files.filter((f: any) => f.conversion_status === 'pending_review');
-          const deployedFiles = files.filter((f: any) => f.conversion_status === 'deployed');
           
           return {
             id: migration.id,
@@ -175,7 +173,6 @@ export const HistorySystem: React.FC = () => {
             failed_count: failedFiles.length,
             pending_count: pendingFiles.length,
             pending_review_count: pendingReviewFiles.length,
-            deployed_count: deployedFiles.length,
             has_converted_files: successFiles.length > 0 || pendingReviewFiles.length > 0,
           };
         }) || [];
@@ -246,8 +243,8 @@ export const HistorySystem: React.FC = () => {
              new Date(file.updated_at) > new Date(existingFile.updated_at))) {
           fileMap.set(key, {
             ...file,
-            conversion_status: ['pending', 'success', 'failed', 'deployed', 'pending_review'].includes(file.conversion_status) 
-              ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed' | 'pending_review'
+            conversion_status: ['pending', 'success', 'failed', 'pending_review'].includes(file.conversion_status) 
+              ? file.conversion_status as 'pending' | 'success' | 'failed' | 'pending_review'
               : 'pending'
           });
         }
@@ -399,8 +396,6 @@ export const HistorySystem: React.FC = () => {
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
       case 'pending_review':
         return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'deployed':
-        return <Play className="h-4 w-4 text-blue-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -417,8 +412,6 @@ export const HistorySystem: React.FC = () => {
         return 'bg-orange-100 text-orange-800';
       case 'pending_review':
         return 'bg-yellow-100 text-yellow-800';
-      case 'deployed':
-        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -444,8 +437,8 @@ export const HistorySystem: React.FC = () => {
       case 'failed':
         filtered = filtered.filter(m => m.failed_count > 0);
         break;
-      case 'deployed':
-        filtered = filtered.filter(m => m.deployed_count > 0);
+      case 'pending_review':
+        filtered = filtered.filter(m => m.pending_review_count > 0);
         break;
       default:
         // Show all migrations with converted files
@@ -548,7 +541,7 @@ export const HistorySystem: React.FC = () => {
                         <SelectItem value="all">All Migrations</SelectItem>
                         <SelectItem value="success">Successful Only</SelectItem>
                         <SelectItem value="failed">Failed Only</SelectItem>
-                        <SelectItem value="deployed">Deployed Only</SelectItem>
+                        <SelectItem value="pending_review">Pending Review Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -579,7 +572,7 @@ export const HistorySystem: React.FC = () => {
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Failed</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Review</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
@@ -612,7 +605,7 @@ export const HistorySystem: React.FC = () => {
                                 <Badge className="bg-orange-100 text-orange-800">{migration.pending_count}</Badge>
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <Badge className="bg-blue-100 text-blue-800">{migration.deployed_count}</Badge>
+                                <Badge className="bg-yellow-100 text-yellow-800">{migration.pending_review_count}</Badge>
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <div className="flex gap-1 justify-center">
@@ -661,8 +654,8 @@ export const HistorySystem: React.FC = () => {
                                     </div>
                                   </td>
                                   <td className="px-4 py-2 text-center text-xs text-gray-600">
-                                    {file.deployment_timestamp ? 
-                                      format(new Date(file.deployment_timestamp), 'MMM dd, HH:mm') : 
+                                    {file.updated_at ? 
+                                      format(new Date(file.updated_at), 'MMM dd, HH:mm') : 
                                       '-'
                                     }
                                   </td>
