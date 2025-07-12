@@ -162,7 +162,7 @@ export const useConversionLogic = (
 
     // Helper to process a batch of files in parallel
     const processBatch = async (batch: FileItem[]) => {
-      setConvertingFileIds(batch.map(f => f.id));
+      setConvertingFileIds(prev => [...prev, ...batch.map(f => f.id)]);
       await Promise.all(
         batch.map(async (file) => {
           try {
@@ -208,10 +208,11 @@ export const useConversionLogic = (
             setFiles(prev => prev.map(f =>
               f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
             ));
+          } finally {
+            setConvertingFileIds(prev => prev.filter(id => id !== file.id));
           }
         })
       );
-      setConvertingFileIds([]);
     };
 
     // Process in batches of 5
