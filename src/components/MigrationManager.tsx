@@ -112,7 +112,7 @@ export const useMigrationManager = () => {
   }, [currentMigrationId, user?.id, startNewMigration]);
 
   // Create a new migration for failed files (separate from main migration)
-  const createFailedFileMigration = useCallback(async (fileName: string): Promise<string | null> => {
+  const createFailedFileMigration = useCallback(async (fileName: string, originalMigrationId?: string): Promise<string | null> => {
     if (!user) {
       toast({
         title: "Authentication Required",

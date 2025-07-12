@@ -45,7 +45,7 @@ export const useConversionLogic = (
   };
 
   // Create a new migration for failed files (separate from main migration)
-  const createFailedFileMigration = useCallback(async (fileName: string): Promise<string | null> => {
+  const createFailedFileMigration = useCallback(async (fileName: string, originalMigrationId?: string): Promise<string | null> => {
     try {
       const projectName = `Failed: ${fileName}`;
 
@@ -169,10 +169,10 @@ export const useConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
       
-      // Save failed file to separate migration
-      const failedMigrationId = await createFailedFileMigration(file.name);
+      // Save failed file to the same migration (not separate)
+      const failedMigrationId = await createFailedFileMigration(file.name, migrationId);
       if (failedMigrationId) {
-        // Insert failed file into the new migration
+        // Insert failed file into the same migration
         await supabase.from('migration_files').insert({
           migration_id: failedMigrationId,
           file_name: file.name,
@@ -256,10 +256,10 @@ export const useConversionLogic = (
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
         
-        // Save failed file to separate migration
-        const failedMigrationId = await createFailedFileMigration(file.name);
+        // Save failed file to the same migration (not separate)
+        const failedMigrationId = await createFailedFileMigration(file.name, migrationId);
         if (failedMigrationId) {
-          // Insert failed file into the new migration
+          // Insert failed file into the same migration
           await supabase.from('migration_files').insert({
             migration_id: failedMigrationId,
             file_name: file.name,
@@ -527,35 +527,20 @@ export const useConversionLogic = (
           )
         );
         
-        // Save failed file to database
-        if (migrationId) {
-          // Check if file already exists for this migration
-          const { data: existing, error: fetchError } = await supabase
-            .from('migration_files')
-            .select('id')
-            .eq('migration_id', migrationId)
-            .eq('file_name', file.name)
-            .single();
-          
-          if (existing && existing.id) {
-            // Update existing record
-            await supabase.from('migration_files').update({
-              conversion_status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error'
-            }).eq('id', existing.id);
-          } else {
-            // Insert new failed file record
-            await supabase.from('migration_files').insert({
-              migration_id: migrationId,
-              file_name: file.name,
-              file_path: file.name,
-              file_type: file.type,
-              original_content: file.content,
-              converted_content: null,
-              conversion_status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error'
-            });
-          }
+        // Save failed file to the same migration (not separate)
+        const failedMigrationId = await createFailedFileMigration(file.name, migrationId);
+        if (failedMigrationId) {
+          // Insert failed file into the same migration
+          await supabase.from('migration_files').insert({
+            migration_id: failedMigrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       } finally {
         convertingIds.delete(file.id);
