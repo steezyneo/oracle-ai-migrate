@@ -176,7 +176,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
-            {(!file.convertedContent && !isEditing) ? (
+            {file.convertedContent ? (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
@@ -212,11 +212,12 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 </div>
               </div>
             ) : (
-              <CodeDiffViewer
-                originalCode={file.content}
-                convertedCode={isEditing ? editedContent : (file.convertedContent || '')}
-                onUpdateConvertedCode={isEditing ? (updated => setEditedContent(updated)) : undefined}
-              />
+              <div>
+                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                  {file.content}
+                </pre>
+              </div>
             )}
             
             {file.errorMessage && (
