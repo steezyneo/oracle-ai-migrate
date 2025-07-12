@@ -273,7 +273,8 @@ const generateQuantitativeIssues = (
       description: `High cyclomatic complexity (${convertedComplexity.cyclomaticComplexity}). Consider refactoring to improve maintainability.`,
       severity: 'warning',
       originalCode: 'Complex procedure',
-      suggestedFix: 'Break down into smaller functions'
+      suggestedFix: 'Break down into smaller functions',
+      category: 'performance'
     });
   }
   
@@ -284,7 +285,8 @@ const generateQuantitativeIssues = (
       description: `Low maintainability index (${convertedComplexity.maintainabilityIndex}/100). Code may be difficult to maintain.`,
       severity: 'warning',
       originalCode: 'Low maintainability',
-      suggestedFix: 'Refactor code structure and add documentation'
+      suggestedFix: 'Refactor code structure and add documentation',
+      category: 'maintainability'
     });
   }
   

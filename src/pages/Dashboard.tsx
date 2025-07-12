@@ -5,7 +5,7 @@ import { Database, FileText, Upload, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { ConversionResult, ConversionReport } from '@/types';
+import { ConversionResult, ConversionReport, FileItem } from '@/types';
 
 import CodeUploader from '@/components/CodeUploader';
 import ReportViewer from '@/components/ReportViewer';
@@ -17,19 +17,6 @@ import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: any[];
-  issues?: any[];
-  performanceMetrics?: any;
-}
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();

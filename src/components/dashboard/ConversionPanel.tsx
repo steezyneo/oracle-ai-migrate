@@ -5,20 +5,8 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { FileItem } from '@/types';
 
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: any[];
-  issues?: any[];
-  performanceMetrics?: any;
-}
 
 interface ConversionPanelProps {
   files: FileItem[];

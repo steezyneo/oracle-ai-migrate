@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import CodeDiffViewer from './CodeDiffViewer';
+import { FileItem } from '@/types';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -18,15 +19,6 @@ interface DataTypeMapping {
   description: string;
 }
 
-interface ConversionIssue {
-  id: string;
-  severity: 'error' | 'warning' | 'info';
-  description: string;
-  lineNumber?: number;
-  suggestedFix?: string;
-  originalCode?: string;
-  category: string;
-}
 
 interface PerformanceMetrics {
   originalComplexity: number;
@@ -44,19 +36,6 @@ interface PerformanceMetrics {
   conversionTimeMs?: number;
 }
 
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  type: 'table' | 'procedure' | 'trigger' | 'other';
-  content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
-  convertedContent?: string;
-  errorMessage?: string;
-  dataTypeMapping?: DataTypeMapping[];
-  issues?: ConversionIssue[];
-  performanceMetrics?: PerformanceMetrics;
-}
 
 interface ConversionViewerProps {
   file: FileItem;
