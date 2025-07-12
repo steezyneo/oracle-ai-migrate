@@ -15,7 +15,8 @@ import {
   ChevronRight,
   RefreshCw,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +26,7 @@ interface FileItem {
   path: string;
   type: 'table' | 'procedure' | 'trigger' | 'other';
   content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
+  conversionStatus: 'pending' | 'success' | 'failed' | 'pending_review';
   convertedContent?: string;
   errorMessage?: string;
 }
@@ -62,7 +63,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   );
   const [localSelected, setLocalSelected] = useState<string[]>(selectedFileIds);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'success' | 'failed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'success' | 'failed' | 'pending_review'>('all');
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -78,7 +79,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return files.filter(file => file.type === type);
   };
 
-  const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
+  const getStatusIcon = (status: 'pending' | 'success' | 'failed' | 'pending_review', fileId: string) => {
     if (convertingFileIds && convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
@@ -88,6 +89,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         return <Check className="h-4 w-4 text-green-600" />;
       case 'failed':
         return <X className="h-4 w-4 text-red-600" />;
+      case 'pending_review':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
         return <Play className="h-4 w-4 text-gray-400" />;
     }
@@ -198,10 +201,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                     file.conversionStatus === 'success' && "text-green-700",
                     file.conversionStatus === 'failed' && "text-red-700",
                     file.conversionStatus === 'pending' && "font-bold text-yellow-700",
-                    file.conversionStatus === 'failed' && <span className="ml-1 text-xs text-red-500">(Error)</span>,
-                    file.conversionStatus === 'pending' && <span className="ml-1 text-xs text-yellow-600">(Needs Review)</span>
+                    file.conversionStatus === 'pending_review' && "font-bold text-yellow-600"
                   )}>
                     {file.name}
+                    {file.conversionStatus === 'failed' && <span className="ml-1 text-xs text-red-500">(Error)</span>}
+                    {file.conversionStatus === 'pending' && <span className="ml-1 text-xs text-yellow-600">(Needs Review)</span>}
+                    {file.conversionStatus === 'pending_review' && <span className="ml-1 text-xs text-yellow-600">(Marked for Review)</span>}
                   </span>
                 </div>
                 
@@ -291,6 +296,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="pending">Pending</option>
               <option value="success">Success</option>
               <option value="failed">Failed</option>
+              <option value="pending_review">Pending Review</option>
             </select>
           </div>
           <div className="flex items-center mb-2">

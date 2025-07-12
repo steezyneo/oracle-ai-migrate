@@ -154,17 +154,51 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
       return;
     }
 
-    const success = await addUnreviewedFile({
-      user_id: '', // This will be set by the hook
-      file_name: file.name,
-      converted_code: file.convertedContent,
-      original_code: file.content || ''
-    });
+    try {
+      // First, add to unreviewed files
+      const success = await addUnreviewedFile({
+        user_id: '', // This will be set by the hook
+        file_name: file.name,
+        converted_code: file.convertedContent,
+        original_code: file.content || ''
+      });
 
-    if (success) {
+      if (success) {
+        // Then, update the file status in migration_files to 'pending_review'
+        const { error: updateError } = await supabase
+          .from('migration_files')
+          .update({ 
+            conversion_status: 'pending_review',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', file.id);
+
+        if (updateError) {
+          console.error('Error updating file status:', updateError);
+          toast({
+            title: "Warning",
+            description: "File added to pending actions, but status update failed.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "File Marked for Review",
+            description: `${file.name} has been marked for review and added to your pending actions.`,
+          });
+          
+          // Update the local file status to reflect the change
+          if (onManualEdit) {
+            // Trigger a refresh of the file data
+            onManualEdit(file.convertedContent || '');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error marking file as unreviewed:', error);
       toast({
-        title: "File Marked as Unreviewed",
-        description: `${file.name} has been added to your pending actions for review.`,
+        title: "Error",
+        description: "Failed to mark file for review.",
+        variant: "destructive"
       });
     }
   };

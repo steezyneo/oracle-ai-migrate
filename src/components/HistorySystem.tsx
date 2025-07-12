@@ -37,6 +37,7 @@ interface Migration {
   success_count: number;
   failed_count: number;
   pending_count: number;
+  pending_review_count: number;
   deployed_count: number;
   has_converted_files: boolean;
 }
@@ -48,7 +49,7 @@ interface MigrationFile {
   file_type: 'table' | 'procedure' | 'trigger' | 'other';
   original_content: string;
   converted_content: string | null;
-  conversion_status: 'pending' | 'success' | 'failed' | 'deployed';
+  conversion_status: 'pending' | 'success' | 'failed' | 'deployed' | 'pending_review';
   error_message: string | null;
   deployment_timestamp: string | null;
   data_type_mapping: any;
@@ -161,6 +162,7 @@ export const HistorySystem: React.FC = () => {
           const successFiles = files.filter((f: any) => f.conversion_status === 'success' && f.converted_content);
           const failedFiles = files.filter((f: any) => f.conversion_status === 'failed');
           const pendingFiles = files.filter((f: any) => f.conversion_status === 'pending');
+          const pendingReviewFiles = files.filter((f: any) => f.conversion_status === 'pending_review');
           const deployedFiles = files.filter((f: any) => f.conversion_status === 'deployed');
           
           return {
@@ -172,8 +174,9 @@ export const HistorySystem: React.FC = () => {
             success_count: successFiles.length,
             failed_count: failedFiles.length,
             pending_count: pendingFiles.length,
+            pending_review_count: pendingReviewFiles.length,
             deployed_count: deployedFiles.length,
-            has_converted_files: successFiles.length > 0,
+            has_converted_files: successFiles.length > 0 || pendingReviewFiles.length > 0,
           };
         }) || [];
         
@@ -243,8 +246,8 @@ export const HistorySystem: React.FC = () => {
              new Date(file.updated_at) > new Date(existingFile.updated_at))) {
           fileMap.set(key, {
             ...file,
-            conversion_status: ['pending', 'success', 'failed', 'deployed'].includes(file.conversion_status) 
-              ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed'
+            conversion_status: ['pending', 'success', 'failed', 'deployed', 'pending_review'].includes(file.conversion_status) 
+              ? file.conversion_status as 'pending' | 'success' | 'failed' | 'deployed' | 'pending_review'
               : 'pending'
           });
         }
@@ -394,6 +397,8 @@ export const HistorySystem: React.FC = () => {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'pending':
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
+      case 'pending_review':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
       case 'deployed':
         return <Play className="h-4 w-4 text-blue-500" />;
       default:
@@ -410,6 +415,8 @@ export const HistorySystem: React.FC = () => {
         return 'bg-red-100 text-red-800';
       case 'pending':
         return 'bg-orange-100 text-orange-800';
+      case 'pending_review':
+        return 'bg-yellow-100 text-yellow-800';
       case 'deployed':
         return 'bg-blue-100 text-blue-800';
       default:

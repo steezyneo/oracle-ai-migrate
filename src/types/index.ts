@@ -83,7 +83,7 @@ export interface FileItem {
   path: string;
   type: 'table' | 'procedure' | 'trigger' | 'other';
   content: string;
-  conversionStatus: 'pending' | 'success' | 'failed';
+  conversionStatus: 'pending' | 'success' | 'failed' | 'pending_review';
   convertedContent?: string;
   errorMessage?: string;
   dataTypeMapping?: DataTypeMapping[];
