@@ -122,13 +122,11 @@ export const useEnhancedConversionLogic = (
       setFiles(prev => prev.map(f => 
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
-      
-      // Save failed file to separate migration
-      const failedMigrationId = await migrationManager.createFailedFileMigration(file.name);
-      if (failedMigrationId) {
-        // Insert failed file into the new migration
+      // Always use the current migration ID for failed files
+      const migrationId = await migrationManager.getOrCreateMigrationId();
+      if (migrationId) {
         await supabase.from('migration_files').insert({
-          migration_id: failedMigrationId,
+          migration_id: migrationId,
           file_name: file.name,
           file_path: file.name,
           file_type: file.type,
@@ -235,11 +233,9 @@ export const useEnhancedConversionLogic = (
         
         // Get the current migration ID and save failed file to the same migration
         const currentMigrationId = await migrationManager.getOrCreateMigrationId();
-        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name, currentMigrationId);
-        if (failedMigrationId) {
-          // Insert failed file into the same migration
+        if (currentMigrationId) {
           await supabase.from('migration_files').insert({
-            migration_id: failedMigrationId,
+            migration_id: currentMigrationId,
             file_name: file.name,
             file_path: file.name,
             file_type: file.type,
@@ -383,11 +379,9 @@ export const useEnhancedConversionLogic = (
         
         // Get the current migration ID and save failed file to the same migration
         const currentMigrationId = await migrationManager.getOrCreateMigrationId();
-        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name, currentMigrationId);
-        if (failedMigrationId) {
-          // Insert failed file into the same migration
+        if (currentMigrationId) {
           await supabase.from('migration_files').insert({
-            migration_id: failedMigrationId,
+            migration_id: currentMigrationId,
             file_name: file.name,
             file_path: file.name,
             file_type: file.type,
@@ -570,11 +564,9 @@ export const useEnhancedConversionLogic = (
         
         // Get the current migration ID and save failed file to the same migration
         const currentMigrationId = await migrationManager.getOrCreateMigrationId();
-        const failedMigrationId = await migrationManager.createFailedFileMigration(file.name, currentMigrationId);
-        if (failedMigrationId) {
-          // Insert failed file into the same migration
+        if (currentMigrationId) {
           await supabase.from('migration_files').insert({
-            migration_id: failedMigrationId,
+            migration_id: currentMigrationId,
             file_name: file.name,
             file_path: file.name,
             file_type: file.type,
