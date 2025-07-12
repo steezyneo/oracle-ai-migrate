@@ -34,6 +34,7 @@ interface ConversionPanelProps {
   onDismissIssue: (issueId: string) => void;
   onGenerateReport: () => void;
   onUploadRedirect: () => void;
+  onClear: () => void;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -50,6 +51,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onDismissIssue,
   onGenerateReport,
   onUploadRedirect,
+  onClear,
 }) => {
   if (files.length === 0) {
     return (
@@ -72,13 +74,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
-        {files.length > 0 && (
-          <div className="flex justify-end mb-2">
-            <Button variant="destructive" onClick={onUploadRedirect}>
-              Clear
-            </Button>
-          </div>
-        )}
         <FileTreeView
           files={files}
           onFileSelect={onFileSelect}
@@ -89,6 +84,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
+          onClear={onClear}
         />
       </div>
 

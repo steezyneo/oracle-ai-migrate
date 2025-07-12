@@ -229,6 +229,7 @@ const Dashboard = () => {
               onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={handleResetAndUpload}
+              onClear={handleResetAndUpload}
             />
           </TabsContent>
 

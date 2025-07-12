@@ -223,13 +223,13 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 Clear
               </Button>
             )}
-            {totalPending > 0 && (
+            {getTotalPendingFiles() > 0 && (
               <Button
                 onClick={onConvertAll}
                 className="text-xs px-3 py-1 h-7"
               >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Convert All ({totalPending})
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Convert All ({getTotalPendingFiles()})
               </Button>
             )}
           </div>
