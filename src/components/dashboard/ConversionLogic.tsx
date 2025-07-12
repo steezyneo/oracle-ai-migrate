@@ -159,55 +159,66 @@ export const useConversionLogic = (
     if (pendingFiles.length === 0) return;
 
     setIsConverting(true);
-    
-    for (const file of pendingFiles) {
-      setConvertingFileId(file.id);
-      try {
-        const result = await convertSybaseToOracle(file, selectedAiModel);
-        
-        const conversionResult: ConversionResult = {
-          id: result.id,
-          originalFile: {
-            id: file.id,
-            name: file.name,
-            content: file.content,
-            type: file.type,
-            status: 'pending'
-          },
-          convertedCode: result.convertedCode,
-          issues: result.issues,
-          dataTypeMapping: result.dataTypeMapping,
-          performance: result.performance,
-          status: result.status
-        };
-        
-        setConversionResults(prev => [...prev, conversionResult]);
-        
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { 
-                ...f, 
-                conversionStatus: mapConversionStatus(result.status),
-                convertedContent: result.convertedCode,
-                dataTypeMapping: result.dataTypeMapping,
-                issues: result.issues,
-                performanceMetrics: result.performance
-              }
-            : f
-        ));
 
-        await supabase.from('migration_files').update({
-          conversion_status: mapConversionStatus(result.status),
-          converted_content: result.convertedCode
-        }).eq('file_name', file.name);
-      } catch (error) {
-        console.error(`Conversion failed for ${file.name}:`, error);
-        setFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
-        ));
-      }
+    // Helper to process a batch of files in parallel
+    const processBatch = async (batch: FileItem[]) => {
+      await Promise.all(
+        batch.map(async (file) => {
+          setConvertingFileId(file.id);
+          try {
+            const result = await convertSybaseToOracle(file, selectedAiModel);
+
+            const conversionResult: ConversionResult = {
+              id: result.id,
+              originalFile: {
+                id: file.id,
+                name: file.name,
+                content: file.content,
+                type: file.type,
+                status: 'pending'
+              },
+              convertedCode: result.convertedCode,
+              issues: result.issues,
+              dataTypeMapping: result.dataTypeMapping,
+              performance: result.performance,
+              status: result.status
+            };
+
+            setConversionResults(prev => [...prev, conversionResult]);
+
+            setFiles(prev => prev.map(f =>
+              f.id === file.id
+                ? {
+                    ...f,
+                    conversionStatus: mapConversionStatus(result.status),
+                    convertedContent: result.convertedCode,
+                    dataTypeMapping: result.dataTypeMapping,
+                    issues: result.issues,
+                    performanceMetrics: result.performance
+                  }
+                : f
+            ));
+
+            await supabase.from('migration_files').update({
+              conversion_status: mapConversionStatus(result.status),
+              converted_content: result.convertedCode
+            }).eq('file_name', file.name);
+          } catch (error) {
+            console.error(`Conversion failed for ${file.name}:`, error);
+            setFiles(prev => prev.map(f =>
+              f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
+            ));
+          }
+        })
+      );
+    };
+
+    // Process in batches of 5
+    for (let i = 0; i < pendingFiles.length; i += 5) {
+      const batch = pendingFiles.slice(i, i + 5);
+      await processBatch(batch);
     }
-    
+
     setConvertingFileId(null);
     setIsConverting(false);
   }, [files, selectedAiModel, setFiles, setConversionResults]);
