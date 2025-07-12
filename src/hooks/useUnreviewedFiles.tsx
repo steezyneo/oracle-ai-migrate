@@ -75,14 +75,16 @@ export const useUnreviewedFiles = () => {
   // Update an unreviewed file
   const updateUnreviewedFile = async (updateData: UnreviewedFileUpdate) => {
     try {
+      const updateFields: any = {
+        updated_at: new Date().toISOString()
+      };
+      if (updateData.converted_code !== undefined) updateFields.converted_code = updateData.converted_code;
+      if (updateData.original_code !== undefined) updateFields.original_code = updateData.original_code;
+      if (updateData.status !== undefined) updateFields.status = updateData.status;
+
       const { error } = await supabase
         .from('unreviewed_files')
-        .update({
-          converted_code: updateData.converted_code,
-          original_code: updateData.original_code,
-          status: updateData.status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateFields)
         .eq('id', updateData.id);
 
       if (error) throw error;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,10 @@ const MarkedForReviewPanel: React.FC<MarkedForReviewPanelProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(convertedCode);
+
+  useEffect(() => {
+    setEditedCode(convertedCode);
+  }, [convertedCode]);
 
   const handleEdit = () => setIsEditing(true);
   const handleSave = () => {

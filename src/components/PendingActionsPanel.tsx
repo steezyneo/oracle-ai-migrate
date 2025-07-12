@@ -24,12 +24,11 @@ const PendingActionsPanel: React.FC = () => {
     setEditedContent('');
   };
 
-  const handleSaveEdit = async (file: UnreviewedFile) => {
+  const handleSaveEdit = async (file: UnreviewedFile, newCode: string) => {
     const success = await updateUnreviewedFile({
       id: file.id,
-      converted_code: editedContent
+      converted_code: newCode
     });
-
     if (success) {
       setEditingFile(null);
       setEditedContent('');
@@ -138,11 +137,7 @@ const PendingActionsPanel: React.FC = () => {
                   <MarkedForReviewPanel
                     originalCode={file.original_code || ''}
                     convertedCode={editingFile === file.id ? editedContent : file.converted_code}
-                    onSave={(newCode) => {
-                      setEditingFile(file.id);
-                      setEditedContent(newCode);
-                      handleSaveEdit({ ...file, converted_code: newCode });
-                    }}
+                    onSave={(newCode) => handleSaveEdit(file, newCode)}
                   />
                   <div className="flex items-center gap-2 pt-2">
                     <Button
