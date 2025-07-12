@@ -669,6 +669,71 @@ export const useConversionLogic = (
     };
   }, [files]);
 
+  // Test API connection
+  const testAPI = useCallback(async () => {
+    console.log('=== TESTING API CONNECTION ===');
+    const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBbhyMmUtGdJhDDUHh7ecI1qsYjR9WQSXU";
+    
+    console.log('API Key present:', !!GEMINI_API_KEY);
+    console.log('API Key length:', GEMINI_API_KEY?.length || 0);
+    console.log('API Key preview:', GEMINI_API_KEY?.substring(0, 10) + '...');
+    
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.length < 10) {
+      toast({
+        title: "API Key Error",
+        description: "Invalid or missing Gemini API key",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Test with a simple prompt
+      const testPrompt = 'Say "Hello World"';
+      console.log('Testing with prompt:', testPrompt);
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: testPrompt
+            }]
+          }]
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API request failed:', response.status, errorText);
+        toast({
+          title: "API Test Failed",
+          description: `HTTP ${response.status}: ${errorText}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('API test successful:', data);
+      toast({
+        title: "API Test Successful",
+        description: "Gemini API is working correctly",
+      });
+      
+    } catch (error) {
+      console.error('API test failed:', error);
+      toast({
+        title: "API Test Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   return {
     isConverting,
     convertingFileIds,
@@ -678,5 +743,6 @@ export const useConversionLogic = (
     handleFixFile,
     handleGenerateReport,
     handleConvertSelected, // Export the new function
+    testAPI, // Export the new function
   };
 };

@@ -34,7 +34,8 @@ interface ConversionPanelProps {
   onDismissIssue: (issueId: string) => void;
   onGenerateReport: () => void;
   onUploadRedirect: () => void;
-  onConvertSelected: (fileIds: string[]) => void; // <-- Add this prop
+  onConvertSelected: (fileIds: string[]) => void;
+  onTestAPI?: () => void; // Add this prop
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -51,7 +52,8 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onDismissIssue,
   onGenerateReport,
   onUploadRedirect,
-  onConvertSelected, // <-- Add this prop
+  onConvertSelected,
+  onTestAPI, // Add this prop
 }) => {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [assignUserId, setAssignUserId] = useState('');
@@ -120,6 +122,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       <div className="col-span-4">
         <div className="flex gap-2 mb-2">
           <Button size="sm" onClick={() => onConvertSelected(selectedFileIds)} disabled={selectedFileIds.length === 0}>Convert Selected</Button>
+          <Button size="sm" onClick={onTestAPI} variant="outline">Test API</Button>
           <select
             value={assignUserId}
             onChange={e => setAssignUserId(e.target.value)}
