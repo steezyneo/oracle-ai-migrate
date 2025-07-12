@@ -7,12 +7,14 @@ interface CodeDiffViewerProps {
   originalCode: string;
   convertedCode: string;
   onUpdateConvertedCode?: (updatedCode: string) => void;
+  readOnly?: boolean;
 }
 
 const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
   originalCode,
   convertedCode,
   onUpdateConvertedCode,
+  readOnly = false,
 }) => {
   return (
     <Card className="w-full">
@@ -34,7 +36,7 @@ const CodeDiffViewer: React.FC<CodeDiffViewerProps> = ({
             <h3 className="text-sm font-medium mb-2 text-muted-foreground">Converted (Oracle)</h3>
             <CodeEditor 
               initialCode={convertedCode} 
-              readOnly={false} 
+              readOnly={readOnly} 
               onSave={onUpdateConvertedCode}
               height="500px"
               language="plsql"
