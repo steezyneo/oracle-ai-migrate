@@ -173,7 +173,7 @@ export const HistorySystem: React.FC = () => {
             failed_count: failedFiles.length,
             pending_count: pendingFiles.length,
             pending_review_count: pendingReviewFiles.length,
-            has_converted_files: successFiles.length > 0 || pendingReviewFiles.length > 0,
+            has_converted_files: successFiles.length > 0 || failedFiles.length > 0 || pendingReviewFiles.length > 0,
           };
         }) || [];
         
@@ -631,7 +631,7 @@ export const HistorySystem: React.FC = () => {
                             {/* Show files if this migration is selected */}
                             {selectedMigrationId === migration.id && migrationFiles.length > 0 && (
                               migrationFiles
-                                .filter(file => file.converted_content) // Only show files with converted content
+                                .filter(file => file.conversion_status !== 'pending') // Show all non-pending files (success, failed, pending_review)
                                 .map((file) => (
                                 <tr key={file.id} className="bg-gray-50 hover:bg-blue-100">
                                   <td className="px-8 py-2 text-sm flex items-center gap-2" colSpan={2}>
@@ -679,10 +679,10 @@ export const HistorySystem: React.FC = () => {
                               ))
                             )}
                             
-                            {selectedMigrationId === migration.id && migrationFiles.filter(f => f.converted_content).length === 0 && (
+                            {selectedMigrationId === migration.id && migrationFiles.filter(f => f.conversion_status !== 'pending').length === 0 && (
                               <tr className="bg-gray-50">
                                 <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                                  No converted files found for this migration
+                                  No processed files found for this migration
                                 </td>
                               </tr>
                             )}

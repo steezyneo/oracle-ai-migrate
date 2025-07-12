@@ -333,8 +333,8 @@ const History = () => {
   // Filter out migrations with 0 files
   const filteredMigrations = migrations.filter(m => m.file_count > 0);
 
-  // Only include files that have been converted (success or failed, not pending)
-  const filteredMigrationFiles = migrationFiles.filter(f => f.converted_content && f.conversion_status !== 'pending');
+  // Only include files that have been processed (success, failed, or pending_review, not pending)
+  const filteredMigrationFiles = migrationFiles.filter(f => f.conversion_status !== 'pending');
   // Group filteredMigrationFiles by file_name, pick the most recent (latest created_at) for each file
   const groupedFiles = Object.values(
     filteredMigrationFiles.reduce((acc, file) => {
