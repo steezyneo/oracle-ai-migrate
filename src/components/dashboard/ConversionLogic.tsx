@@ -127,11 +127,36 @@ export const useConversionLogic = (
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f
       ));
       
-      // Update status to failed in database
-      await supabase.from('migration_files').update({
-        conversion_status: 'failed',
-        error_message: error instanceof Error ? error.message : 'Unknown error'
-      }).eq('id', file.id);
+      // Save failed file to database
+      if (migrationId) {
+        // Check if file already exists for this migration
+        const { data: existing, error: fetchError } = await supabase
+          .from('migration_files')
+          .select('id')
+          .eq('migration_id', migrationId)
+          .eq('file_name', file.name)
+          .single();
+        
+        if (existing && existing.id) {
+          // Update existing record
+          await supabase.from('migration_files').update({
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          }).eq('id', existing.id);
+        } else {
+          // Insert new failed file record
+          await supabase.from('migration_files').insert({
+            migration_id: migrationId,
+            file_name: file.name,
+            file_path: file.name,
+            file_type: file.type,
+            original_content: file.content,
+            converted_content: null,
+            conversion_status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
     } finally {
       setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
       setIsConverting(false);
@@ -204,11 +229,36 @@ export const useConversionLogic = (
           f.id === file.id ? { ...f, conversionStatus: 'failed' } : f
         ));
         
-        // Update status to failed in database
-        await supabase.from('migration_files').update({
-          conversion_status: 'failed',
-          error_message: error instanceof Error ? error.message : 'Unknown error'
-        }).eq('id', file.id);
+        // Save failed file to database
+        if (migrationId) {
+          // Check if file already exists for this migration
+          const { data: existing, error: fetchError } = await supabase
+            .from('migration_files')
+            .select('id')
+            .eq('migration_id', migrationId)
+            .eq('file_name', file.name)
+            .single();
+          
+          if (existing && existing.id) {
+            // Update existing record
+            await supabase.from('migration_files').update({
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            }).eq('id', existing.id);
+          } else {
+            // Insert new failed file record
+            await supabase.from('migration_files').insert({
+              migration_id: migrationId,
+              file_name: file.name,
+              file_path: file.name,
+              file_type: file.type,
+              original_content: file.content,
+              converted_content: null,
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
       } finally {
         setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));
       }
@@ -316,6 +366,37 @@ export const useConversionLogic = (
             f.id === file.id ? { ...f, conversionStatus: 'failed', errorMessage: error?.message || String(error) } : f
           )
         );
+        
+        // Save failed file to database
+        if (migrationId) {
+          // Check if file already exists for this migration
+          const { data: existing, error: fetchError } = await supabase
+            .from('migration_files')
+            .select('id')
+            .eq('migration_id', migrationId)
+            .eq('file_name', file.name)
+            .single();
+          
+          if (existing && existing.id) {
+            // Update existing record
+            await supabase.from('migration_files').update({
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            }).eq('id', existing.id);
+          } else {
+            // Insert new failed file record
+            await supabase.from('migration_files').insert({
+              migration_id: migrationId,
+              file_name: file.name,
+              file_path: file.name,
+              file_type: file.type,
+              original_content: file.content,
+              converted_content: null,
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
@@ -433,6 +514,37 @@ export const useConversionLogic = (
             f.id === file.id ? { ...f, conversionStatus: 'failed', errorMessage: error?.message || String(error) } : f
           )
         );
+        
+        // Save failed file to database
+        if (migrationId) {
+          // Check if file already exists for this migration
+          const { data: existing, error: fetchError } = await supabase
+            .from('migration_files')
+            .select('id')
+            .eq('migration_id', migrationId)
+            .eq('file_name', file.name)
+            .single();
+          
+          if (existing && existing.id) {
+            // Update existing record
+            await supabase.from('migration_files').update({
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            }).eq('id', existing.id);
+          } else {
+            // Insert new failed file record
+            await supabase.from('migration_files').insert({
+              migration_id: migrationId,
+              file_name: file.name,
+              file_path: file.name,
+              file_type: file.type,
+              original_content: file.content,
+              converted_content: null,
+              conversion_status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
       } finally {
         convertingIds.delete(file.id);
         setConvertingFileIds(Array.from(convertingIds));
