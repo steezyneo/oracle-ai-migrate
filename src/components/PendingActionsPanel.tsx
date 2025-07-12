@@ -133,34 +133,36 @@ const PendingActionsPanel: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Original Code:
-                    </label>
-                    <ScrollArea className="h-[120px] w-full rounded-md border mb-2">
-                      <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                        {file.original_code}
-                      </pre>
-                    </ScrollArea>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Converted Code:
-                    </label>
-                    {editingFile === file.id ? (
-                      <Textarea
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                        placeholder="Edit your converted code..."
-                      />
-                    ) : (
-                      <ScrollArea className="h-[200px] w-full rounded-md border">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Original Code:
+                      </label>
+                      <ScrollArea className="h-[200px] w-full rounded-md border mb-2">
                         <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                          {file.converted_code}
+                          {file.original_code}
                         </pre>
                       </ScrollArea>
-                    )}
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Converted Code:
+                      </label>
+                      {editingFile === file.id ? (
+                        <Textarea
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          className="min-h-[200px] font-mono text-sm"
+                          placeholder="Edit your converted code..."
+                        />
+                      ) : (
+                        <ScrollArea className="h-[200px] w-full rounded-md border">
+                          <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
+                            {file.converted_code}
+                          </pre>
+                        </ScrollArea>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 pt-2">
