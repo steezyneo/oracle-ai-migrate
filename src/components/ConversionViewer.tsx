@@ -10,6 +10,7 @@ import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
+import CodeDiffViewer from './CodeDiffViewer';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -175,44 +176,47 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-              <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                {file.content}
-              </pre>
-            </div>
-            
-            {file.convertedContent && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-green-700">Converted Oracle Code:</h3>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditing(!isEditing)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    {isEditing ? 'Cancel' : 'Edit'}
-                  </Button>
+            {file.convertedContent ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                  <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                    {file.content}
+                  </pre>
                 </div>
-                
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      className="min-h-64 font-mono text-sm"
-                    />
-                    <Button onClick={handleSaveEdit} size="sm">
-                      <Save className="h-4 w-4 mr-1" />
-                      Save Changes
-                    </Button>
-                  </div>
-                ) : (
+                <div>
+                  <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
                   <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
                     {file.convertedContent}
                   </pre>
-                )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditing(!isEditing)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      {isEditing ? 'Cancel' : 'Edit'}
+                    </Button>
+                    {isEditing && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={handleSaveEdit}
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                  {file.content}
+                </pre>
               </div>
             )}
             
