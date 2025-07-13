@@ -4,6 +4,67 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBbhyMmUtGdJhDDUHh7ecI1qsYjR9WQSXU";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+// T-SQL validation function to check if file contains valid T-SQL code
+export const validateTSQLContent = (content: string): { isValid: boolean; error?: string } => {
+  const trimmedContent = content.trim();
+  
+  // Check if content is empty
+  if (!trimmedContent) {
+    return { isValid: false, error: 'File is empty or contains no content' };
+  }
+  
+  // Check for basic T-SQL keywords and patterns
+  const tsqlPatterns = [
+    // Common T-SQL keywords
+    /\b(create|alter|drop|select|insert|update|delete|declare|begin|end|if|while|for|case|when|then|else|return|go|use|exec|execute|sp_|xp_)\b/i,
+    // T-SQL data types
+    /\b(int|bigint|smallint|tinyint|bit|decimal|numeric|float|real|money|smallmoney|char|varchar|nchar|nvarchar|text|ntext|binary|varbinary|image|datetime|smalldatetime|date|time|timestamp|uniqueidentifier|sql_variant|xml)\b/i,
+    // T-SQL functions
+    /\b(getdate|getutcdate|sysdatetime|sysutcdatetime|dateadd|datediff|datename|datepart|year|month|day|hour|minute|second|isnull|isnumeric|len|substring|charindex|patindex|replace|stuff|upper|lower|ltrim|rtrim|trim|left|right|concat|format|convert|cast|try_convert|try_cast)\b/i,
+    // T-SQL system functions
+    /\b(@@|@@error|@@rowcount|@@identity|@@scope_identity|@@trancount|@@version|@@servername|@@dbname|@@spid)\b/i,
+    // T-SQL control flow
+    /\b(begin\s+tran|commit\s+tran|rollback\s+tran|save\s+tran|begin\s+try|begin\s+catch|end\s+try|end\s+catch|raiserror|throw|return)\b/i,
+    // T-SQL table operations
+    /\b(create\s+table|alter\s+table|drop\s+table|create\s+index|create\s+view|create\s+procedure|create\s+function|create\s+trigger|create\s+schema|create\s+database)\b/i,
+    // T-SQL joins and clauses
+    /\b(inner\s+join|left\s+join|right\s+join|full\s+join|cross\s+join|where|group\s+by|having|order\s+by|top|distinct|union|intersect|except)\b/i,
+    // T-SQL variables and parameters
+    /\b(@[a-zA-Z_][a-zA-Z0-9_]*)\b/,
+    // T-SQL comments
+    /(--.*$)|(\/\*[\s\S]*?\*\/)/m
+  ];
+  
+  // Check if at least 3 T-SQL patterns are found (to avoid false positives)
+  const foundPatterns = tsqlPatterns.filter(pattern => pattern.test(trimmedContent));
+  
+  if (foundPatterns.length < 3) {
+    return { 
+      isValid: false, 
+      error: 'File does not appear to contain valid T-SQL code. Please ensure the file contains T-SQL syntax such as CREATE TABLE, SELECT statements, stored procedures, or other T-SQL constructs.' 
+    };
+  }
+  
+  // Additional check for common non-SQL content that might slip through
+  const nonSqlPatterns = [
+    /\b(html|css|javascript|js|php|python|java|c#|vb|ruby|perl|bash|powershell|batch|xml|json|yaml|toml|ini|conf|config|log|txt|doc|docx|pdf|exe|dll|so|dylib)\b/i,
+    /<html|<head|<body|<script|<style|<!doctype/i,
+    /function\s*\(|class\s+\w+|import\s+|export\s+|require\s*\(|module\.exports/i,
+    /public\s+class|private\s+|protected\s+|namespace\s+|using\s+|#include/i
+  ];
+  
+  const foundNonSqlPatterns = nonSqlPatterns.filter(pattern => pattern.test(trimmedContent));
+  
+  if (foundNonSqlPatterns.length > 0) {
+    return { 
+      isValid: false, 
+      error: 'File appears to contain non-SQL content. Please ensure the file contains only T-SQL code.' 
+    };
+  }
+  
+  return { isValid: true };
+};
+
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
 export const convertSybaseToOracle = async (
   file: CodeFile,
@@ -13,6 +74,12 @@ export const convertSybaseToOracle = async (
 ): Promise<ConversionResult> => {
   console.log(`[CONVERT] Starting conversion for file: ${file.name} with model: ${aiModel}`);
   const startTime = Date.now();
+
+  // Validate T-SQL content before conversion
+  const validation = validateTSQLContent(file.content);
+  if (!validation.isValid) {
+    throw new Error(`T-SQL validation failed for ${file.name}: ${validation.error}`);
+  }
 
   // Extract data type mappings from original code
   const dataTypeMapping = extractDataTypeMappings(file.content);

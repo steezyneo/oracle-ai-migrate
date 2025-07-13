@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { validateTSQLContent } from '@/utils/conversionUtils';
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
@@ -49,6 +50,20 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       reader.onload = (e) => {
         if (e.target && e.target.result) {
           const content = e.target.result as string;
+          
+          // Validate T-SQL content for SQL files
+          if (file.name.toLowerCase().endsWith('.sql')) {
+            const validation = validateTSQLContent(content);
+            if (!validation.isValid) {
+              toast({
+                title: 'Invalid T-SQL File',
+                description: `${file.name}: ${validation.error}`,
+                variant: 'destructive'
+              });
+              return;
+            }
+          }
+          
           const newFile: CodeFile = {
             id: crypto.randomUUID(),
             name: file.name,
@@ -263,6 +278,19 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
         variant: 'destructive'
       });
       return;
+    }
+    
+    // Validate T-SQL content for SQL files
+    if (manualFileName.toLowerCase().endsWith('.sql')) {
+      const validation = validateTSQLContent(manualContent);
+      if (!validation.isValid) {
+        toast({
+          title: 'Invalid T-SQL Content',
+          description: `${manualFileName}: ${validation.error}`,
+          variant: 'destructive'
+        });
+        return;
+      }
     }
     
     const newFile: CodeFile = {
