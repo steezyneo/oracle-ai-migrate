@@ -88,7 +88,6 @@ const Dashboard = () => {
     handleConvertAll,
     handleGenerateReport,
     handleConvertSelected,
-    testAPI, // Add this
   } = conversionLogic;
 
   useEffect(() => {
@@ -362,7 +361,6 @@ const Dashboard = () => {
                 onGenerateReport={handleGenerateReportWrapper}
                 onUploadRedirect={() => setActiveTab('upload')}
                 onConvertSelected={handleConvertSelected}
-                testAPI={testAPI} // Pass the testAPI function
               />
             </div>
           </TabsContent>

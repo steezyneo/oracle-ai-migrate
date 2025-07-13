@@ -26,6 +26,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
   const [manualFileName, setManualFileName] = useState<string>('');
   const [templateType, setTemplateType] = useState<'table' | 'procedure' | 'trigger'>('table');
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [validationError, setValidationError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   
@@ -55,6 +56,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
           if (file.name.toLowerCase().endsWith('.sql')) {
             const validation = validateTSQLContent(content);
             if (!validation.isValid) {
+              setValidationError(`${file.name}: ${validation.error}`);
               toast({
                 title: 'Invalid T-SQL File',
                 description: `${file.name}: ${validation.error}`,
@@ -84,6 +86,9 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
             }
             return [...prevFiles, newFile];
           });
+          
+          // Clear validation error on successful upload
+          setValidationError('');
           
           toast({
             title: 'File Uploaded',
@@ -284,6 +289,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     if (manualFileName.toLowerCase().endsWith('.sql')) {
       const validation = validateTSQLContent(manualContent);
       if (!validation.isValid) {
+        setValidationError(`${manualFileName}: ${validation.error}`);
         toast({
           title: 'Invalid T-SQL Content',
           description: `${manualFileName}: ${validation.error}`,
@@ -305,6 +311,9 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     
     setManualContent('');
     setManualFileName('');
+    
+    // Clear validation error on successful manual addition
+    setValidationError('');
     
     toast({
       title: 'File Added',
@@ -704,6 +713,17 @@ END`;
                   </TabsContent>
                 ))}
               </Tabs>
+            </div>
+          )}
+          
+          {/* Validation Error Display */}
+          {validationError && (
+            <div className="mx-6 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-red-700 font-medium">This is not a T-SQL file</span>
+              </div>
+              <p className="text-red-600 text-sm mt-1">{validationError}</p>
             </div>
           )}
         </CardContent>

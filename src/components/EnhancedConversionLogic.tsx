@@ -137,7 +137,7 @@ export const useEnhancedConversionLogic = (
         });
       }
     } finally {
-      setConvertingFileIds(convertingFileIds.filter(id => id !== fileId));
+      setConvertingFileIds(prev => prev.filter(id => id !== fileId));
       setIsConverting(false);
     }
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds, migrationManager]);
@@ -246,11 +246,11 @@ export const useEnhancedConversionLogic = (
           });
         }
       } finally {
-        setConvertingFileIds(convertingFileIds.filter(id => id !== file.id));
+        setConvertingFileIds(prev => prev.filter(id => id !== file.id));
       }
     }
     
-    setConvertingFileIds([]);
+    setConvertingFileIds(prev => []);
     setIsConverting(false);
   }, [files, selectedAiModel, customPrompt, setFiles, setConversionResults, convertingFileIds, setConvertingFileIds, migrationManager]);
 
@@ -393,7 +393,7 @@ export const useEnhancedConversionLogic = (
         }
       } finally {
         convertingIds.delete(file.id);
-        setConvertingFileIds(Array.from(convertingIds));
+        setConvertingFileIds(prev => Array.from(convertingIds));
       }
     };
 
@@ -417,7 +417,7 @@ export const useEnhancedConversionLogic = (
       }
     }
 
-    setConvertingFileIds([]);
+    setConvertingFileIds(prev => []);
     setIsConverting(false);
     
     const failedCount = results.filter(r => r.status === 'failed').length;
@@ -578,7 +578,7 @@ export const useEnhancedConversionLogic = (
         }
       } finally {
         convertingIds.delete(file.id);
-        setConvertingFileIds(Array.from(convertingIds));
+        setConvertingFileIds(prev => Array.from(convertingIds));
       }
     };
 
