@@ -45,8 +45,6 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
-  const [report, setReport] = useState<ConversionReport | null>(null);
-  const [showReport, setShowReport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
@@ -129,8 +127,7 @@ const Dashboard = () => {
   const handleGenerateReportWrapper = async () => {
     try {
       const newReport = await handleGenerateReport();
-      setReport(newReport);
-      setShowReport(true);
+      navigate(`/report/${newReport.id}`);
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
@@ -169,25 +166,6 @@ const Dashboard = () => {
 
   if (!user || !profile) {
     return null;
-  }
-
-  if (showReport && report) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <DashboardHeader
-          onGoToHistory={handleGoToHistory}
-          onGoHome={handleGoHome}
-          onShowHelp={() => setShowHelp(true)}
-          title="Migration Report"
-        />
-        <main className="container mx-auto px-4 py-8">
-          <ReportViewer 
-            report={report} 
-            onBack={() => setShowReport(false)} 
-          />
-        </main>
-      </div>
-    );
   }
 
   return (

@@ -3,6 +3,8 @@ import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversionResult, ConversionReport } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FileItem {
   id: string;
@@ -25,6 +27,7 @@ export const useConversionLogic = (
   selectedAiModel: string
 ) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isConverting, setIsConverting] = useState(false);
   const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
@@ -285,7 +288,7 @@ export const useConversionLogic = (
     }
   }, [files, selectedAiModel, setFiles, setConversionResults, toast, mapConversionStatus]);
 
-  const handleGenerateReport = useCallback(async (): Promise<ConversionReport> => {
+  const handleGenerateReport = useCallback(async (): Promise<ConversionReport & { id: string }> => {
     const conversionResults: ConversionResult[] = files.map(file => ({
       id: file.id,
       originalFile: {
@@ -305,7 +308,7 @@ export const useConversionLogic = (
 
     const reportSummary = generateConversionReport(conversionResults);
 
-    return {
+    const report = {
       timestamp: new Date().toISOString(),
       filesProcessed: files.length,
       successCount: files.filter(f => f.conversionStatus === 'success').length,
@@ -314,7 +317,20 @@ export const useConversionLogic = (
       results: conversionResults,
       summary: reportSummary,
     };
-  }, [files]);
+
+    // Save to Supabase migration_reports
+    const { data, error } = await supabase
+      .from('migration_reports')
+      .insert({
+        user_id: user?.id,
+        report: report,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { ...report, id: data.id };
+  }, [files, user]);
 
   return {
     isConverting,
