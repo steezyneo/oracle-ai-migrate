@@ -59,6 +59,8 @@ const Dashboard = () => {
     handleGenerateReport,
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
 
+  const canCompleteMigration = unreviewedFiles.length === 0;
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -247,6 +249,7 @@ const Dashboard = () => {
               onUploadRedirect={handleResetAndUpload}
               onClear={handleResetAndUpload}
               onMoveToDevReview={handleMoveToDevReview}
+              canCompleteMigration={canCompleteMigration}
             />
           </TabsContent>
 
@@ -271,7 +274,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="devReview">
-            <DevReviewPanel />
+            <DevReviewPanel canCompleteMigration={canCompleteMigration} />
           </TabsContent>
         </Tabs>
       </main>

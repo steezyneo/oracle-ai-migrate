@@ -11,7 +11,11 @@ import MarkedForReviewPanel from './MarkedForReviewPanel';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 
-const DevReviewPanel: React.FC = () => {
+interface DevReviewPanelProps {
+  canCompleteMigration: boolean;
+}
+
+const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration }) => {
   const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile } = useUnreviewedFiles();
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
@@ -107,7 +111,7 @@ const DevReviewPanel: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6">
+    <div className="grid grid-cols-12 gap-6 relative">
       <div className="col-span-4">
         <FileTreeView
           files={unreviewedFiles.map(f => ({
@@ -182,6 +186,15 @@ const DevReviewPanel: React.FC = () => {
           </Card>
         )}
       </div>
+      {/* Complete Migration button at the bottom if allowed */}
+      {canCompleteMigration && unreviewedFiles.length === 0 && (
+        <div className="absolute right-0 bottom-0 p-4">
+          <Button className="bg-green-600 hover:bg-green-700">
+            <Check className="h-4 w-4 mr-2" />
+            Complete Migration
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

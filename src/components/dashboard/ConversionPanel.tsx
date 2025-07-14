@@ -36,6 +36,7 @@ interface ConversionPanelProps {
   onUploadRedirect: () => void;
   onClear: () => void;
   onMoveToDevReview: () => void;
+  canCompleteMigration: boolean;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -54,6 +55,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onUploadRedirect,
   onClear,
   onMoveToDevReview,
+  canCompleteMigration,
 }) => {
   if (files.length === 0) {
     return (
@@ -111,6 +113,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
                 <Button 
                   onClick={onGenerateReport}
                   className="bg-green-600 hover:bg-green-700"
+                  disabled={!canCompleteMigration}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Complete Migration
