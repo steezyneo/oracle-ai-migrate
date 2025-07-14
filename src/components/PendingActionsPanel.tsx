@@ -115,14 +115,22 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     <div className="grid grid-cols-12 gap-6 relative">
       <div className="col-span-4">
         <FileTreeView
-          files={unreviewedFiles.map(f => ({
-            ...f,
-            name: f.file_name,
-            content: f.original_code,
-            convertedContent: f.converted_code,
-            conversionStatus: 'pending',
-            errorMessage: f.error_message,
-          }))}
+          files={unreviewedFiles.map(f => {
+            let type = 'other';
+            const lower = f.file_name.toLowerCase();
+            if (lower.includes('trig')) type = 'trigger';
+            else if (lower.includes('proc')) type = 'procedure';
+            else if (lower.includes('tab') || lower.includes('table')) type = 'table';
+            return {
+              ...f,
+              name: f.file_name,
+              content: f.original_code,
+              convertedContent: f.converted_code,
+              conversionStatus: 'pending',
+              errorMessage: f.error_message,
+              type,
+            };
+          })}
           onFileSelect={file => setSelectedFileId(file.id)}
           selectedFile={{
             ...selectedFile,
