@@ -119,6 +119,8 @@ const History = () => {
   const handleBack = () => {
     if (location.state?.previousReportId) {
       navigate(`/report/${location.state.previousReportId}`);
+    } else if (location.state?.fromLanding) {
+      navigate('/');
     } else {
       navigate('/migration', { state: { activeTab: returnTab } });
     }
