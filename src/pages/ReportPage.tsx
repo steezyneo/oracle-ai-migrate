@@ -5,6 +5,9 @@ import ReportViewer from '@/components/ReportViewer';
 import { ConversionReport } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { Database, History as HistoryIcon, HelpCircle, Home } from 'lucide-react';
+import UserDropdown from '@/components/UserDropdown';
+import Help from '@/components/Help';
 
 const ReportPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -12,6 +15,7 @@ const ReportPage: React.FC = () => {
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -46,21 +50,34 @@ const ReportPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation Bar */}
       <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/history', { state: { previousReportId: reportId } })}>
-            History
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+              <Home className="h-5 w-5" />
+              Home
+            </button>
+            <Database className="h-8 w-8 text-primary mr-2" />
+            <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/history', { state: { previousReportId: reportId } })} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+              <HistoryIcon className="h-5 w-5" />
+              History
+            </button>
+            <button onClick={() => setShowHelp(true)} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+              <HelpCircle className="h-5 w-5" />
+              Help
+            </button>
+            <UserDropdown />
+          </div>
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
         <ReportViewer report={report} onBack={() => navigate(-1)} />
       </main>
+      {showHelp && <Help onClose={() => setShowHelp(false)} />}
     </div>
   );
 };

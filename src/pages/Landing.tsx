@@ -22,7 +22,7 @@ const Landing = () => {
 
   const handleGoToHistory = () => {
     if (user) {
-      navigate('/history');
+      navigate('/history', { state: { fromLanding: true } });
     } else {
       navigate('/auth');
     }
