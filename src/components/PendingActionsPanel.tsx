@@ -13,9 +13,10 @@ import ConversionViewer from '@/components/ConversionViewer';
 
 interface DevReviewPanelProps {
   canCompleteMigration: boolean;
+  onCompleteMigration: () => void;
 }
 
-const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration }) => {
+const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, onCompleteMigration }) => {
   const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile } = useUnreviewedFiles();
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
@@ -189,7 +190,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration })
       {/* Complete Migration button at the bottom if allowed */}
       {canCompleteMigration && unreviewedFiles.length === 0 && (
         <div className="absolute right-0 bottom-0 p-4">
-          <Button className="bg-green-600 hover:bg-green-700">
+          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
             <Check className="h-4 w-4 mr-2" />
             Complete Migration
           </Button>

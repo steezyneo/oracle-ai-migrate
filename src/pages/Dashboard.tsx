@@ -179,6 +179,14 @@ const Dashboard = () => {
     setActiveTab('devReview');
   };
 
+  const handleCompleteMigration = () => {
+    toast({
+      title: 'Migration Completed',
+      description: 'All files have been reviewed and migration is complete!',
+    });
+    // TODO: Add real completion logic here (e.g., update migration status, redirect, etc.)
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -274,7 +282,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="devReview">
-            <DevReviewPanel canCompleteMigration={canCompleteMigration} />
+            <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={handleCompleteMigration} />
           </TabsContent>
         </Tabs>
       </main>
