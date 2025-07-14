@@ -341,16 +341,20 @@ const History = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <button onClick={handleBack} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+                <ArrowLeft className="h-5 w-5" />
+                Back
+              </button>
               <HomeButton onClick={handleGoHome} />
               <Button 
                 variant="ghost" 
                 onClick={handleBack}
                 className="flex items-center gap-2"
+                style={{ display: 'none' }} // Hide duplicate back button
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </Button>
-              
               <div className="flex items-center">
                 <Database className="h-8 w-8 text-primary mr-3" />
                 <h1 className="text-2xl font-bold text-gray-900">Migration History</h1>
