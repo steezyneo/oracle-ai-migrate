@@ -306,7 +306,6 @@ export const useConversionLogic = (
 
     const reportSummary = generateConversionReport(conversionResults);
 
-    // Prepare the report object for DB
     const report = {
       timestamp: new Date().toISOString(),
       filesProcessed: files.length,
@@ -317,21 +316,19 @@ export const useConversionLogic = (
       summary: reportSummary,
     };
 
-    // Save to Supabase deployment_logs
+    // Save to Supabase migration_reports
     const { data, error } = await supabase
-      .from('deployment_logs')
+      .from('migration_reports')
       .insert({
-        ...report,
-        // Store as JSON if needed
-        results: JSON.stringify(conversionResults),
-        summary: reportSummary,
+        user_id: user?.id,
+        report: report,
       })
       .select()
       .single();
 
     if (error) throw error;
     return { ...report, id: data.id };
-  }, [files]);
+  }, [files, user]);
 
   return {
     isConverting,

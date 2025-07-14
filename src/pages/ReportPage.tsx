@@ -18,14 +18,13 @@ const ReportPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch the report data from Supabase (adjust table/logic as needed)
         const { data, error } = await supabase
-          .from('deployment_logs')
-          .select('*')
-          .eq('id', id)
+          .from('migration_reports')
+          .select('report')
+          .eq('id', reportId)
           .single();
         if (error) throw error;
-        setReport(data as ConversionReport);
+        setReport(data.report as ConversionReport);
       } catch (err: any) {
         setError('Failed to fetch report.');
       } finally {
