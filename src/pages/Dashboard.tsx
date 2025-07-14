@@ -182,6 +182,9 @@ const Dashboard = () => {
           file_name: file.name,
           converted_code: file.convertedContent,
           original_code: file.content,
+          data_type_mapping: file.dataTypeMapping,
+          issues: file.issues,
+          performance_metrics: file.performanceMetrics,
         });
       }
     }

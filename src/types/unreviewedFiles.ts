@@ -7,6 +7,9 @@ export interface UnreviewedFile {
   status: 'unreviewed' | 'reviewed';
   created_at: string;
   updated_at: string;
+  data_type_mapping?: any;
+  issues?: any;
+  performance_metrics?: any;
 }
 
 export interface UnreviewedFileInsert {
@@ -15,6 +18,9 @@ export interface UnreviewedFileInsert {
   converted_code: string;
   original_code: string;
   status?: 'unreviewed' | 'reviewed';
+  data_type_mapping?: any;
+  issues?: any;
+  performance_metrics?: any;
 }
 
 export interface UnreviewedFileUpdate {
