@@ -35,6 +35,7 @@ interface ConversionPanelProps {
   onGenerateReport: () => void;
   onUploadRedirect: () => void;
   onClear: () => void;
+  onMoveToDevReview: () => void;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -52,6 +53,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onGenerateReport,
   onUploadRedirect,
   onClear,
+  onMoveToDevReview,
 }) => {
   if (files.length === 0) {
     return (
@@ -98,7 +100,14 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             />
             
             {files.some(f => f.conversionStatus === 'success') && (
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="secondary"
+                  onClick={onMoveToDevReview}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Move to Dev Review
+                </Button>
                 <Button 
                   onClick={onGenerateReport}
                   className="bg-green-600 hover:bg-green-700"

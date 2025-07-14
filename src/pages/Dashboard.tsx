@@ -12,7 +12,7 @@ import ReportViewer from '@/components/ReportViewer';
 import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
-import PendingActionsPanel from '@/components/PendingActionsPanel';
+import DevReviewPanel from '@/components/PendingActionsPanel';
 import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboard';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
@@ -38,9 +38,9 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'pending' | 'metrics') || 'upload';
+  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'devReview' | 'metrics') || 'upload';
   
-  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'pending' | 'metrics'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'devReview' | 'metrics'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
@@ -172,6 +172,11 @@ const Dashboard = () => {
     setActiveTab('upload');
   };
 
+  const handleMoveToDevReview = () => {
+    // Optionally, persist files for review here
+    setActiveTab('devReview');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -196,7 +201,7 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending' | 'metrics')}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'devReview' | 'metrics')}>
           <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
@@ -210,9 +215,9 @@ const Dashboard = () => {
               <BarChart3 className="h-4 w-4" />
               Performance
             </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2 relative">
+            <TabsTrigger value="devReview" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
-              Pending Actions
+              Dev Review
               {unreviewedFiles.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreviewedFiles.length}
@@ -241,6 +246,7 @@ const Dashboard = () => {
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={handleResetAndUpload}
               onClear={handleResetAndUpload}
+              onMoveToDevReview={handleMoveToDevReview}
             />
           </TabsContent>
 
@@ -264,8 +270,8 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="pending">
-            <PendingActionsPanel />
+          <TabsContent value="devReview">
+            <DevReviewPanel />
           </TabsContent>
         </Tabs>
       </main>

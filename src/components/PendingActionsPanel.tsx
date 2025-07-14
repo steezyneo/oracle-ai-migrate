@@ -9,7 +9,7 @@ import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { UnreviewedFile } from '@/types/unreviewedFiles';
 import MarkedForReviewPanel from './MarkedForReviewPanel';
 
-const PendingActionsPanel: React.FC = () => {
+const DevReviewPanel: React.FC = () => {
   const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile } = useUnreviewedFiles();
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
@@ -177,4 +177,4 @@ const PendingActionsPanel: React.FC = () => {
   );
 };
 
-export default PendingActionsPanel;
+export default DevReviewPanel;
