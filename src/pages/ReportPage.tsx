@@ -20,7 +20,7 @@ const ReportPage: React.FC = () => {
       try {
         // Fetch the report data from Supabase (adjust table/logic as needed)
         const { data, error } = await supabase
-          .from('migrations')
+          .from('deployment_logs')
           .select('*')
           .eq('id', id)
           .single();
