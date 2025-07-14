@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { convertSybaseToOracle, generateConversionReport } from '@/utils/conversionUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversionResult, ConversionReport } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FileItem {
   id: string;
@@ -285,7 +286,7 @@ export const useConversionLogic = (
     }
   }, [files, selectedAiModel, setFiles, setConversionResults, toast, mapConversionStatus]);
 
-  const handleGenerateReport = useCallback(async (): Promise<ConversionReport> => {
+  const handleGenerateReport = useCallback(async (): Promise<ConversionReport & { id: string }> => {
     const conversionResults: ConversionResult[] = files.map(file => ({
       id: file.id,
       originalFile: {
@@ -306,6 +307,7 @@ export const useConversionLogic = (
     const reportSummary = generateConversionReport(conversionResults);
 
     return {
+      id: uuidv4(),
       timestamp: new Date().toISOString(),
       filesProcessed: files.length,
       successCount: files.filter(f => f.conversionStatus === 'success').length,
