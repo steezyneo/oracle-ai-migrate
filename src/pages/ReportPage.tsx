@@ -75,7 +75,10 @@ const ReportPage: React.FC = () => {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
-        <ReportViewer report={report} onBack={() => navigate(-1)} />
+        <ReportViewer 
+          report={report} 
+          onBack={() => navigate('/migration', { state: { activeTab: 'conversion', recentReport: report } })} 
+        />
       </main>
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
     </div>

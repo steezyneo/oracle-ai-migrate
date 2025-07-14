@@ -82,6 +82,25 @@ const Dashboard = () => {
     }
   }, [files, selectedFile]);
 
+  useEffect(() => {
+    // Restore conversion results and files if coming from report page
+    if (location.state?.activeTab === 'conversion' && location.state?.recentReport) {
+      const report = location.state.recentReport;
+      setConversionResults(report.results || []);
+      // Optionally, set files if your FileItem structure matches ConversionResult.originalFile
+      setFiles(report.results.map((r: any) => ({
+        ...r.originalFile,
+        convertedContent: r.convertedCode,
+        conversionStatus: r.status,
+        errorMessage: r.errorMessage,
+        dataTypeMapping: r.dataTypeMapping,
+        issues: r.issues,
+        performanceMetrics: r.performanceMetrics,
+      })));
+      setActiveTab('conversion');
+    }
+  }, [location.state]);
+
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
     setFiles(convertedFiles);
