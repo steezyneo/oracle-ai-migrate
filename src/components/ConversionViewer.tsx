@@ -103,32 +103,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
-  const handleMarkAsUnreviewed = async () => {
-    if (!file.convertedContent) {
-      toast({
-        title: "No Converted Code",
-        description: "This file doesn't have converted code to mark as unreviewed.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const success = await addUnreviewedFile({
-      user_id: '', // This will be set by the hook
-      file_name: file.name,
-      converted_code: file.convertedContent,
-      original_code: file.content,
-    });
-
-    if (success) {
-      toast({
-        title: "File Marked as Unreviewed",
-        description: `${file.name} has been added to your pending actions for review.`,
-      });
-      setIsMarkedUnreviewed(true);
-    }
-  };
-
   return (
     <Card className="h-full">
       <CardHeader>
@@ -143,22 +117,11 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             </Badge>
             <Badge variant="outline">{file.type}</Badge>
             {file.convertedContent && (
-              <>
-                <FileDownloader
-                  fileName={file.name}
-                  content={file.convertedContent}
-                  fileType={file.type}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleMarkAsUnreviewed}
-                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-                >
-                  <Clock className="h-4 w-4 mr-1" />
-                  Mark as Unreviewed
-                </Button>
-              </>
+              <FileDownloader
+                fileName={file.name}
+                content={file.convertedContent}
+                fileType={file.type}
+              />
             )}
           </div>
         </CardTitle>
