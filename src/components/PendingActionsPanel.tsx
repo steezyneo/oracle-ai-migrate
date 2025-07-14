@@ -142,7 +142,11 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           }}
           isConverting={false}
           convertingFileIds={[]}
-          onClear={() => {}}
+          onClear={undefined}
+          onConvertAll={undefined}
+          onConvertAllByType={undefined}
+          onConvertFile={undefined}
+          onFixFile={undefined}
         />
       </div>
       <div className="col-span-8">
