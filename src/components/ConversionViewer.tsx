@@ -149,6 +149,15 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   content={file.convertedContent}
                   fileType={file.type}
                 />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleMarkAsUnreviewed}
+                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Mark as Unreviewed
+                </Button>
               </>
             )}
           </div>

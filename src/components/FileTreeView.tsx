@@ -15,8 +15,7 @@ import {
   ChevronRight,
   RefreshCw,
   AlertTriangle,
-  Loader2,
-  Clock
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -78,13 +77,14 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     if (convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
+    
     switch (status) {
       case 'success':
         return <Check className="h-4 w-4 text-green-600" />;
       case 'failed':
         return <X className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Play className="h-4 w-4 text-gray-400" />;
     }
   };
 
@@ -133,6 +133,17 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
           </Button>
           
+          {pendingCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
+              className="text-xs px-2 py-1 h-6"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Convert All ({pendingCount})
+            </Button>
+          )}
         </div>
         
         {isExpanded && (
@@ -159,6 +170,33 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {getStatusIcon(file.conversionStatus, file.id)}
+                  {file.conversionStatus === 'pending' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onConvertFile(file.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6"
+                    >
+                      Convert
+                    </Button>
+                  )}
+                  {file.conversionStatus === 'failed' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFixFile(file.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6 text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Fix
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -183,6 +221,15 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             {onClear && files.length > 0 && (
               <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
                 Clear
+              </Button>
+            )}
+            {getTotalPendingFiles() > 0 && (
+              <Button
+                onClick={onConvertAll}
+                className="text-xs px-3 py-1 h-7"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Convert All ({getTotalPendingFiles()})
               </Button>
             )}
           </div>
