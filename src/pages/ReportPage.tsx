@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ReportViewer from '@/components/ReportViewer';
 import { ConversionReport } from '@/types';
@@ -12,10 +12,19 @@ import Help from '@/components/Help';
 const ReportPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const lastBackState = React.useRef<any>(null);
+
+  // On mount, if location.state?.backToResults exists, store it
+  useEffect(() => {
+    if (location.state?.backToResults) {
+      lastBackState.current = location.state.backToResults;
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -48,6 +57,12 @@ const ReportPage: React.FC = () => {
     return <div className="min-h-screen flex items-center justify-center">Report not found.</div>;
   }
 
+  // Always use the lastBackState if available, otherwise default
+  const handleBackToResults = () => {
+    const state = lastBackState.current || { activeTab: 'conversion', recentReport: report };
+    navigate('/migration', { state });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
@@ -62,7 +77,7 @@ const ReportPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/history', { state: { previousReportId: reportId } })} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+            <button onClick={() => navigate('/history', { state: { previousReportId: reportId, backToResults: lastBackState.current || { activeTab: 'conversion', recentReport: report } } })} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
               <HistoryIcon className="h-5 w-5" />
               History
             </button>
@@ -77,7 +92,7 @@ const ReportPage: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         <ReportViewer 
           report={report} 
-          onBack={() => navigate('/migration', { state: { activeTab: 'conversion', recentReport: report } })} 
+          onBack={handleBackToResults} 
         />
       </main>
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
