@@ -48,7 +48,7 @@ const Dashboard = () => {
   const [showHelp, setShowHelp] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
-  const { unreviewedFiles } = useUnreviewedFiles();
+  const { unreviewedFiles, addUnreviewedFile } = useUnreviewedFiles();
   const {
     isConverting,
     convertingFileIds,
@@ -174,8 +174,21 @@ const Dashboard = () => {
     setActiveTab('upload');
   };
 
-  const handleMoveToDevReview = () => {
-    // Optionally, persist files for review here
+  const handleMoveToDevReview = async () => {
+    // Add all files in conversion to Dev Review (unreviewed_files)
+    for (const file of files) {
+      if (file.content && file.convertedContent) {
+        await addUnreviewedFile({
+          file_name: file.name,
+          converted_code: file.convertedContent,
+          original_code: file.content,
+        });
+      }
+    }
+    // Clear conversion files
+    setFiles([]);
+    setSelectedFile(null);
+    setConversionResults([]);
     setActiveTab('devReview');
   };
 
