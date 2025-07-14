@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Database, History as HistoryIcon, HelpCircle, Home } from 'lucide-react';
 import UserDropdown from '@/components/UserDropdown';
+import Help from '@/components/Help';
 
 const ReportPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -14,6 +15,7 @@ const ReportPage: React.FC = () => {
   const [report, setReport] = useState<ConversionReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -64,7 +66,7 @@ const ReportPage: React.FC = () => {
               <HistoryIcon className="h-5 w-5" />
               History
             </button>
-            <button onClick={() => {/* implement help modal if needed */}} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+            <button onClick={() => setShowHelp(true)} className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
               <HelpCircle className="h-5 w-5" />
               Help
             </button>
@@ -75,6 +77,7 @@ const ReportPage: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         <ReportViewer report={report} onBack={() => navigate(-1)} />
       </main>
+      {showHelp && <Help onClose={() => setShowHelp(false)} />}
     </div>
   );
 };
