@@ -53,6 +53,9 @@ const ReportPage: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
+          <Button variant="outline" onClick={() => navigate('/history', { state: { previousReportId: reportId } })}>
+            History
+          </Button>
           <h1 className="text-2xl font-bold text-gray-900">Migration Report</h1>
         </div>
       </header>

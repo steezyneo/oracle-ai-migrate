@@ -116,8 +116,12 @@ const History = () => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    navigate('/migration', { state: { activeTab: returnTab } });
+  const handleBack = () => {
+    if (location.state?.previousReportId) {
+      navigate(`/report/${location.state.previousReportId}`);
+    } else {
+      navigate('/migration', { state: { activeTab: returnTab } });
+    }
   };
 
   const handleGoHome = () => {
@@ -340,7 +344,7 @@ const History = () => {
               <HomeButton onClick={handleGoHome} />
               <Button 
                 variant="ghost" 
-                onClick={handleBackToDashboard}
+                onClick={handleBack}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
