@@ -257,15 +257,16 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     return 'other';
   };
   
+  // Remove a file from the upload list
   const handleRemoveFile = (id: string) => {
     setFiles(prevFiles => prevFiles.filter(file => file.id !== id));
-    
     toast({
       title: 'File Removed',
       description: 'The file has been removed from the upload list.'
     });
   };
-  
+
+  // Add a manually entered file to the list
   const handleManualSubmit = () => {
     if (!manualContent.trim()) {
       toast({
@@ -275,7 +276,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       });
       return;
     }
-    
     if (!manualFileName.trim()) {
       toast({
         title: 'Missing Filename',
@@ -284,7 +284,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       });
       return;
     }
-    
     // Validate T-SQL content for SQL files
     if (manualFileName.toLowerCase().endsWith('.sql')) {
       const validation = validateTSQLContent(manualContent);
@@ -298,7 +297,6 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
         return;
       }
     }
-    
     const newFile: CodeFile = {
       id: crypto.randomUUID(),
       name: manualFileName,
@@ -306,28 +304,24 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       type: templateType,
       status: 'pending'
     };
-    
     setFiles(prevFiles => [...prevFiles, newFile]);
-    
     setManualContent('');
     setManualFileName('');
-    
     // Clear validation error on successful manual addition
     setValidationError('');
-    
     toast({
       title: 'File Added',
       description: `${manualFileName} has been added to the list.`
     });
   };
-  
+
+  // Change the type of a file (table, procedure, etc.)
   const handleChangeFileType = (id: string, newType: 'table' | 'procedure' | 'trigger' | 'other') => {
     setFiles(prevFiles => 
       prevFiles.map(file => 
         file.id === id ? { ...file, type: newType } : file
       )
     );
-    
     toast({
       title: 'File Type Changed',
       description: `The file type has been updated to ${newType}.`

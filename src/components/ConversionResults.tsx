@@ -36,54 +36,54 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   
   const selectedResult = results.find(r => r.id === selectedResultId);
   
+  // Show a toast and update UI when code is updated
   const handleUpdateConvertedCode = (resultId: string, updatedCode: string) => {
-    console.log('Updated code for', resultId, updatedCode);
+    // TODO: Persist code update to backend if needed
     toast({
       title: 'Code Updated',
       description: 'Your changes to the converted code have been saved.'
     });
   };
-  
+
+  // Request an AI rewrite for a specific issue
   const handleRequestAIRewrite = (resultId: string, issue: string) => {
     setIsRewriting(true);
     toast({
       title: 'AI Rewrite Requested',
       description: `Processing: ${issue}`
     });
-    
     onRequestReconversion(resultId, issue);
-    
-    // Reset rewriting state after a brief delay to show loading state
+    // Simulate loading state for user feedback
     setTimeout(() => {
       setIsRewriting(false);
     }, 2000);
   };
-  
+
+  // Download the converted file as a .sql or .txt
   const handleDownloadFile = (result: ConversionResult) => {
     const blob = new Blob([result.convertedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
     const fileExtension = result.originalFile.name.includes('.') 
       ? result.originalFile.name.split('.').pop() 
       : 'sql';
     const baseName = result.originalFile.name.includes('.')
       ? result.originalFile.name.substring(0, result.originalFile.name.lastIndexOf('.'))
       : result.originalFile.name;
-    a.download = `${baseName}_oracle.${fileExtension}`;
+    const downloadName = `${baseName}_oracle.${fileExtension}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadName;
     document.body.appendChild(a);
     a.click();
-    
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
     toast({
       title: 'File Downloaded',
       description: `${result.originalFile.name} has been downloaded successfully.`,
     });
   };
-  
+
+  // Return a status icon for the summary sidebar
   const getStatusIcon = (status: 'success' | 'warning' | 'error') => {
     if (status === 'success') {
       return <Check className="h-4 w-4 text-green-500" />;
@@ -93,15 +93,16 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
       return <X className="h-4 w-4 text-red-500" />;
     }
   };
-  
+
+  // Count results by status for summary display
   const summaryCountsByStatus = {
     success: results.filter(r => r.status === 'success').length,
     warning: results.filter(r => r.status === 'warning').length,
     error: results.filter(r => r.status === 'error').length,
   };
 
+  // Complete the migration and move to the next step
   const handleCompleteMigration = async () => {
-    // Continue to next step instead of writing to history
     if (onComplete) onComplete();
   };
   

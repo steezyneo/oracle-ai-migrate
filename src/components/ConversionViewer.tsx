@@ -120,10 +120,11 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   }, [file.convertedContent, file.reviewComments]);
 
+  // Save the edited code to the database and update UI
   const handleSaveEdit = async () => {
     onManualEdit(editedContent);
     setIsEditing(false);
-    // Persist to Supabase
+    // Save to Supabase
     if (file.id) {
       const { error } = await supabase
         .from('migration_files')
@@ -133,83 +134,80 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         toast({
           title: 'Save Failed',
           description: error.message,
-          variant: 'destructive'
+          variant: 'destructive',
         });
       } else {
         toast({
           title: 'Saved',
-          description: 'Changes saved to database.'
+          description: 'Changes saved to database.',
         });
       }
     }
   };
 
+  // Mark this file as needing review (adds to unreviewed list)
   const handleMarkAsUnreviewed = async () => {
     if (!file.convertedContent) {
       toast({
         title: "No Converted Code",
         description: "This file doesn't have converted code to mark as unreviewed.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-
     try {
-      // First, add to unreviewed files
+      // Add to unreviewed files (user_id set by hook)
       const success = await addUnreviewedFile({
-        user_id: '', // This will be set by the hook
+        user_id: '',
         file_name: file.name,
         converted_code: file.convertedContent,
-        original_code: file.content || ''
+        original_code: file.content || '',
       });
-
       if (success) {
-        // Then, update the file status in migration_files to 'pending_review'
+        // Update file status in DB
         const { error: updateError } = await supabase
           .from('migration_files')
-          .update({ 
+          .update({
             conversion_status: 'pending_review',
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', file.id);
-
         if (updateError) {
+          // Not critical, just warn
           console.error('Error updating file status:', updateError);
           toast({
             title: "Warning",
             description: "File added to pending actions, but status update failed.",
-            variant: "destructive"
+            variant: "destructive",
           });
         } else {
           toast({
             title: "File Marked for Review",
             description: `${file.name} has been marked for review and added to your pending actions.`,
           });
-          
-          // Update the local file status to reflect the change
+          // Refresh file data
           if (onManualEdit) {
-            // Trigger a refresh of the file data
             onManualEdit(file.convertedContent || '');
           }
         }
       }
     } catch (error) {
+      // This should be rare, but log for debugging
       console.error('Error marking file as unreviewed:', error);
       toast({
         title: "Error",
         description: "Failed to mark file for review.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  // Handler for reconvert with suggestion
+  // Re-run conversion with a custom suggestion prompt
   const handleReconvertWithSuggestion = async () => {
     setIsReconverting(true);
     try {
-      // Use the suggestion as a custom prompt
       const customPrompt = suggestion.trim();
-      // Call backend conversion logic (assume window.handleFileReconvert is injected by parent)
+      // NOTE: window.handleFileReconvert is injected by parent (see dashboard logic)
       if (typeof window !== 'undefined' && (window as any).handleFileReconvert) {
         await (window as any).handleFileReconvert(file.id, customPrompt);
       }
@@ -223,7 +221,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
-  // Handler for auto-fix
+  // Let the AI try to auto-fix issues in the converted code
   const handleAutoFix = async () => {
     setIsReconverting(true);
     try {
@@ -239,6 +237,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
+  // Fetch latest review comments from the database
   const fetchLatestComments = async () => {
     const { data, error } = await supabase.from('migration_files').select('review_comments').eq('id', file.id).single();
     if (!error && data && data.review_comments) {

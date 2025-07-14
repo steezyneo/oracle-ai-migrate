@@ -26,43 +26,43 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const { toast } = useToast();
   
+  // Handle code changes in the textarea
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setCode(e.target.value);
   };
-  
+
+  // Save the code and show a toast
   const handleSave = () => {
     if (onSave) {
       onSave(code);
       setIsEditing(false);
-      
       toast({
         title: 'Changes Saved',
         description: 'Your code changes have been saved.',
       });
     }
   };
-  
+
+  // Enter editing mode
   const handleEdit = () => {
     setIsEditing(true);
   };
-  
+
+  // Cancel editing and revert to initial code
   const handleCancel = () => {
     setCode(initialCode);
     setIsEditing(false);
-    
     toast({
       title: 'Changes Discarded',
       description: 'Your code changes have been discarded.',
     });
   };
-  
-  // Simple syntax highlighting function (a real implementation would use a library like Prism)
+
+  // Add line numbers for readability (not real syntax highlighting)
   const getHighlightedCode = () => {
     if (!showLineNumbers) return code;
-    
     const lines = code.split('\n');
     const paddingLength = lines.length.toString().length;
-    
     return lines
       .map((line, index) => {
         const lineNumber = (index + 1).toString().padStart(paddingLength, ' ');

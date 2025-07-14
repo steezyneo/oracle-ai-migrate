@@ -13,39 +13,42 @@ const PendingActionsPanel: React.FC = () => {
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
 
+  // Start editing a file's converted code
   const handleStartEdit = (file: UnreviewedFile) => {
     setEditingFile(file.id);
     setEditedContent(file.converted_code);
   };
 
+  // Cancel editing and reset state
   const handleCancelEdit = () => {
     setEditingFile(null);
     setEditedContent('');
   };
 
+  // Save changes to a file's converted code
   const handleSaveEdit = async (file: UnreviewedFile) => {
     const success = await updateUnreviewedFile({
       id: file.id,
       converted_code: editedContent
     });
-
     if (success) {
       setEditingFile(null);
       setEditedContent('');
     }
   };
 
+  // Mark a file as reviewed and save changes
   const handleMarkAsReviewed = async (file: UnreviewedFile) => {
     const codeToSave = editingFile === file.id ? editedContent : file.converted_code;
     const originalCode = file.original_code || '';
     const success = await markAsReviewed(file.id, file.file_name, codeToSave, originalCode);
-    
     if (success && editingFile === file.id) {
       setEditingFile(null);
       setEditedContent('');
     }
   };
 
+  // Delete a file from the unreviewed list
   const handleDelete = async (fileId: string) => {
     await deleteUnreviewedFile(fileId);
     if (editingFile === fileId) {

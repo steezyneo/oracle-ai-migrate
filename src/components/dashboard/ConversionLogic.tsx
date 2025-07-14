@@ -32,6 +32,7 @@ export const useConversionLogic = (
   const [isConverting, setIsConverting] = useState(false);
   const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
+  // Map conversion status from result to local state
   const mapConversionStatus = (status: 'success' | 'warning' | 'error'): 'pending' | 'success' | 'failed' => {
     switch (status) {
       case 'success':
@@ -44,11 +45,10 @@ export const useConversionLogic = (
     }
   };
 
-  // Create a new migration for failed files (separate from main migration)
+  // Create a new migration for failed files (for better tracking)
   const createFailedFileMigration = useCallback(async (fileName: string, originalMigrationId?: string): Promise<string | null> => {
     try {
       const projectName = `Failed: ${fileName}`;
-
       const { data, error } = await supabase
         .from('migrations')
         .insert({ 
@@ -57,7 +57,6 @@ export const useConversionLogic = (
         })
         .select()
         .single();
-
       if (error) {
         console.error('Error creating failed file migration:', error);
         toast({
@@ -74,6 +73,7 @@ export const useConversionLogic = (
         return data.id;
       }
     } catch (error) {
+      // This should be rare, but log for debugging
       console.error('Error creating failed file migration:', error);
       toast({
         title: "Migration Error",
@@ -84,16 +84,14 @@ export const useConversionLogic = (
     }
   }, [user?.id, toast]);
 
+  // Convert a single file and update state/history
   const handleConvertFile = useCallback(async (fileId: string) => {
     const file = files.find(f => f.id === fileId);
     if (!file) return;
-
     setConvertingFileIds([...convertingFileIds, fileId]);
     setIsConverting(true);
-    
     try {
       const result = await convertSybaseToOracle(file, selectedAiModel, customPrompt);
-      
       const conversionResult: ConversionResult = {
         id: result.id,
         originalFile: {
@@ -109,9 +107,7 @@ export const useConversionLogic = (
         performance: result.performance,
         status: result.status
       };
-      
       setConversionResults(prev => [...prev, conversionResult]);
-      
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { 
@@ -124,7 +120,6 @@ export const useConversionLogic = (
             }
           : f
       ));
-
       // Upsert into migration_files after successful conversion
       if (migrationId) {
         // Check if file already exists for this migration
@@ -161,9 +156,11 @@ export const useConversionLogic = (
           });
         }
       } else {
+        // No migrationId found, warn but don't break flow
         console.warn('No migrationId found for conversion. File will not be added to history.');
       }
     } catch (error) {
+      // Log and update state for failed conversion
       console.error('Conversion failed:', error);
       setFiles(prev => prev.map(f => 
         f.id === fileId ? { ...f, conversionStatus: 'failed' } : f

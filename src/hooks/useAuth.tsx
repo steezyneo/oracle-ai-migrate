@@ -21,16 +21,17 @@ interface AuthContextType {
   signOut: (onSuccess?: () => void) => Promise<void>;
 }
 
+// Auth context and provider for Supabase authentication
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Move generateUsername to module scope
+// Helper to generate a unique username from email (ensures no collisions)
 const generateUsername = async (email: string) => {
   let base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   let username = base;
   let suffix = 1;
-  // Check for uniqueness
+  // Try incrementing until we find a unique username
   while (true) {
-    const { data, error } = await supabase.from('profiles').select('id').eq('username', username).single();
+    const { data } = await supabase.from('profiles').select('id').eq('username', username).single();
     if (!data) break;
     username = `${base}${suffix}`;
     suffix++;
@@ -38,13 +39,14 @@ const generateUsername = async (email: string) => {
   return username;
 };
 
+// Provider for authentication state and actions
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch profile helper
+  // Fetch the user's profile from Supabase
   const fetchProfile = async (userId: string) => {
     try {
       const { data: profileData, error } = await supabase
@@ -60,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
@@ -74,7 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Get initial session
+    // Get the initial session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -89,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sign up a new user and create a profile
   const signUp = async (email: string, password: string, fullName: string, onSuccess?: () => void) => {
     const redirectUrl = `${window.location.origin}/`;
     const username = await generateUsername(email);
@@ -110,6 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
+  // Sign in an existing user
   const signIn = async (email: string, password: string, onSuccess?: () => void) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (!error) {
@@ -122,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
+  // Sign out the user and clear profile
   const signOut = async (onSuccess?: () => void) => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -147,6 +152,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Hook to access auth context (must be used inside AuthProvider)
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -155,6 +161,7 @@ export const useAuth = () => {
   return context;
 };
 
+// Utility to backfill usernames for existing profiles (one-off migration)
 export const backfillUsernames = async () => {
   const { data: profiles } = await supabase.from('profiles').select('*');
   for (const profile of profiles) {

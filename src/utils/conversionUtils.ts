@@ -4,16 +4,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBbhyMmUtGdJhDDUHh7ecI1qsYjR9WQSXU";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// T-SQL validation function to check if file contains valid T-SQL code
+// Validate if a string contains enough T-SQL to be considered a real Sybase/SQL file
 export const validateTSQLContent = (content: string): { isValid: boolean; error?: string } => {
   const trimmedContent = content.trim();
-  
-  // Check if content is empty
+  // Quick check for empty files
   if (!trimmedContent) {
     return { isValid: false, error: 'File is empty or contains no content' };
   }
-  
-  // Check for basic T-SQL keywords and patterns
+  // Look for common T-SQL patterns (not foolproof, but catches most cases)
   const tsqlPatterns = [
     // Common T-SQL keywords
     /\b(create|alter|drop|select|insert|update|delete|declare|begin|end|if|while|for|case|when|then|else|return|go|use|exec|execute|sp_|xp_)\b/i,
@@ -65,22 +63,22 @@ export const validateTSQLContent = (content: string): { isValid: boolean; error?
   return { isValid: true };
 };
 
-// Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
+// Convert Sybase SQL to Oracle PL/SQL using Gemini AI
+// Throws if validation fails or conversion errors
 export const convertSybaseToOracle = async (
   file: CodeFile,
   aiModel: string = 'default',
   customPrompt?: string,
   skipExplanation: boolean = true
 ): Promise<ConversionResult> => {
+  // NOTE: This function is async and can throw
   console.log(`[CONVERT] Starting conversion for file: ${file.name} with model: ${aiModel}`);
   const startTime = Date.now();
-
-  // Validate T-SQL content before conversion
+  // Validate before sending to AI
   const validation = validateTSQLContent(file.content);
   if (!validation.isValid) {
     throw new Error(`T-SQL validation failed for ${file.name}: ${validation.error}`);
   }
-
   // Extract data type mappings from original code
   const dataTypeMapping = extractDataTypeMappings(file.content);
 
@@ -152,7 +150,7 @@ export const convertSybaseToOracle = async (
   };
 };
 
-// Helper: extract data type mappings from code
+// Extract Sybase data types and map to Oracle types (best effort, not exhaustive)
 const extractDataTypeMappings = (code: string): DataTypeMapping[] => {
   const mappings: DataTypeMapping[] = [];
   const sybaseTypes = [
@@ -232,7 +230,7 @@ const extractDataTypeMappings = (code: string): DataTypeMapping[] => {
   return mappings;
 };
 
-// Analyze code complexity quantitatively
+// Quantitative code complexity analysis (basic, not a full parser)
 const analyzeCodeComplexity = (code: string) => {
   const lines = code.split('\n');
   const totalLines = lines.length;
@@ -263,7 +261,7 @@ const analyzeCodeComplexity = (code: string) => {
   };
 };
 
-// Generate quantitative performance metrics
+// Generate performance metrics for a conversion (lines, complexity, maintainability, etc.)
 const generatePerformanceMetrics = (
   originalComplexity: any,
   convertedComplexity: any,
@@ -310,7 +308,7 @@ const generatePerformanceMetrics = (
   };
 };
 
-// Generate issues based on quantitative analysis
+// Generate issues based on code metrics (not a linter, just heuristics)
 const generateQuantitativeIssues = (
   originalComplexity: any,
   convertedComplexity: any,
@@ -344,6 +342,7 @@ const generateQuantitativeIssues = (
   return issues;
 };
 
+// Create a summary report for a batch of conversions
 export const generateConversionReport = (results: ConversionResult[]): ConversionReport => {
   const successCount = results.filter(r => r.status === 'success').length;
   const warningCount = results.filter(r => r.status === 'warning').length;
