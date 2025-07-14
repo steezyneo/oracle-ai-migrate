@@ -117,12 +117,21 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         <FileTreeView
           files={unreviewedFiles.map(f => ({
             ...f,
-            conversionStatus: 'pending',
+            name: f.file_name,
+            content: f.original_code,
             convertedContent: f.converted_code,
+            conversionStatus: 'pending',
             errorMessage: f.error_message,
           }))}
           onFileSelect={file => setSelectedFileId(file.id)}
-          selectedFile={selectedFile}
+          selectedFile={{
+            ...selectedFile,
+            name: selectedFile?.file_name,
+            content: selectedFile?.original_code,
+            convertedContent: selectedFile?.converted_code,
+            conversionStatus: 'pending',
+            errorMessage: selectedFile?.error_message,
+          }}
           isConverting={false}
           convertingFileIds={[]}
           onClear={() => {}}
@@ -134,8 +143,10 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             <ConversionViewer
               file={{
                 ...selectedFile,
-                conversionStatus: 'pending',
+                name: selectedFile.file_name,
+                content: selectedFile.original_code,
                 convertedContent: editingFile === selectedFile.id ? editedContent : selectedFile.converted_code,
+                conversionStatus: 'pending',
                 errorMessage: selectedFile.error_message,
               }}
               onManualEdit={content => {
