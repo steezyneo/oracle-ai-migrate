@@ -4,6 +4,7 @@ import { convertSybaseToOracle, generateConversionReport } from '@/utils/convers
 import { supabase } from '@/integrations/supabase/client';
 import { ConversionResult, ConversionReport } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FileItem {
   id: string;
@@ -26,6 +27,7 @@ export const useConversionLogic = (
   selectedAiModel: string
 ) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isConverting, setIsConverting] = useState(false);
   const [convertingFileIds, setConvertingFileIds] = useState<string[]>([]);
 
