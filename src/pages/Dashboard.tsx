@@ -350,10 +350,6 @@ const Dashboard = () => {
               <FileText className="h-4 w-4" />
               Conversion
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Performance
-            </TabsTrigger>
             <TabsTrigger value="devReview" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
               Dev Review
@@ -362,6 +358,10 @@ const Dashboard = () => {
                   {unreviewedFiles.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Performance
             </TabsTrigger>
           </TabsList>
 
