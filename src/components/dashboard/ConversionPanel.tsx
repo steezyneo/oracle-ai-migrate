@@ -88,9 +88,20 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
     return matchesSearch && matchesStatus;
   });
-  const currentIndex = filteredFiles.findIndex(f => f.id === selectedFile?.id);
+  // Group filtered files by type to match sidebar order
+  const filteredTables = filteredFiles.filter(f => f.type === 'table');
+  const filteredProcedures = filteredFiles.filter(f => f.type === 'procedure');
+  const filteredTriggers = filteredFiles.filter(f => f.type === 'trigger');
+  const filteredOther = filteredFiles.filter(f => f.type === 'other');
+  const allFilteredFiles = [
+    ...filteredTables,
+    ...filteredProcedures,
+    ...filteredTriggers,
+    ...filteredOther
+  ];
+  const currentIndex = allFilteredFiles.findIndex(f => f.id === selectedFile?.id);
   const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < filteredFiles.length - 1;
+  const hasNext = currentIndex >= 0 && currentIndex < allFilteredFiles.length - 1;
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -118,8 +129,8 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             onManualEdit={onManualEdit}
             onDismissIssue={onDismissIssue}
             hideEdit={true}
-            onPrevFile={hasPrev ? () => onFileSelect(filteredFiles[currentIndex - 1]) : undefined}
-            onNextFile={hasNext ? () => onFileSelect(filteredFiles[currentIndex + 1]) : undefined}
+            onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
+            onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
             hasPrev={hasPrev}
             hasNext={hasNext}
           />
