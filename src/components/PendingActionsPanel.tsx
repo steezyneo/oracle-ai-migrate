@@ -116,17 +116,17 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             Dev Review
           </CardTitle>
           <CardDescription>
-            Files awaiting your review will appear here
+            All files have been cleared from Dev Review. Migration is complete!
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-              No Files for Dev Review
+            <h3 className="text-lg font-semibold text-green-600 mb-2">
+              Migration Complete
             </h3>
             <p className="text-sm text-muted-foreground">
-              When you move files to Dev Review, they will appear here for editing and review.
+              You can now view your migration report or start a new migration.
             </p>
           </div>
         </CardContent>

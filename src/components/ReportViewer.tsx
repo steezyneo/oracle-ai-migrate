@@ -343,10 +343,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         </CardContent>
         
         <CardFooter>
-          <div className="w-full flex justify-between">
-            <Button variant="outline" onClick={onBack}>
-              Back to Results
-            </Button>
+          <div className="w-full flex justify-end">
             <Button onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Download Report

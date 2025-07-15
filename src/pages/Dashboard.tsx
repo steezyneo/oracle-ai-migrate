@@ -7,6 +7,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import CodeUploader from '@/components/CodeUploader';
 import ReportViewer from '@/components/ReportViewer';
@@ -47,6 +49,8 @@ const Dashboard = () => {
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
   const [showHelp, setShowHelp] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
   const { unreviewedFiles, addUnreviewedFile } = useUnreviewedFiles();
@@ -197,6 +201,11 @@ const Dashboard = () => {
   };
 
   const handleCompleteMigration = async () => {
+    if (activeTab === 'devReview' && !pendingCompleteMigration) {
+      setShowConfirmModal(true);
+      return;
+    }
+    setPendingCompleteMigration(false);
     try {
       // If in Dev Review, use unreviewedFiles for the report
       let reportResults = [];
@@ -287,6 +296,13 @@ const Dashboard = () => {
         }
       }
       navigate(`/report/${data.id}`);
+      // After navigation, clear all unreviewed files from Dev Review
+      if (activeTab === 'devReview') {
+        toast({
+          title: "Migration Complete",
+          description: "All files have been cleared from Dev Review.",
+        });
+      }
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
@@ -392,7 +408,10 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="devReview">
-            <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={handleCompleteMigration} />
+            <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={() => {
+              setPendingCompleteMigration(true);
+              handleCompleteMigration();
+            }} />
           </TabsContent>
         </Tabs>
       </main>
@@ -400,6 +419,19 @@ const Dashboard = () => {
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
       )}
+      {/* Confirmation Modal */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Migration?</DialogTitle>
+          </DialogHeader>
+          <div>Are you sure you want to complete migration? All reviewed and unreviewed files will be cleared from Dev Review.</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={() => { setShowConfirmModal(false); setPendingCompleteMigration(true); handleCompleteMigration(); }}>Yes, Complete Migration</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
