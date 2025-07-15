@@ -53,7 +53,7 @@ const Dashboard = () => {
   const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
-  const { unreviewedFiles, addUnreviewedFile } = useUnreviewedFiles();
+  const { unreviewedFiles, addUnreviewedFile, refreshUnreviewedFiles } = useUnreviewedFiles();
   const {
     isConverting,
     convertingFileIds,
@@ -227,32 +227,33 @@ const Dashboard = () => {
   };
 
   const handleCompleteMigration = async () => {
-    if (activeTab === 'devReview' && !pendingCompleteMigration) {
-      setShowConfirmModal(true);
-      return;
-    }
-    setPendingCompleteMigration(false);
+    // No confirmation popup or pending state
     try {
+      // Refresh the list to get the latest reviewed files
+      await refreshUnreviewedFiles();
       // If in Dev Review, use unreviewedFiles for the report
       let reportResults = [];
       if (activeTab === 'devReview') {
-        reportResults = unreviewedFiles.map(f => ({
-          id: f.id || uuidv4(),
-          originalFile: {
+        // Only include reviewed files in the report
+        reportResults = unreviewedFiles
+          .filter(f => f.status === 'reviewed')
+          .map(f => ({
             id: f.id || uuidv4(),
-            name: f.file_name,
-            content: f.original_code,
-            type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            originalFile: {
+              id: f.id || uuidv4(),
+              name: f.file_name,
+              content: f.original_code,
+              type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+              status: 'success',
+            },
+            aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
+            convertedCode: f.converted_code,
+            issues: f.issues || [],
+            dataTypeMapping: f.data_type_mapping || [],
+            performance: f.performance_metrics || {},
             status: 'success',
-          },
-          aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
-          convertedCode: f.converted_code,
-          issues: f.issues || [],
-          dataTypeMapping: f.data_type_mapping || [],
-          performance: f.performance_metrics || {},
-          status: 'success',
-          explanations: [],
-        }));
+            explanations: [],
+          }));
       } else {
         // fallback to files state (conversion tab)
         reportResults = files.map(file => ({
@@ -298,13 +299,6 @@ const Dashboard = () => {
       // After saving the report, move all files to history and remove from unreviewed_files
       // (No longer add files to migrations/migration_files here. This is now done after deployment to Oracle.)
       navigate(`/report/${data.id}`);
-      // After navigation, clear all unreviewed files from Dev Review
-      if (activeTab === 'devReview') {
-        toast({
-          title: "Migration Complete",
-          description: "All files have been cleared from Dev Review.",
-        });
-      }
     } catch (error) {
       console.error('Error generating report:', error);
     toast({
@@ -411,7 +405,6 @@ const Dashboard = () => {
 
           <TabsContent value="devReview">
             <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={() => {
-              setPendingCompleteMigration(true);
               handleCompleteMigration();
             }} />
           </TabsContent>
@@ -421,19 +414,6 @@ const Dashboard = () => {
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
       )}
-      {/* Confirmation Modal */}
-      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete Migration?</DialogTitle>
-          </DialogHeader>
-          <div>Are you sure you want to complete migration? All reviewed and unreviewed files will be cleared from Dev Review.</div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={() => { setShowConfirmModal(false); setPendingCompleteMigration(true); handleCompleteMigration(); }}>Yes, Complete Migration</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

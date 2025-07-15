@@ -138,7 +138,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           .from('unreviewed_files')
           .select('*')
           .eq('user_id', user.id)
-          .in('status', ['unreviewed', 'reviewed']);
+          .eq('status', 'reviewed');
         if (!error && unreviewed && unreviewed.length > 0) {
           latestFiles = unreviewed.map(f => ({
             file_name: f.file_name,
@@ -191,8 +191,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         await supabase.from('migration_files').insert(
           filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
         );
-        // After inserting into migration_files, delete all unreviewed_files for this user
-        await supabase.from('unreviewed_files').delete().eq('user_id', user.id);
+        // After inserting into migration_files, delete only reviewed files from unreviewed_files
+        await supabase.from('unreviewed_files').delete().eq('user_id', user.id).eq('status', 'reviewed');
       }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
