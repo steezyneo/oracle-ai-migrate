@@ -251,7 +251,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
-              <FileTreeView
+        <FileTreeView
                 files={mappedReviewedFiles}
           onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
@@ -340,11 +340,11 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <Trash2 className="h-4 w-4 mr-2" />
           Delete
         </Button>
-        <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
-          <Check className="h-4 w-4 mr-2" />
-          Complete Migration
-        </Button>
-      </div>
+          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
+            <Check className="h-4 w-4 mr-2" />
+            Complete Migration
+          </Button>
+        </div>
     </div>
   );
 };

@@ -191,6 +191,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         await supabase.from('migration_files').insert(
           filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
         );
+        // After inserting into migration_files, delete all unreviewed_files for this user
+        await supabase.from('unreviewed_files').delete().eq('user_id', user.id);
       }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
