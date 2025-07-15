@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, Check, Edit3, Trash2, FileText } from 'lucide-react';
+import { Clock, Check, Edit3, Trash2, FileText, Folder, ChevronDown, ChevronUp } from 'lucide-react';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { UnreviewedFile } from '@/types/unreviewedFiles';
 import MarkedForReviewPanel from './MarkedForReviewPanel';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { cn } from '@/lib/utils';
 
 interface DevReviewPanelProps {
   canCompleteMigration: boolean;
@@ -21,8 +22,19 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [showUnreviewed, setShowUnreviewed] = useState(true);
+  const [showReviewed, setShowReviewed] = useState(false);
 
-  const selectedFile = unreviewedFiles.find(f => f.id === selectedFileId) || unreviewedFiles[0];
+  // Split files into pending and reviewed
+  const pendingFiles = unreviewedFiles.filter(f => f.status !== 'reviewed');
+  const reviewedFiles = unreviewedFiles.filter(f => f.status === 'reviewed');
+
+  // Find selected file in either list
+  const selectedFile =
+    pendingFiles.find(f => f.id === selectedFileId) ||
+    reviewedFiles.find(f => f.id === selectedFileId) ||
+    pendingFiles[0] ||
+    reviewedFiles[0];
 
   const handleStartEdit = (file: UnreviewedFile) => {
     setEditingFile(file.id);
@@ -49,11 +61,16 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     const codeToSave = editingFile === file.id ? editedContent : file.converted_code;
     const originalCode = file.original_code || '';
     const success = await markAsReviewed(file.id, file.file_name, codeToSave, originalCode);
-    
     if (success && editingFile === file.id) {
       setEditingFile(null);
       setEditedContent('');
     }
+    // After marking as reviewed, select next pending file if available
+    setSelectedFileId(
+      pendingFiles.filter(f => f.id !== file.id)[0]?.id ||
+      reviewedFiles.concat([{ ...file, status: 'reviewed' }])[0]?.id ||
+      null
+    );
   };
 
   const handleDelete = async (fileId: string) => {
@@ -61,6 +78,12 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     if (editingFile === fileId) {
       handleCancelEdit();
     }
+    // After delete, select next file
+    setSelectedFileId(
+      pendingFiles.filter(f => f.id !== fileId)[0]?.id ||
+      reviewedFiles.filter(f => f.id !== fileId)[0]?.id ||
+      null
+    );
   };
 
   if (isLoading) {
@@ -84,7 +107,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     );
   }
 
-  if (unreviewedFiles.length === 0) {
+  if (pendingFiles.length === 0 && reviewedFiles.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -111,46 +134,75 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     );
   }
 
+  // Helper to map UnreviewedFile to FileItem for FileTreeView
+  const mapToFileItem = (f: UnreviewedFile): any => {
+    let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
+    const lower = f.file_name.toLowerCase();
+    if (lower.includes('trig')) type = 'trigger';
+    else if (lower.includes('proc')) type = 'procedure';
+    else if (lower.includes('tab') || lower.includes('table')) type = 'table';
+    return {
+      ...f,
+      name: f.file_name,
+      content: f.original_code,
+      convertedContent: f.converted_code,
+      conversionStatus: 'pending',
+      errorMessage: undefined,
+      type,
+      path: f.file_name,
+    };
+  };
+
   return (
     <div className="grid grid-cols-12 gap-6 relative min-h-[500px] pb-20">
-      <div className="col-span-4">
-        <FileTreeView
-          files={unreviewedFiles.map(f => {
-            let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
-            const lower = f.file_name.toLowerCase();
-            if (lower.includes('trig')) type = 'trigger';
-            else if (lower.includes('proc')) type = 'procedure';
-            else if (lower.includes('tab') || lower.includes('table')) type = 'table';
-            return {
-              ...f,
-              name: f.file_name,
-              content: f.original_code,
-              convertedContent: f.converted_code,
-              conversionStatus: 'pending',
-              errorMessage: undefined,
-              type,
-              path: f.file_name,
-            };
-          }) as any}
-          onFileSelect={file => setSelectedFileId(file.id)}
-          selectedFile={selectedFile ? {
-            ...selectedFile,
-            name: selectedFile.file_name,
-            content: selectedFile.original_code,
-            convertedContent: selectedFile.converted_code,
-            conversionStatus: 'pending',
-            errorMessage: undefined,
-            type: (() => {
-              const lower = selectedFile.file_name.toLowerCase();
-              if (lower.includes('trig')) return 'trigger';
-              if (lower.includes('proc')) return 'procedure';
-              if (lower.includes('tab') || lower.includes('table')) return 'table';
-              return 'other';
-            })() as 'table' | 'procedure' | 'trigger' | 'other',
-            path: selectedFile.file_name,
-          } : null}
-          hideActions={true}
-        />
+      <div className="col-span-4 flex flex-col h-full">
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
+                <Folder className="h-4 w-4 text-orange-500" />
+                UnReviewed Files ({pendingFiles.length})
+              </div>
+              <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
+                {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            {showUnreviewed && (
+              <FileTreeView
+                files={pendingFiles.map(mapToFileItem)}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+              />
+            )}
+          </CardContent>
+        </Card>
+        {/* Review Files Folder */}
+        <Card className="mt-6">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-green-700 flex items-center gap-2">
+                <Folder className="h-4 w-4 text-green-600" />
+                Reviewed Files ({reviewedFiles.length})
+              </div>
+              <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
+                {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            {showReviewed && (
+              <FileTreeView
+                files={reviewedFiles.map(mapToFileItem)}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
       <div className="col-span-8">
         {selectedFile ? (
@@ -162,7 +214,15 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 content: selectedFile.original_code,
                 convertedContent: editingFile === selectedFile.id ? editedContent : selectedFile.converted_code,
                 conversionStatus: 'pending',
-                errorMessage: selectedFile.error_message,
+                errorMessage: undefined,
+                type: (() => {
+                  const lower = selectedFile.file_name.toLowerCase();
+                  if (lower.includes('trig')) return 'trigger';
+                  if (lower.includes('proc')) return 'procedure';
+                  if (lower.includes('tab') || lower.includes('table')) return 'table';
+                  return 'other';
+                })() as 'table' | 'procedure' | 'trigger' | 'other',
+                path: selectedFile.file_name,
               }}
               onManualEdit={content => {
                 setEditingFile(selectedFile.id);
@@ -180,14 +240,16 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit
               </Button>
-              <Button
-                size="sm"
-                onClick={() => handleMarkAsReviewed(selectedFile)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Mark as Reviewed & Save
-              </Button>
+              {selectedFile.status !== 'reviewed' && (
+                <Button
+                  size="sm"
+                  onClick={() => handleMarkAsReviewed(selectedFile)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Mark as Reviewed & Save
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="destructive"

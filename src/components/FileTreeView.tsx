@@ -58,7 +58,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   hideActions = false,
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['tables', 'procedures', 'triggers'])
+    new Set()
   );
 
   const toggleSection = (section: string) => {
@@ -204,29 +204,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Project Structure</CardTitle>
-          {!hideActions && (
-            <div className="flex gap-2">
-              {onClear && files.length > 0 && (
-                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                  Clear
-                </Button>
-              )}
-              {onConvertAll && totalPending > 0 && (
-                <Button
-                  onClick={onConvertAll}
-                  className="text-xs px-3 py-1 h-7"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Convert All ({totalPending})
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4">
           {renderSection('tables', 'Tables', tables)}

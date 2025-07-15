@@ -20,7 +20,7 @@ export const useUnreviewedFiles = () => {
         .from('unreviewed_files')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'unreviewed')
+        .in('status', ['unreviewed', 'reviewed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -105,7 +105,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             {files.some(f => f.conversionStatus === 'success') && (
               <div className="flex justify-end gap-2">
                 <Button 
-                  variant="secondary"
+                  variant="primary"
                   onClick={onMoveToDevReview}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
