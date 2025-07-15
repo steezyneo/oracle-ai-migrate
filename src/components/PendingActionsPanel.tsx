@@ -137,19 +137,22 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   // Helper to map UnreviewedFile to FileItem for FileTreeView
   const mapToFileItem = (f: UnreviewedFile): any => {
     let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
-    const lower = f.file_name.toLowerCase();
-    if (lower.includes('trig')) type = 'trigger';
-    else if (lower.includes('proc')) type = 'procedure';
-    else if (lower.includes('tab') || lower.includes('table')) type = 'table';
-    return {
-      ...f,
-      name: f.file_name,
-      content: f.original_code,
-      convertedContent: f.converted_code,
-      conversionStatus: 'pending',
+            const lower = f.file_name.toLowerCase();
+            if (lower.includes('trig')) type = 'trigger';
+            else if (lower.includes('proc')) type = 'procedure';
+            else if (lower.includes('tab') || lower.includes('table')) type = 'table';
+            return {
+              ...f,
+              name: f.file_name,
+              content: f.original_code,
+              convertedContent: f.converted_code,
+              conversionStatus: 'pending',
       errorMessage: undefined,
-      type,
+              type,
       path: f.file_name,
+      dataTypeMapping: f.data_type_mapping || [],
+      issues: f.issues || [],
+      performanceMetrics: f.performance_metrics || {},
     };
   };
 
@@ -197,7 +200,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             {showReviewed && (
               <FileTreeView
                 files={reviewedFiles.map(mapToFileItem)}
-                onFileSelect={file => setSelectedFileId(file.id)}
+          onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
                 defaultExpandedSections={[]}
@@ -225,6 +228,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                   return 'other';
                 })() as 'table' | 'procedure' | 'trigger' | 'other',
                 path: selectedFile.file_name,
+                dataTypeMapping: selectedFile.data_type_mapping || [],
+                issues: selectedFile.issues || [],
+                performanceMetrics: selectedFile.performance_metrics || {},
               }}
               onManualEdit={content => {
                 setEditingFile(selectedFile.id);
@@ -233,24 +239,16 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               onDismissIssue={() => {}}
             />
             <div className="flex gap-2">
+              {/* Removed Edit button */}
+              {selectedFile.status !== 'reviewed' && (
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => handleStartEdit(selectedFile)}
-                disabled={editingFile === selectedFile.id}
+                onClick={() => handleMarkAsReviewed(selectedFile)}
+                className="bg-green-600 hover:bg-green-700"
               >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit
+                <Check className="h-4 w-4 mr-2" />
+                Mark as Reviewed & Save
               </Button>
-              {selectedFile.status !== 'reviewed' && (
-                <Button
-                  size="sm"
-                  onClick={() => handleMarkAsReviewed(selectedFile)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  Mark as Reviewed & Save
-                </Button>
               )}
               <Button
                 size="sm"
@@ -278,12 +276,12 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         )}
       </div>
       {/* Complete Migration button always visible at bottom right */}
-      <div className="absolute right-0 bottom-0 p-4">
-        <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
-          <Check className="h-4 w-4 mr-2" />
-          Complete Migration
-        </Button>
-      </div>
+        <div className="absolute right-0 bottom-0 p-4">
+          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
+            <Check className="h-4 w-4 mr-2" />
+            Complete Migration
+          </Button>
+        </div>
     </div>
   );
 };

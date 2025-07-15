@@ -49,6 +49,9 @@ export const useUnreviewedFiles = () => {
           user_id: user.id,
           status: 'unreviewed',
           original_code: fileData.original_code,
+          data_type_mapping: fileData.data_type_mapping || [],
+          issues: fileData.issues || [],
+          performance_metrics: fileData.performance_metrics || {},
         });
 
       if (error) throw error;
