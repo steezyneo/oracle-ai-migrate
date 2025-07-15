@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { 
   Folder, 
   FolderOpen, 
@@ -62,6 +63,20 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
   );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  // Filter files by search and status
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'All' ? true :
+      statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
+      statusFilter === 'Success' ? file.conversionStatus === 'success' :
+      statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
+      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
+    return matchesSearch && matchesStatus;
+  });
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -74,7 +89,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getFilesByType = (type: string) => {
-    return files.filter(file => file.type === type);
+    return filteredFiles.filter(file => file.type === type);
   };
 
   const getSectionIcon = (type: string) => {
@@ -207,23 +222,46 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   return (
     <Card className="h-full">
       {!hideActions && (
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Project Structure</CardTitle>
-          <div className="flex gap-2">
-            {onClear && files.length > 0 && (
-              <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                Clear
-              </Button>
-            )}
-            {onConvertAll && totalPending > 0 && (
-              <Button
-                onClick={onConvertAll}
-                className="text-xs px-3 py-1 h-7 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Convert All ({totalPending})
-              </Button>
-            )}
+        <CardHeader className="pb-3 flex flex-col gap-2">
+          <div className="flex flex-row items-center justify-between w-full mb-2">
+            <CardTitle className="text-lg">Project Structure</CardTitle>
+            <div className="flex gap-2">
+              {onClear && files.length > 0 && (
+                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
+                  Clear
+                </Button>
+              )}
+              {onConvertAll && totalPending > 0 && (
+                <Button
+                  onClick={onConvertAll}
+                  className="text-xs px-3 py-1 h-7 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Convert All ({totalPending})
+                </Button>
+              )}
+            </div>
+          </div>
+          {/* Search and Filter Row */}
+          <div className="flex flex-row gap-2 w-full mb-2">
+            <Input
+              type="text"
+              placeholder="Search files..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="flex-1 h-8 text-sm"
+            />
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="h-8 text-sm border rounded px-2"
+            >
+              <option value="All">All</option>
+              <option value="Pending">Pending</option>
+              <option value="Success">Success</option>
+              <option value="Failed">Failed</option>
+              <option value="Pending Review">Pending Review</option>
+            </select>
           </div>
         </CardHeader>
       )}

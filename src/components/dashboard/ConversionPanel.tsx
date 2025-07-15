@@ -75,6 +75,23 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     );
   }
 
+  // Compute filtered file list for navigation (should match FileTreeView's filter logic)
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState('All');
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'All' ? true :
+      statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
+      statusFilter === 'Success' ? file.conversionStatus === 'success' :
+      statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
+      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
+    return matchesSearch && matchesStatus;
+  });
+  const currentIndex = filteredFiles.findIndex(f => f.id === selectedFile?.id);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < filteredFiles.length - 1;
+
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
@@ -97,6 +114,15 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       <div className="col-span-8">
         {selectedFile ? (
           <div className="space-y-4">
+            {/* Next/Previous Navigation */}
+            <div className="flex justify-between items-center mb-2">
+              <Button size="sm" variant="outline" onClick={() => hasPrev && onFileSelect(filteredFiles[currentIndex - 1])} disabled={!hasPrev}>
+                Previous
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => hasNext && onFileSelect(filteredFiles[currentIndex + 1])} disabled={!hasNext}>
+                Next
+              </Button>
+            </div>
             <ConversionViewer
               file={selectedFile}
               onManualEdit={onManualEdit}
