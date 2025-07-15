@@ -108,6 +108,30 @@ const Dashboard = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    // When switching to Dev Review, update conversionResults from unreviewedFiles
+    if (activeTab === 'devReview' && unreviewedFiles.length > 0) {
+      setConversionResults(
+        unreviewedFiles.map(f => ({
+          id: f.id || uuidv4(),
+          originalFile: {
+            id: f.id || uuidv4(),
+            name: f.file_name,
+            content: f.original_code,
+            type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            status: 'success',
+          },
+          convertedCode: f.converted_code,
+          issues: f.issues || [],
+          dataTypeMapping: f.data_type_mapping || [],
+          performance: f.performance_metrics || {},
+          status: 'success',
+          explanations: [],
+        }))
+      );
+    }
+  }, [activeTab, unreviewedFiles]);
+
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
     setFiles(convertedFiles);
@@ -189,7 +213,7 @@ const Dashboard = () => {
           original_code: file.content,
           data_type_mapping: file.dataTypeMapping,
           issues: file.issues,
-          performance_metrics: file.performanceMetrics,
+          performance_metrics: file.performanceMetrics || {},
         });
       }
     }
