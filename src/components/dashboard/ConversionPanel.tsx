@@ -128,16 +128,34 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
 
       <div className="col-span-8">
         {selectedFile ? (
-          <ConversionViewer
-            file={selectedFile}
-            onManualEdit={onManualEdit}
-            onDismissIssue={onDismissIssue}
-            hideEdit={true}
-            onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
-            onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
-            hasPrev={hasPrev}
-            hasNext={hasNext}
-          />
+          <>
+            <ConversionViewer
+              file={selectedFile}
+              onManualEdit={onManualEdit}
+              onDismissIssue={onDismissIssue}
+              hideEdit={true}
+              onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
+              onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button 
+                onClick={onMoveToDevReview}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Move to Dev Review
+              </Button>
+              <Button 
+                onClick={onGenerateReport}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!canCompleteMigration}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Complete Migration
+              </Button>
+            </div>
+          </>
         ) : (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
