@@ -49,6 +49,8 @@ export const useUnreviewedFiles = () => {
           user_id: user.id,
           status: 'unreviewed',
           original_code: fileData.original_code,
+          converted_code: fileData.converted_code,
+          ai_generated_code: fileData.ai_generated_code || fileData.converted_code, // Store original AI output
           data_type_mapping: fileData.data_type_mapping || [],
           issues: fileData.issues || [],
           performance_metrics: fileData.performance_metrics || {},

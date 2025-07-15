@@ -62,6 +62,7 @@ export const useConversionLogic = (
           type: file.type,
           status: 'pending'
         },
+        aiGeneratedCode: result.convertedCode, // Store original AI output
         convertedCode: result.convertedCode,
         issues: result.issues,
         dataTypeMapping: result.dataTypeMapping,
@@ -119,6 +120,7 @@ export const useConversionLogic = (
             type: file.type,
             status: 'pending'
           },
+          aiGeneratedCode: result.convertedCode, // Store original AI output
           convertedCode: result.convertedCode,
           issues: result.issues,
           dataTypeMapping: result.dataTypeMapping,
@@ -180,6 +182,7 @@ export const useConversionLogic = (
                 type: file.type,
                 status: 'pending'
               },
+              aiGeneratedCode: result.convertedCode, // Store original AI output
               convertedCode: result.convertedCode,
               issues: result.issues,
               dataTypeMapping: result.dataTypeMapping,
@@ -247,6 +250,7 @@ export const useConversionLogic = (
           type: fileToFix.type,
           status: 'pending'
         },
+        aiGeneratedCode: result.convertedCode, // Store original AI output
         convertedCode: result.convertedCode,
         issues: result.issues,
         dataTypeMapping: result.dataTypeMapping,
@@ -298,6 +302,7 @@ export const useConversionLogic = (
         type: file.type,
         status: 'pending'
       },
+      aiGeneratedCode: (file as any).aiGeneratedCode || file.convertedContent || '', // Preserve if exists, fallback for legacy
       convertedCode: file.convertedContent || '',
       issues: file.issues || [],
       performance: file.performanceMetrics || {},

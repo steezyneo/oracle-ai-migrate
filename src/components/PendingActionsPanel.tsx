@@ -236,6 +236,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 setEditingFile(selectedFile.id);
                 setEditedContent(content);
               }}
+              onSaveEdit={(newContent) => handleSaveEdit(selectedFile, newContent)}
               onDismissIssue={() => {}}
             />
             <div className="flex gap-2">

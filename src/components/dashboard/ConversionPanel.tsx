@@ -101,6 +101,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
               file={selectedFile}
               onManualEdit={onManualEdit}
               onDismissIssue={onDismissIssue}
+              hideEdit={true}
             />
             
             {files.some(f => f.conversionStatus === 'success') && (

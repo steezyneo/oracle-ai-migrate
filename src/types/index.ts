@@ -21,6 +21,7 @@ export interface CodeFile {
 export interface ConversionResult {
   id: string;
   originalFile: CodeFile;
+  aiGeneratedCode: string; // Original AI-generated Oracle code
   convertedCode: string;
   issues: ConversionIssue[];
   dataTypeMapping?: DataTypeMapping[];

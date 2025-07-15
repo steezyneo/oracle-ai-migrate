@@ -121,6 +121,7 @@ const Dashboard = () => {
             type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
             status: 'success',
           },
+          aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
           convertedCode: f.converted_code,
           issues: f.issues || [],
           dataTypeMapping: f.data_type_mapping || [],
@@ -210,6 +211,7 @@ const Dashboard = () => {
         await addUnreviewedFile({
           file_name: file.name,
           converted_code: file.convertedContent,
+          ai_generated_code: (file as any).aiGeneratedCode || file.convertedContent, // Store original AI output
           original_code: file.content,
           data_type_mapping: file.dataTypeMapping,
           issues: file.issues,
@@ -243,6 +245,7 @@ const Dashboard = () => {
             type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
             status: 'success',
           },
+          aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
           convertedCode: f.converted_code,
           issues: f.issues || [],
           dataTypeMapping: f.data_type_mapping || [],
@@ -261,6 +264,7 @@ const Dashboard = () => {
             type: file.type,
             status: 'success',
           },
+          aiGeneratedCode: (file as any).aiGeneratedCode || file.convertedContent || '', // Preserve if exists, fallback for legacy
           convertedCode: file.convertedContent || '',
           issues: file.issues || [],
           dataTypeMapping: file.dataTypeMapping || [],
