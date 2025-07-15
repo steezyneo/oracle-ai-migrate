@@ -138,7 +138,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           .from('unreviewed_files')
           .select('*')
           .eq('user_id', user.id)
-          .in('status', ['unreviewed', 'reviewed']);
+          .eq('status', 'reviewed');
         if (!error && unreviewed && unreviewed.length > 0) {
           latestFiles = unreviewed.map(f => ({
             file_name: f.file_name,
@@ -191,8 +191,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         await supabase.from('migration_files').insert(
           filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
         );
-        // After inserting into migration_files, delete all unreviewed_files for this user
-        await supabase.from('unreviewed_files').delete().eq('user_id', user.id);
+        // After inserting into migration_files, delete only reviewed files from unreviewed_files
+        await supabase.from('unreviewed_files').delete().eq('user_id', user.id).eq('status', 'reviewed');
       }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
@@ -380,7 +380,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         </CardContent>
         
         <CardFooter>
-          <div className="w-full flex justify-end">
+          <div className="w-full flex justify-between items-center">
+            <Button variant="default" className="flex items-center gap-2" onClick={onBack}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              Back
+            </Button>
             <Button onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Download Report
