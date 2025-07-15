@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 import CodeUploader from '@/components/CodeUploader';
 import ReportViewer from '@/components/ReportViewer';
@@ -197,8 +198,66 @@ const Dashboard = () => {
 
   const handleCompleteMigration = async () => {
     try {
-      const newReport = await handleGenerateReport();
-      navigate(`/report/${newReport.id}`);
+      // If in Dev Review, use unreviewedFiles for the report
+      let reportResults = [];
+      if (activeTab === 'devReview') {
+        reportResults = unreviewedFiles.map(f => ({
+          id: f.id || uuidv4(),
+          originalFile: {
+            id: f.id || uuidv4(),
+            name: f.file_name,
+            content: f.original_code,
+            type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            status: 'success',
+          },
+          convertedCode: f.converted_code,
+          issues: f.issues || [],
+          dataTypeMapping: f.data_type_mapping || [],
+          performance: f.performance_metrics || {},
+          status: 'success',
+          explanations: [],
+        }));
+      } else {
+        // fallback to files state (conversion tab)
+        reportResults = files.map(file => ({
+          id: file.id,
+          originalFile: {
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: 'success',
+          },
+          convertedCode: file.convertedContent || '',
+          issues: file.issues || [],
+          dataTypeMapping: file.dataTypeMapping || [],
+          performance: file.performanceMetrics || {},
+          status: file.conversionStatus === 'success' ? 'success' : file.conversionStatus === 'failed' ? 'error' : 'warning',
+          explanations: [],
+        }));
+      }
+      // Generate summary
+      const reportSummary = (await import('@/utils/conversionUtils')).generateConversionReport(reportResults);
+      const report = {
+        timestamp: new Date().toISOString(),
+        filesProcessed: reportResults.length,
+        successCount: reportResults.filter(r => r.status === 'success').length,
+        warningCount: reportResults.filter(r => r.status === 'warning').length,
+        errorCount: reportResults.filter(r => r.status === 'error').length,
+        results: reportResults,
+        summary: reportSummary,
+      };
+      // Save to Supabase migration_reports
+      const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+        .from('migration_reports')
+        .insert({
+          user_id: profile?.id,
+          report: report,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      navigate(`/report/${data.id}`);
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
