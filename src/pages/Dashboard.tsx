@@ -257,6 +257,35 @@ const Dashboard = () => {
         .select()
         .single();
       if (error) throw error;
+
+      // After saving the report, move reviewed files to history and remove from unreviewed_files
+      if (activeTab === 'devReview') {
+        const supabaseClient = (await import('@/integrations/supabase/client')).supabase;
+        for (const f of unreviewedFiles.filter(f => f.status === 'reviewed')) {
+          // 1. Create a migration for each file (or group as needed)
+          const { data: migration, error: migrationError } = await supabaseClient
+            .from('migrations')
+            .insert({
+              user_id: profile?.id,
+              project_name: `Reviewed: ${f.file_name}`
+            })
+            .select()
+            .single();
+          if (migrationError) continue;
+          // 2. Add to migration_files
+          await supabaseClient.from('migration_files').insert({
+            migration_id: migration.id,
+            file_name: f.file_name,
+            file_path: f.file_name,
+            file_type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            converted_content: f.converted_code,
+            original_content: f.original_code,
+            conversion_status: 'success',
+          });
+          // 3. Remove from unreviewed_files
+          await supabaseClient.from('unreviewed_files').delete().eq('id', f.id);
+        }
+      }
       navigate(`/report/${data.id}`);
     } catch (error) {
       console.error('Error generating report:', error);
