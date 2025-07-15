@@ -195,12 +195,18 @@ const Dashboard = () => {
     setActiveTab('devReview');
   };
 
-  const handleCompleteMigration = () => {
-    toast({
-      title: 'Migration Completed',
-      description: 'All files have been reviewed and migration is complete!',
-    });
-    // TODO: Add real completion logic here (e.g., update migration status, redirect, etc.)
+  const handleCompleteMigration = async () => {
+    try {
+      const newReport = await handleGenerateReport();
+      navigate(`/report/${newReport.id}`);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: "Failed to generate the conversion report",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

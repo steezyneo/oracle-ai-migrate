@@ -46,14 +46,7 @@ interface FileTreeViewProps {
 const FileTreeView: React.FC<FileTreeViewProps> = ({
   files,
   onFileSelect,
-  onConvertFile,
-  onConvertAllByType,
-  onConvertAll,
-  onFixFile,
   selectedFile,
-  isConverting = false,
-  convertingFileIds = [],
-  onClear
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['tables', 'procedures', 'triggers'])
@@ -73,21 +66,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return files.filter(file => file.type === type);
   };
 
-  const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
-    if (convertingFileIds.includes(fileId)) {
-      return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
-    }
-    
-    switch (status) {
-      case 'success':
-        return <Check className="h-4 w-4 text-green-600" />;
-      case 'failed':
-        return <X className="h-4 w-4 text-red-600" />;
-      default:
-        return <Play className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
   const getSectionIcon = (type: string) => {
     switch (type) {
       case 'tables':
@@ -101,103 +79,31 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     }
   };
 
-  const getPendingFilesCount = (sectionFiles: FileItem[]) => {
-    return sectionFiles.filter(f => f.conversionStatus === 'pending').length;
-  };
-
-  const getTotalPendingFiles = () => {
-    return files.filter(f => f.conversionStatus === 'pending').length;
-  };
-
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
     const isExpanded = expandedSections.has(sectionKey);
-    const pendingCount = getPendingFilesCount(sectionFiles);
-    const typeKey = sectionKey === 'tables' ? 'table' : 
-                   sectionKey === 'procedures' ? 'procedure' : 
-                   sectionKey === 'triggers' ? 'trigger' : 'other';
-    
     return (
       <div key={sectionKey} className="mb-2">
-        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleSection(sectionKey)}
-            className="flex-1 justify-start p-0 h-auto font-medium"
-          >
-            {isExpanded ? 
-              <ChevronDown className="h-4 w-4 mr-2" /> : 
-              <ChevronRight className="h-4 w-4 mr-2" />
-            }
-            {getSectionIcon(sectionKey)}
-            <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
-          </Button>
-          
-          {pendingCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
-              className="text-xs px-2 py-1 h-6"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Convert All ({pendingCount})
-            </Button>
-          )}
+        <div className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" onClick={() => toggleSection(sectionKey)}>
+          {isExpanded ? 
+            <ChevronDown className="h-4 w-4 mr-2" /> : 
+            <ChevronRight className="h-4 w-4 mr-2" />
+          }
+          {getSectionIcon(sectionKey)}
+          <span className="ml-2 font-medium">{sectionTitle} ({sectionFiles.length})</span>
         </div>
-        
         {isExpanded && (
           <div className="ml-4 space-y-1">
             {sectionFiles.map((file) => (
               <div
                 key={file.id}
                 className={cn(
-                  "flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer group",
+                  "flex items-center p-2 rounded hover:bg-gray-50 cursor-pointer",
                   selectedFile?.id === file.id && "bg-blue-50 border border-blue-200"
                 )}
                 onClick={() => onFileSelect(file)}
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  <span className={cn(
-                    "text-sm truncate",
-                    file.conversionStatus === 'success' && "text-green-700",
-                    file.conversionStatus === 'failed' && "text-red-700"
-                  )}>
-                    {file.name}
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {getStatusIcon(file.conversionStatus, file.id)}
-                  {file.conversionStatus === 'pending' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onConvertFile(file.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6"
-                    >
-                      Convert
-                    </Button>
-                  )}
-                  {file.conversionStatus === 'failed' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFixFile(file.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6 text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Fix
-                    </Button>
-                  )}
-                </div>
+                <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-sm truncate ml-2">{file.name}</span>
               </div>
             ))}
           </div>
@@ -210,30 +116,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const procedures = getFilesByType('procedure');
   const triggers = getFilesByType('trigger');
   const others = getFilesByType('other');
-  const totalPending = getTotalPendingFiles();
 
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Project Structure</CardTitle>
-          <div className="flex gap-2">
-            {onClear && files.length > 0 && (
-              <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                Clear
-              </Button>
-            )}
-            {getTotalPendingFiles() > 0 && (
-              <Button
-                onClick={onConvertAll}
-                className="text-xs px-3 py-1 h-7"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Convert All ({getTotalPendingFiles()})
-              </Button>
-            )}
-          </div>
-        </div>
+        <CardTitle className="text-lg">Project Structure</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4">

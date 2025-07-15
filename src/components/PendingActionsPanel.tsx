@@ -112,7 +112,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6 relative">
+    <div className="grid grid-cols-12 gap-6 relative min-h-[500px]">
       <div className="col-span-4">
         <FileTreeView
           files={unreviewedFiles.map(f => {
@@ -140,13 +140,6 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             conversionStatus: 'pending',
             errorMessage: selectedFile?.error_message,
           }}
-          isConverting={false}
-          convertingFileIds={[]}
-          onClear={undefined}
-          onConvertAll={undefined}
-          onConvertAllByType={undefined}
-          onConvertFile={undefined}
-          onFixFile={undefined}
         />
       </div>
       <div className="col-span-8">
@@ -210,15 +203,13 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </Card>
         )}
       </div>
-      {/* Complete Migration button at the bottom if allowed */}
-      {canCompleteMigration && unreviewedFiles.length === 0 && (
-        <div className="absolute right-0 bottom-0 p-4">
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
-            <Check className="h-4 w-4 mr-2" />
-            Complete Migration
-          </Button>
-        </div>
-      )}
+      {/* Complete Migration button always visible at bottom right */}
+      <div className="absolute right-0 bottom-0 p-4">
+        <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
+          <Check className="h-4 w-4 mr-2" />
+          Complete Migration
+        </Button>
+      </div>
     </div>
   );
 };
