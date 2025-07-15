@@ -139,22 +139,24 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
               hasPrev={hasPrev}
               hasNext={hasNext}
             />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button 
-                onClick={onMoveToDevReview}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Move to Dev Review
-              </Button>
-              <Button 
-                onClick={onGenerateReport}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={!canCompleteMigration}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Complete Migration
-              </Button>
-            </div>
+            {files.some(f => f.conversionStatus === 'success') && (
+              <div className="flex justify-end gap-2 mt-4">
+                <Button 
+                  onClick={onMoveToDevReview}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Move to Dev Review
+                </Button>
+                <Button 
+                  onClick={onGenerateReport}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={!canCompleteMigration}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Complete Migration
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           <Card className="h-full flex items-center justify-center">
