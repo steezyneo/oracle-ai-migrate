@@ -119,6 +119,10 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onClear={onClear}
           hideActions={false}
           defaultExpandedSections={['tables','procedures','triggers']}
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          onSearchTermChange={setSearchTerm}
+          onStatusFilterChange={setStatusFilter}
         />
       </div>
 

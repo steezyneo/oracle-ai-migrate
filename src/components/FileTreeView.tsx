@@ -80,7 +80,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
       statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' :
       statusFilter === 'Reviewed' ? file.conversionStatus === 'reviewed' : true;
     return matchesSearch && matchesStatus;
   });
@@ -267,7 +266,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Pending">Pending</option>
               <option value="Success">Success</option>
               <option value="Failed">Failed</option>
-              <option value="Pending Review">Pending Review</option>
               <option value="Reviewed">Reviewed</option>
             </select>
           </div>
