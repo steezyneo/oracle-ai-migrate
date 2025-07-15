@@ -269,6 +269,11 @@ const Dashboard = () => {
 
       // After saving the report, move all files to history and remove from unreviewed_files
       // (No longer add files to migrations/migration_files here. This is now done after deployment to Oracle.)
+      // Delete all unreviewed_files for this user
+      await (await import('@/integrations/supabase/client')).supabase
+        .from('unreviewed_files')
+        .delete()
+        .eq('user_id', profile?.id);
       navigate(`/report/${data.id}`);
       // After navigation, clear all unreviewed files from Dev Review
       if (activeTab === 'devReview') {
