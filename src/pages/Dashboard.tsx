@@ -121,7 +121,7 @@ const Dashboard = () => {
             type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
             status: 'success',
           },
-          aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
+          aiGeneratedCode: f.ai_generated_code || f.converted_code || '', // Use DB field
           convertedCode: f.converted_code,
           issues: f.issues || [],
           dataTypeMapping: f.data_type_mapping || [],
@@ -312,11 +312,11 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      toast({
+    toast({
         title: "Report Generation Failed",
         description: "Failed to generate the conversion report",
         variant: "destructive",
-      });
+    });
     }
   };
 

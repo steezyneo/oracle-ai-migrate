@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import CodeDiffViewer from './CodeDiffViewer';
+import { diffChars } from 'diff';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -83,6 +84,23 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
 
+  // Helper to calculate human edit percentage (character-based)
+  function getEditPercentage(aiCode: string, finalCode: string): number {
+    if (!aiCode || !finalCode) return 0;
+    const diff = diffChars(aiCode, finalCode);
+    let changed = 0;
+    let total = aiCode.length;
+    diff.forEach(part => {
+      if (part.added || part.removed) {
+        changed += part.count || part.value.length;
+      }
+    });
+    return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
+  }
+  const aiCode = (file as any).aiGeneratedCode || file.convertedContent || '';
+  const finalCode = file.convertedContent || '';
+  const humanEditPercent = getEditPercentage(aiCode, finalCode);
+
   const handleSaveEdit = async () => {
     onManualEdit(editedContent);
     setIsEditing(false);
@@ -140,11 +158,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="code">Code</TabsTrigger>
             <TabsTrigger value="mapping">Data Types</TabsTrigger>
-            <TabsTrigger value="issues">
-              Issues {file.issues && file.issues.length > 0 && (
-                <Badge variant="outline" className="ml-1">{file.issues.length}</Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="issues">Issues {file.issues && file.issues.length > 0 && (<Badge variant="outline" className="ml-1">{file.issues.length}</Badge>)}</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
           
@@ -159,6 +173,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
+                  {/* Human Edits Metric */}
                   {isEditing ? (
                     hideEdit ? (
                       <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
@@ -276,6 +291,20 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-4">
+            {/* Human Edits Metric in Performance Tab */}
+            <Card className="mb-4">
+              <CardContent className="py-4 flex flex-col items-center">
+                <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded px-2 py-1 mb-1">Human Edits</span>
+                <span className="text-2xl font-bold text-purple-700">{humanEditPercent}%</span>
+                <span className="text-xs text-muted-foreground mt-1">Percentage of AI-generated code changed by a human</span>
+                <div className="mt-4 w-full">
+                  <h4 className="text-sm font-medium mb-2">AI-Generated Code vs. Final Code Diff (character-based)</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap">
+                    {aiCode !== finalCode ? `AI Output:\n${aiCode}\n\nFinal Code:\n${finalCode}` : 'No changes detected.'}
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
             {file.performanceMetrics ? (
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>
