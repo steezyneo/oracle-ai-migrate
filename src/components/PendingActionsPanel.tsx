@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,9 +44,50 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   const filteredPendingFiles = pendingFiles.filter(filterFile);
   const filteredReviewedFiles = reviewedFiles.filter(filterFile);
 
-  // For navigation, combine both lists
-  const allFilteredFiles = [...filteredPendingFiles, ...filteredReviewedFiles];
+  // Map to FileItem for type property
+  const mapToFileItem = (f: UnreviewedFile): any => {
+    let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
+            const lower = f.file_name.toLowerCase();
+            if (lower.includes('trig')) type = 'trigger';
+            else if (lower.includes('proc')) type = 'procedure';
+            else if (lower.includes('tab') || lower.includes('table')) type = 'table';
+            return {
+              ...f,
+              name: f.file_name,
+              content: f.original_code,
+              convertedContent: f.converted_code,
+              conversionStatus: 'pending',
+      errorMessage: undefined,
+              type,
+      path: f.file_name,
+      dataTypeMapping: f.data_type_mapping || [],
+      issues: f.issues || [],
+      performanceMetrics: f.performance_metrics || {},
+    };
+  };
+
+  const mappedPendingFiles = filteredPendingFiles.map(mapToFileItem);
+  const mappedReviewedFiles = filteredReviewedFiles.map(mapToFileItem);
+  const filteredTables = mappedPendingFiles.filter(f => f.type === 'table');
+  const filteredProcedures = mappedPendingFiles.filter(f => f.type === 'procedure');
+  const filteredTriggers = mappedPendingFiles.filter(f => f.type === 'trigger');
+  const filteredOther = mappedPendingFiles.filter(f => f.type === 'other');
+  const reviewedTables = mappedReviewedFiles.filter(f => f.type === 'table');
+  const reviewedProcedures = mappedReviewedFiles.filter(f => f.type === 'procedure');
+  const reviewedTriggers = mappedReviewedFiles.filter(f => f.type === 'trigger');
+  const reviewedOther = mappedReviewedFiles.filter(f => f.type === 'other');
+  const allFilteredFiles = [
+    ...filteredTables,
+    ...filteredProcedures,
+    ...filteredTriggers,
+    ...filteredOther,
+    ...reviewedTables,
+    ...reviewedProcedures,
+    ...reviewedTriggers,
+    ...reviewedOther
+  ];
   const currentIndex = allFilteredFiles.findIndex(f => f.id === selectedFileId);
+  console.log('DEBUG: currentIndex', currentIndex, 'selectedFileId', selectedFileId, 'allFilteredFiles', allFilteredFiles.map(f => f.id));
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < allFilteredFiles.length - 1;
 
@@ -56,6 +97,15 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     reviewedFiles.find(f => f.id === selectedFileId) ||
     pendingFiles[0] ||
     reviewedFiles[0];
+
+  useEffect(() => {
+    if (
+      allFilteredFiles.length > 0 &&
+      !allFilteredFiles.some(f => f.id === selectedFileId)
+    ) {
+      setSelectedFileId(allFilteredFiles[0].id);
+    }
+  }, [allFilteredFiles, selectedFileId]);
 
   const handleStartEdit = (file: UnreviewedFile) => {
     setEditingFile(file.id);
@@ -155,28 +205,6 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     );
   }
 
-  // Helper to map UnreviewedFile to FileItem for FileTreeView
-  const mapToFileItem = (f: UnreviewedFile): any => {
-    let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
-            const lower = f.file_name.toLowerCase();
-            if (lower.includes('trig')) type = 'trigger';
-            else if (lower.includes('proc')) type = 'procedure';
-            else if (lower.includes('tab') || lower.includes('table')) type = 'table';
-            return {
-              ...f,
-              name: f.file_name,
-              content: f.original_code,
-              convertedContent: f.converted_code,
-              conversionStatus: 'pending',
-      errorMessage: undefined,
-              type,
-      path: f.file_name,
-      dataTypeMapping: f.data_type_mapping || [],
-      issues: f.issues || [],
-      performanceMetrics: f.performance_metrics || {},
-    };
-  };
-
   return (
     <div className="grid grid-cols-12 gap-6 relative min-h-[500px] pb-20">
       <div className="col-span-4 flex flex-col h-full">
@@ -195,7 +223,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <CardContent className="pt-0 pb-2">
             {showUnreviewed && (
               <FileTreeView
-                files={filteredPendingFiles.map(mapToFileItem)}
+                files={mappedPendingFiles}
                 onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
@@ -224,7 +252,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
               <FileTreeView
-                files={filteredReviewedFiles.map(mapToFileItem)}
+                files={mappedReviewedFiles}
           onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}

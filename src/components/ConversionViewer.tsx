@@ -175,11 +175,10 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             {file.convertedContent ? (
               <div className="grid grid-cols-2 gap-4 relative">
                 {/* Left Arrow */}
-                {onPrevFile && (
+                {hasPrev && onPrevFile && (
                   <button
                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
                     onClick={onPrevFile}
-                    disabled={!hasPrev}
                     style={{ left: '-2.5rem' }}
                     aria-label="Previous file"
                   >
@@ -187,11 +186,10 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   </button>
                 )}
                 {/* Right Arrow */}
-                {onNextFile && (
+                {hasNext && onNextFile && (
                   <button
                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
                     onClick={onNextFile}
-                    disabled={!hasNext}
                     style={{ right: '-2.5rem' }}
                     aria-label="Next file"
                   >
