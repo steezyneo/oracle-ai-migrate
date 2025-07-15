@@ -112,7 +112,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6 relative min-h-[500px]">
+    <div className="grid grid-cols-12 gap-6 relative min-h-[500px] pb-20">
       <div className="col-span-4">
         <FileTreeView
           files={unreviewedFiles.map(f => {
