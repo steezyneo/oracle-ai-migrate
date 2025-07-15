@@ -113,52 +113,25 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
 
       <div className="col-span-8">
         {selectedFile ? (
-          <div className="space-y-4">
-            {/* Next/Previous Navigation */}
-            <div className="flex justify-between items-center mb-2">
-              <Button size="sm" variant="outline" onClick={() => hasPrev && onFileSelect(filteredFiles[currentIndex - 1])} disabled={!hasPrev}>
-                Previous
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => hasNext && onFileSelect(filteredFiles[currentIndex + 1])} disabled={!hasNext}>
-                Next
-              </Button>
-            </div>
-            <ConversionViewer
-              file={selectedFile}
-              onManualEdit={onManualEdit}
-              onDismissIssue={onDismissIssue}
-              hideEdit={true}
-            />
-            
-            {files.some(f => f.conversionStatus === 'success') && (
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="primary"
-                  onClick={onMoveToDevReview}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Move to Dev Review
-                </Button>
-                <Button 
-                  onClick={onGenerateReport}
-                  className="bg-green-600 hover:bg-green-700"
-                  disabled={!canCompleteMigration}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Complete Migration
-                </Button>
-              </div>
-            )}
-          </div>
+          <ConversionViewer
+            file={selectedFile}
+            onManualEdit={onManualEdit}
+            onDismissIssue={onDismissIssue}
+            hideEdit={true}
+            onPrevFile={hasPrev ? () => onFileSelect(filteredFiles[currentIndex - 1]) : undefined}
+            onNextFile={hasNext ? () => onFileSelect(filteredFiles[currentIndex + 1]) : undefined}
+            hasPrev={hasPrev}
+            hasNext={hasNext}
+          />
         ) : (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Select a file to view conversion
+                Select a file to view
               </h3>
               <p className="text-gray-600">
-                Choose a file from the project structure to see its conversion details
+                Choose a file from the list to see its details
               </p>
             </CardContent>
           </Card>

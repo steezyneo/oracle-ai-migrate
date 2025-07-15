@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save, Clock } from 'lucide-react';
+import { Edit, Save, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,6 +66,10 @@ interface ConversionViewerProps {
   onDismissIssue: (issueId: string) => void;
   onSaveEdit?: (newContent: string) => void | Promise<void>; // Accepts edited content
   hideEdit?: boolean; // Hide edit option
+  onPrevFile?: () => void;
+  onNextFile?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
@@ -74,6 +78,10 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   onDismissIssue,
   onSaveEdit,
   hideEdit,
+  onPrevFile,
+  onNextFile,
+  hasPrev,
+  hasNext,
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
@@ -165,7 +173,31 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           
           <TabsContent value="code" className="space-y-4">
             {file.convertedContent ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 relative">
+                {/* Left Arrow */}
+                {onPrevFile && (
+                  <button
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onPrevFile}
+                    disabled={!hasPrev}
+                    style={{ left: '-2.5rem' }}
+                    aria-label="Previous file"
+                  >
+                    <ArrowLeft className="h-6 w-6" />
+                  </button>
+                )}
+                {/* Right Arrow */}
+                {onNextFile && (
+                  <button
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onNextFile}
+                    disabled={!hasNext}
+                    style={{ right: '-2.5rem' }}
+                    aria-label="Next file"
+                  >
+                    <ArrowRight className="h-6 w-6" />
+                  </button>
+                )}
                 <div>
                   <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
                   <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">

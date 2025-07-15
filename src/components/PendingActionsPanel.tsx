@@ -24,10 +24,31 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [showUnreviewed, setShowUnreviewed] = useState(true);
   const [showReviewed, setShowReviewed] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
 
   // Split files into pending and reviewed
   const pendingFiles = unreviewedFiles.filter(f => f.status !== 'reviewed');
   const reviewedFiles = unreviewedFiles.filter(f => f.status === 'reviewed');
+
+  // Filter helpers
+  const filterFile = (file: UnreviewedFile) => {
+    const matchesSearch = file.file_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'All' ? true :
+      statusFilter === 'Pending' ? file.status !== 'reviewed' :
+      statusFilter === 'Reviewed' ? file.status === 'reviewed' : true;
+    return matchesSearch && matchesStatus;
+  };
+
+  const filteredPendingFiles = pendingFiles.filter(filterFile);
+  const filteredReviewedFiles = reviewedFiles.filter(filterFile);
+
+  // For navigation, combine both lists
+  const allFilteredFiles = [...filteredPendingFiles, ...filteredReviewedFiles];
+  const currentIndex = allFilteredFiles.findIndex(f => f.id === selectedFileId);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < allFilteredFiles.length - 1;
 
   // Find selected file in either list
   const selectedFile =
@@ -174,11 +195,15 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <CardContent className="pt-0 pb-2">
             {showUnreviewed && (
               <FileTreeView
-                files={pendingFiles.map(mapToFileItem)}
+                files={filteredPendingFiles.map(mapToFileItem)}
                 onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
                 defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
               />
             )}
           </CardContent>
@@ -199,11 +224,15 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
               <FileTreeView
-                files={reviewedFiles.map(mapToFileItem)}
+                files={filteredReviewedFiles.map(mapToFileItem)}
           onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
                 defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
               />
             )}
           </CardContent>
@@ -211,7 +240,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       </div>
       <div className="col-span-8">
         {selectedFile ? (
-          <div className="space-y-4">
+          <>
             <ConversionViewer
               file={{
                 ...selectedFile,
@@ -239,8 +268,12 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               }}
               onSaveEdit={(newContent) => handleSaveEdit(selectedFile, newContent)}
               onDismissIssue={() => {}}
+              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               {/* Removed Edit button */}
               {selectedFile.status !== 'reviewed' && (
               <Button
@@ -252,17 +285,8 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 Mark as Reviewed & Save
               </Button>
               )}
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleDelete(selectedFile.id)}
-                className="ml-auto"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
             </div>
-          </div>
+          </>
         ) : (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
@@ -277,13 +301,22 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </Card>
         )}
       </div>
-      {/* Complete Migration button always visible at bottom right */}
-        <div className="absolute right-0 bottom-0 p-4">
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
-            <Check className="h-4 w-4 mr-2" />
-            Complete Migration
-          </Button>
-        </div>
+      {/* Complete Migration and Delete buttons always visible at bottom right */}
+      <div className="absolute right-0 bottom-0 p-4 flex gap-2">
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => handleDelete(selectedFile?.id)}
+          disabled={!selectedFile}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </Button>
+        <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
+          <Check className="h-4 w-4 mr-2" />
+          Complete Migration
+        </Button>
+      </div>
     </div>
   );
 };

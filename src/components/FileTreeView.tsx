@@ -44,6 +44,10 @@ interface FileTreeViewProps {
   onClear?: () => void;
   hideActions?: boolean;
   defaultExpandedSections?: string[];
+  searchTerm?: string;
+  statusFilter?: string;
+  onSearchTermChange?: (term: string) => void;
+  onStatusFilterChange?: (status: string) => void;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -59,12 +63,14 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onClear,
   hideActions = false,
   defaultExpandedSections = [],
+  searchTerm = '',
+  statusFilter = 'All',
+  onSearchTermChange,
+  onStatusFilterChange,
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
   );
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
 
   // Filter files by search and status
   const filteredFiles = files.filter(file => {
@@ -74,7 +80,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
       statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
+      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' :
+      statusFilter === 'Reviewed' ? file.conversionStatus === 'reviewed' : true;
     return matchesSearch && matchesStatus;
   });
 
@@ -248,12 +255,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               type="text"
               placeholder="Search files..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={e => onSearchTermChange ? onSearchTermChange(e.target.value) : undefined}
               className="flex-1 h-8 text-sm"
             />
             <select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
+              onChange={e => onStatusFilterChange ? onStatusFilterChange(e.target.value) : undefined}
               className="h-8 text-sm border rounded px-2"
             >
               <option value="All">All</option>
@@ -261,6 +268,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Success">Success</option>
               <option value="Failed">Failed</option>
               <option value="Pending Review">Pending Review</option>
+              <option value="Reviewed">Reviewed</option>
             </select>
           </div>
         </CardHeader>
