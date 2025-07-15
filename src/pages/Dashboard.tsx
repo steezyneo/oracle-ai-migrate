@@ -267,32 +267,35 @@ const Dashboard = () => {
         .single();
       if (error) throw error;
 
-      // After saving the report, move reviewed files to history and remove from unreviewed_files
+      // After saving the report, move all files to history and remove from unreviewed_files
       if (activeTab === 'devReview') {
         const supabaseClient = (await import('@/integrations/supabase/client')).supabase;
-        for (const f of unreviewedFiles.filter(f => f.status === 'reviewed')) {
-          // 1. Create a migration for each file (or group as needed)
-          const { data: migration, error: migrationError } = await supabaseClient
-            .from('migrations')
-            .insert({
-              user_id: profile?.id,
-              project_name: `Reviewed: ${f.file_name}`
-            })
-            .select()
-            .single();
-          if (migrationError) continue;
-          // 2. Add to migration_files
-          await supabaseClient.from('migration_files').insert({
+        // 1. Create a single migration/project for the batch
+        const { data: migration, error: migrationError } = await supabaseClient
+          .from('migrations')
+          .insert({
+            user_id: profile?.id,
+            project_name: `Migration Batch: ${new Date().toLocaleString()}`
+          })
+          .select()
+          .single();
+        if (!migrationError && migration) {
+          // 2. Insert all files from the report into migration_files
+          const filesToInsert = reportResults.map(r => ({
             migration_id: migration.id,
-            file_name: f.file_name,
-            file_path: f.file_name,
-            file_type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
-            converted_content: f.converted_code,
-            original_content: f.original_code,
-            conversion_status: 'success',
-          });
-          // 3. Remove from unreviewed_files
-          await supabaseClient.from('unreviewed_files').delete().eq('id', f.id);
+            file_name: r.originalFile.name,
+            file_path: r.originalFile.name,
+            file_type: r.originalFile.type,
+            converted_content: r.convertedCode,
+            original_content: r.originalFile.content,
+            conversion_status: r.status,
+          }));
+          await supabaseClient.from('migration_files').insert(filesToInsert);
+          // 3. Remove all processed files from unreviewed_files
+          const fileIds = unreviewedFiles.map(f => f.id);
+          if (fileIds.length > 0) {
+            await supabaseClient.from('unreviewed_files').delete().in('id', fileIds);
+          }
         }
       }
       navigate(`/report/${data.id}`);
