@@ -146,16 +146,29 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           result.convertedCode
         );
         // Update conversion_status in migration_files for this file
-        const { error: updateError } = await supabase.from('migration_files').update({
-          conversion_status: deployResult.success ? 'success' : 'failed',
-        }).eq('file_name', result.originalFile.name);
-        
-        if (updateError) {
-          console.error('Error updating file status:', updateError);
-        } else {
-          console.log(`Updated file ${result.originalFile.name} to status: ${deployResult.success ? 'success' : 'failed'}`);
-        }
+        // (No-op for now, as files are not in migration_files yet)
         if (!deployResult.success) allSuccess = false;
+      }
+      // After deployment, create a migration/project and insert all files into migration_files
+      const { data: migration, error: migrationError } = await supabase
+        .from('migrations')
+        .insert({
+          user_id: user?.id,
+          project_name: `Oracle Deployment: ${new Date().toLocaleString()}`
+        })
+        .select()
+        .single();
+      if (!migrationError && migration) {
+        const filesToInsert = report.results.map(r => ({
+          migration_id: migration.id,
+          file_name: r.originalFile.name,
+          file_path: r.originalFile.name,
+          file_type: r.originalFile.type,
+          converted_content: r.convertedCode,
+          original_content: r.originalFile.content,
+          conversion_status: r.status,
+        }));
+        await supabase.from('migration_files').insert(filesToInsert);
       }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(

@@ -268,36 +268,7 @@ const Dashboard = () => {
       if (error) throw error;
 
       // After saving the report, move all files to history and remove from unreviewed_files
-      if (activeTab === 'devReview') {
-        const supabaseClient = (await import('@/integrations/supabase/client')).supabase;
-        // 1. Create a single migration/project for the batch
-        const { data: migration, error: migrationError } = await supabaseClient
-          .from('migrations')
-          .insert({
-            user_id: profile?.id,
-            project_name: `Migration Batch: ${new Date().toLocaleString()}`
-          })
-          .select()
-          .single();
-        if (!migrationError && migration) {
-          // 2. Insert all files from the report into migration_files
-          const filesToInsert = reportResults.map(r => ({
-            migration_id: migration.id,
-            file_name: r.originalFile.name,
-            file_path: r.originalFile.name,
-            file_type: r.originalFile.type,
-            converted_content: r.convertedCode,
-            original_content: r.originalFile.content,
-            conversion_status: r.status,
-          }));
-          await supabaseClient.from('migration_files').insert(filesToInsert);
-          // 3. Remove all processed files from unreviewed_files
-          const fileIds = unreviewedFiles.map(f => f.id);
-          if (fileIds.length > 0) {
-            await supabaseClient.from('unreviewed_files').delete().in('id', fileIds);
-          }
-        }
-      }
+      // (No longer add files to migrations/migration_files here. This is now done after deployment to Oracle.)
       navigate(`/report/${data.id}`);
       // After navigation, clear all unreviewed files from Dev Review
       if (activeTab === 'devReview') {
