@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
@@ -50,7 +51,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
         if (e.target && e.target.result) {
           const content = e.target.result as string;
           const newFile: CodeFile = {
-            id: crypto.randomUUID(),
+            id: uuidv4(),
             name: file.name,
             content: content,
             type: determineFileType(file.name, content),
@@ -266,7 +267,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
     }
     
     const newFile: CodeFile = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       name: manualFileName,
       content: manualContent,
       type: templateType,

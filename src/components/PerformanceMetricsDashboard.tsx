@@ -14,6 +14,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { ConversionResult } from '@/types';
+import { diffChars } from 'diff';
 
 interface PerformanceMetricsDashboardProps {
   results: ConversionResult[];
@@ -85,6 +86,20 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
       default: return null;
     }
   };
+
+  // Helper to calculate human edit percentage (character-based)
+  function getEditPercentage(aiCode: string, finalCode: string): number {
+    if (!aiCode || !finalCode) return 0;
+    const diff = diffChars(aiCode, finalCode);
+    let changed = 0;
+    let total = aiCode.length;
+    diff.forEach(part => {
+      if (part.added || part.removed) {
+        changed += part.count || part.value.length;
+      }
+    });
+    return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
+  }
 
   return (
     <div className="space-y-6">
@@ -351,40 +366,52 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {results.map((result) => (
-              <div key={result.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(result.status)}
-                  <div>
-                    <p className="font-medium">{result.originalFile.name}</p>
-                    <p className="text-sm text-muted-foreground">{result.originalFile.type}</p>
+            {results.map((result) => {
+              // Use result.aiGeneratedCode for the original AI output, fallback to result.convertedCode if not available
+              const aiCode = result.aiGeneratedCode || result.convertedCode || '';
+              const finalCode = result.convertedCode || '';
+              const editPercent = getEditPercentage(aiCode, finalCode);
+              return (
+                <div key={result.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(result.status)}
+                    <div>
+                      <p className="font-medium">{result.originalFile.name}</p>
+                      <p className="text-sm text-muted-foreground">{result.originalFile.type}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-green-600">
+                        {result.performance?.linesReduced || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Lines</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-blue-600">
+                        {result.performance?.loopsReduced || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Loops</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-orange-600">
+                        {result.performance?.conversionTimeMs || 0}ms
+                      </p>
+                      <p className="text-xs text-muted-foreground">Time</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-purple-600">
+                        {editPercent}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">Human Edits</p>
+                    </div>
+                    <Badge variant="outline" className={getStatusColor(result.status)}>
+                      {result.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-green-600">
-                      {result.performance?.linesReduced || 0}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Lines</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-blue-600">
-                      {result.performance?.loopsReduced || 0}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Loops</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-orange-600">
-                      {result.performance?.conversionTimeMs || 0}ms
-                    </p>
-                    <p className="text-xs text-muted-foreground">Time</p>
-                  </div>
-                  <Badge variant="outline" className={getStatusColor(result.status)}>
-                    {result.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

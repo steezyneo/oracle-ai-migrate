@@ -6,13 +6,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import CodeUploader from '@/components/CodeUploader';
 import ReportViewer from '@/components/ReportViewer';
 import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
-import PendingActionsPanel from '@/components/PendingActionsPanel';
+import DevReviewPanel from '@/components/PendingActionsPanel';
 import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboard';
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
@@ -38,17 +41,19 @@ const Dashboard = () => {
   const location = useLocation();
   const { toast } = useToast();
   
-  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'pending' | 'metrics') || 'upload';
+  const initialTab = (location.state?.activeTab as 'upload' | 'conversion' | 'devReview' | 'metrics') || 'upload';
   
-  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'pending' | 'metrics'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'upload' | 'conversion' | 'devReview' | 'metrics'>(initialTab);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
   const [showHelp, setShowHelp] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
-  const { unreviewedFiles } = useUnreviewedFiles();
+  const { unreviewedFiles, addUnreviewedFile } = useUnreviewedFiles();
   const {
     isConverting,
     convertingFileIds,
@@ -58,6 +63,8 @@ const Dashboard = () => {
     handleFixFile,
     handleGenerateReport,
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
+
+  const canCompleteMigration = unreviewedFiles.length === 0;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -100,6 +107,31 @@ const Dashboard = () => {
       setActiveTab('conversion');
     }
   }, [location.state]);
+
+  useEffect(() => {
+    // When switching to Dev Review, update conversionResults from unreviewedFiles
+    if (activeTab === 'devReview' && unreviewedFiles.length > 0) {
+      setConversionResults(
+        unreviewedFiles.map(f => ({
+          id: f.id || uuidv4(),
+          originalFile: {
+            id: f.id || uuidv4(),
+            name: f.file_name,
+            content: f.original_code,
+            type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            status: 'success',
+          },
+          aiGeneratedCode: f.ai_generated_code || f.converted_code || '', // Use DB field
+          convertedCode: f.converted_code,
+          issues: f.issues || [],
+          dataTypeMapping: f.data_type_mapping || [],
+          performance: f.performance_metrics || {},
+          status: 'success',
+          explanations: [],
+        }))
+      );
+    }
+  }, [activeTab, unreviewedFiles]);
 
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     const convertedFiles = await handleCodeUpload(uploadedFiles);
@@ -172,6 +204,117 @@ const Dashboard = () => {
     setActiveTab('upload');
   };
 
+  const handleMoveToDevReview = async () => {
+    // Add all files in conversion to Dev Review (unreviewed_files)
+    for (const file of files) {
+      if (file.content && file.convertedContent) {
+        await addUnreviewedFile({
+          file_name: file.name,
+          converted_code: file.convertedContent,
+          ai_generated_code: (file as any).aiGeneratedCode || file.convertedContent, // Store original AI output
+          original_code: file.content,
+          data_type_mapping: file.dataTypeMapping,
+          issues: file.issues,
+          performance_metrics: file.performanceMetrics || {},
+        });
+      }
+    }
+    // Clear conversion files
+    setFiles([]);
+    setSelectedFile(null);
+    setConversionResults([]);
+    setActiveTab('devReview');
+  };
+
+  const handleCompleteMigration = async () => {
+    if (activeTab === 'devReview' && !pendingCompleteMigration) {
+      setShowConfirmModal(true);
+      return;
+    }
+    setPendingCompleteMigration(false);
+    try {
+      // If in Dev Review, use unreviewedFiles for the report
+      let reportResults = [];
+      if (activeTab === 'devReview') {
+        reportResults = unreviewedFiles.map(f => ({
+          id: f.id || uuidv4(),
+          originalFile: {
+            id: f.id || uuidv4(),
+            name: f.file_name,
+            content: f.original_code,
+            type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            status: 'success',
+          },
+          aiGeneratedCode: (f as any).aiGeneratedCode || f.converted_code || '', // Preserve if exists, fallback for legacy
+          convertedCode: f.converted_code,
+          issues: f.issues || [],
+          dataTypeMapping: f.data_type_mapping || [],
+          performance: f.performance_metrics || {},
+          status: 'success',
+          explanations: [],
+        }));
+      } else {
+        // fallback to files state (conversion tab)
+        reportResults = files.map(file => ({
+          id: file.id,
+          originalFile: {
+            id: file.id,
+            name: file.name,
+            content: file.content,
+            type: file.type,
+            status: 'success',
+          },
+          aiGeneratedCode: (file as any).aiGeneratedCode || file.convertedContent || '', // Preserve if exists, fallback for legacy
+          convertedCode: file.convertedContent || '',
+          issues: file.issues || [],
+          dataTypeMapping: file.dataTypeMapping || [],
+          performance: file.performanceMetrics || {},
+          status: file.conversionStatus === 'success' ? 'success' : file.conversionStatus === 'failed' ? 'error' : 'warning',
+          explanations: [],
+        }));
+      }
+      // Generate summary
+      const reportSummary = (await import('@/utils/conversionUtils')).generateConversionReport(reportResults);
+      const report = {
+        timestamp: new Date().toISOString(),
+        filesProcessed: reportResults.length,
+        successCount: reportResults.filter(r => r.status === 'success').length,
+        warningCount: reportResults.filter(r => r.status === 'warning').length,
+        errorCount: reportResults.filter(r => r.status === 'error').length,
+        results: reportResults,
+        summary: reportSummary,
+      };
+      // Save to Supabase migration_reports
+      const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+        .from('migration_reports')
+        .insert({
+          user_id: profile?.id,
+          report: report,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      // After saving the report, move all files to history and remove from unreviewed_files
+      // (No longer add files to migrations/migration_files here. This is now done after deployment to Oracle.)
+      navigate(`/report/${data.id}`);
+      // After navigation, clear all unreviewed files from Dev Review
+      if (activeTab === 'devReview') {
+        toast({
+          title: "Migration Complete",
+          description: "All files have been cleared from Dev Review.",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+    toast({
+        title: "Report Generation Failed",
+        description: "Failed to generate the conversion report",
+        variant: "destructive",
+    });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -196,7 +339,7 @@ const Dashboard = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'pending' | 'metrics')}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'devReview' | 'metrics')}>
           <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-8">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
@@ -206,18 +349,18 @@ const Dashboard = () => {
               <FileText className="h-4 w-4" />
               Conversion
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Performance
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2 relative">
+            <TabsTrigger value="devReview" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
-              Pending Actions
+              Dev Review
               {unreviewedFiles.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreviewedFiles.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Performance
             </TabsTrigger>
           </TabsList>
 
@@ -241,6 +384,8 @@ const Dashboard = () => {
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={handleResetAndUpload}
               onClear={handleResetAndUpload}
+              onMoveToDevReview={handleMoveToDevReview}
+              canCompleteMigration={canCompleteMigration}
             />
           </TabsContent>
 
@@ -264,8 +409,11 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="pending">
-            <PendingActionsPanel />
+          <TabsContent value="devReview">
+            <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={() => {
+              setPendingCompleteMigration(true);
+              handleCompleteMigration();
+            }} />
           </TabsContent>
         </Tabs>
       </main>
@@ -273,6 +421,19 @@ const Dashboard = () => {
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
       )}
+      {/* Confirmation Modal */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Migration?</DialogTitle>
+          </DialogHeader>
+          <div>Are you sure you want to complete migration? All reviewed and unreviewed files will be cleared from Dev Review.</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={() => { setShowConfirmModal(false); setPendingCompleteMigration(true); handleCompleteMigration(); }}>Yes, Complete Migration</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

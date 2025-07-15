@@ -4,13 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save, Clock } from 'lucide-react';
+import { Edit, Save, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import CodeDiffViewer from './CodeDiffViewer';
+import { diffChars } from 'diff';
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -52,6 +53,7 @@ interface FileItem {
   content: string;
   conversionStatus: 'pending' | 'success' | 'failed';
   convertedContent?: string;
+  aiGeneratedCode?: string; // Add this field for human edits
   errorMessage?: string;
   dataTypeMapping?: DataTypeMapping[];
   issues?: ConversionIssue[];
@@ -62,12 +64,24 @@ interface ConversionViewerProps {
   file: FileItem;
   onManualEdit: (newContent: string) => void;
   onDismissIssue: (issueId: string) => void;
+  onSaveEdit?: (newContent: string) => void | Promise<void>; // Accepts edited content
+  hideEdit?: boolean; // Hide edit option
+  onPrevFile?: () => void;
+  onNextFile?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
   onManualEdit,
   onDismissIssue,
+  onSaveEdit,
+  hideEdit,
+  onPrevFile,
+  onNextFile,
+  hasPrev,
+  hasNext,
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
@@ -79,9 +93,30 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
 
+  // Helper to calculate human edit percentage (character-based)
+  function getEditPercentage(aiCode: string, finalCode: string): number {
+    if (!aiCode || !finalCode) return 0;
+    const diff = diffChars(aiCode, finalCode);
+    let changed = 0;
+    let total = aiCode.length;
+    diff.forEach(part => {
+      if (part.added || part.removed) {
+        changed += part.count || part.value.length;
+      }
+    });
+    return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
+  }
+  const aiCode = (file as any).aiGeneratedCode || file.convertedContent || '';
+  const finalCode = file.convertedContent || '';
+  const humanEditPercent = getEditPercentage(aiCode, finalCode);
+
   const handleSaveEdit = async () => {
     onManualEdit(editedContent);
     setIsEditing(false);
+    if (onSaveEdit) {
+      await onSaveEdit(editedContent);
+      return;
+    }
     // Persist to Supabase
     if (file.id) {
       const { error } = await supabase
@@ -103,32 +138,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
-  const handleMarkAsUnreviewed = async () => {
-    if (!file.convertedContent) {
-      toast({
-        title: "No Converted Code",
-        description: "This file doesn't have converted code to mark as unreviewed.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const success = await addUnreviewedFile({
-      user_id: '', // This will be set by the hook
-      file_name: file.name,
-      converted_code: file.convertedContent,
-      original_code: file.content,
-    });
-
-    if (success) {
-      toast({
-        title: "File Marked as Unreviewed",
-        description: `${file.name} has been added to your pending actions for review.`,
-      });
-      setIsMarkedUnreviewed(true);
-    }
-  };
-
   return (
     <Card className="h-full">
       <CardHeader>
@@ -143,22 +152,11 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             </Badge>
             <Badge variant="outline">{file.type}</Badge>
             {file.convertedContent && (
-              <>
-                <FileDownloader
-                  fileName={file.name}
-                  content={file.convertedContent}
-                  fileType={file.type}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleMarkAsUnreviewed}
-                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-                >
-                  <Clock className="h-4 w-4 mr-1" />
-                  Mark as Unreviewed
-                </Button>
-              </>
+              <FileDownloader
+                fileName={file.name}
+                content={file.convertedContent}
+                fileType={file.type}
+              />
             )}
           </div>
         </CardTitle>
@@ -169,17 +167,35 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="code">Code</TabsTrigger>
             <TabsTrigger value="mapping">Data Types</TabsTrigger>
-            <TabsTrigger value="issues">
-              Issues {file.issues && file.issues.length > 0 && (
-                <Badge variant="outline" className="ml-1">{file.issues.length}</Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="issues">Issues {file.issues && file.issues.length > 0 && (<Badge variant="outline" className="ml-1">{file.issues.length}</Badge>)}</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
             {file.convertedContent ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 relative">
+                {/* Left Arrow */}
+                {hasPrev && onPrevFile && (
+                  <button
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onPrevFile}
+                    style={{ left: '-2.5rem' }}
+                    aria-label="Previous file"
+                  >
+                    <ArrowLeft className="h-6 w-6" />
+                  </button>
+                )}
+                {/* Right Arrow */}
+                {hasNext && onNextFile && (
+                  <button
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onNextFile}
+                    style={{ right: '-2.5rem' }}
+                    aria-label="Next file"
+                  >
+                    <ArrowRight className="h-6 w-6" />
+                  </button>
+                )}
                 <div>
                   <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
                   <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
@@ -188,46 +204,55 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
+                  {/* Human Edits Metric */}
                   {isEditing ? (
-                    <>
-                      <Textarea
-                        value={editedContent}
-                        onChange={e => setEditedContent(e.target.value)}
-                        className="min-h-64 font-mono text-sm mb-2"
-                      />
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={handleSaveEdit}
-                        >
-                          <Save className="h-4 w-4 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditing(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </>
+                    hideEdit ? (
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                    ) : (
+                      <>
+                        <Textarea
+                          value={editedContent}
+                          onChange={e => setEditedContent(e.target.value)}
+                          className="min-h-64 font-mono text-sm mb-2"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleSaveEdit}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </>
+                    )
                   ) : (
                     <>
                       <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
                         {file.convertedContent}
                       </pre>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditing(true)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      </div>
+                      {!hideEdit && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(true)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -297,6 +322,20 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-4">
+            {/* Human Edits Metric in Performance Tab */}
+            <Card className="mb-4">
+              <CardContent className="py-4 flex flex-col items-center">
+                <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded px-2 py-1 mb-1">Human Edits</span>
+                <span className="text-2xl font-bold text-purple-700">{humanEditPercent}%</span>
+                <span className="text-xs text-muted-foreground mt-1">Percentage of AI-generated code changed by a human</span>
+                <div className="mt-4 w-full">
+                  <h4 className="text-sm font-medium mb-2">AI-Generated Code vs. Final Code Diff (character-based)</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap">
+                    {aiCode !== finalCode ? `AI Output:\n${aiCode}\n\nFinal Code:\n${finalCode}` : 'No changes detected.'}
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
             {file.performanceMetrics ? (
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>

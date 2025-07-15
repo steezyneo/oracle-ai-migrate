@@ -129,11 +129,42 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       // Calculate lines of SQL and file count from the report
       const linesOfSql = report.summary.split('\n').length;
       const fileCount = report.filesProcessed;
-      // Simulate deployment using the mock function from databaseUtils
-      // We'll assume each file is deployed individually for status update
       let allSuccess = true;
-      for (const result of report.results) {
-        // Simulate deployment for each file (replace with real logic as needed)
+      let filesToInsert = [];
+      // Fetch latest reviewed files from unreviewed_files
+      let latestFiles = [];
+      if (user) {
+        const { data: unreviewed, error } = await supabase
+          .from('unreviewed_files')
+          .select('*')
+          .eq('user_id', user.id)
+          .in('status', ['unreviewed', 'reviewed']);
+        if (!error && unreviewed && unreviewed.length > 0) {
+          latestFiles = unreviewed.map(f => ({
+            file_name: f.file_name,
+            file_path: f.file_name,
+            file_type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
+            converted_content: f.converted_code,
+            original_content: f.original_code,
+            conversion_status: 'success',
+          }));
+        }
+      }
+      if (latestFiles.length > 0) {
+        filesToInsert = latestFiles;
+      } else {
+        // fallback to report.results
+        filesToInsert = report.results.map(r => ({
+          file_name: r.originalFile.name,
+          file_path: r.originalFile.name,
+          file_type: r.originalFile.type,
+          converted_content: r.convertedCode,
+          original_content: r.originalFile.content,
+          conversion_status: r.status,
+        }));
+      }
+      // Simulate deployment for each file (replace with real logic as needed)
+      for (const file of filesToInsert) {
         const deployResult = await deployToOracle(
           { 
             type: 'oracle',
@@ -143,19 +174,25 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             password: 'password',
             database: 'ORCL'
           },
-          result.convertedCode
+          file.converted_content
         );
-        // Update conversion_status in migration_files for this file
-        const { error: updateError } = await supabase.from('migration_files').update({
-          conversion_status: deployResult.success ? 'success' : 'failed',
-        }).eq('file_name', result.originalFile.name);
-        
-        if (updateError) {
-          console.error('Error updating file status:', updateError);
-        } else {
-          console.log(`Updated file ${result.originalFile.name} to status: ${deployResult.success ? 'success' : 'failed'}`);
-        }
         if (!deployResult.success) allSuccess = false;
+      }
+      // After deployment, create a migration/project and insert all files into migration_files
+      const { data: migration, error: migrationError } = await supabase
+        .from('migrations')
+        .insert({
+          user_id: user?.id,
+          project_name: `Oracle Deployment: ${new Date().toLocaleString()}`
+        })
+        .select()
+        .single();
+      if (!migrationError && migration) {
+        await supabase.from('migration_files').insert(
+          filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
+        );
+        // After inserting into migration_files, delete all unreviewed_files for this user
+        await supabase.from('unreviewed_files').delete().eq('user_id', user.id);
       }
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
@@ -343,10 +380,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         </CardContent>
         
         <CardFooter>
-          <div className="w-full flex justify-between">
-            <Button variant="outline" onClick={onBack}>
-              Back to Results
-            </Button>
+          <div className="w-full flex justify-end">
             <Button onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Download Report

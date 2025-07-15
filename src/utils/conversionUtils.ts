@@ -1,5 +1,6 @@
 import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v4 as uuidv4 } from 'uuid';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -73,7 +74,7 @@ export const convertSybaseToOracle = async (
 
   console.log(`[CONVERT] Success for file: ${file.name} in ${conversionTime}ms`);
   return {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     originalFile: file,
     convertedCode,
     issues,
@@ -315,7 +316,7 @@ const generateQuantitativeIssues = (
   
   if (convertedComplexity.cyclomaticComplexity > 15) {
     issues.push({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       lineNumber: 1,
       description: `High cyclomatic complexity (${convertedComplexity.cyclomaticComplexity}). Consider refactoring to improve maintainability.`,
       severity: 'warning',
@@ -326,7 +327,7 @@ const generateQuantitativeIssues = (
   
   if (convertedComplexity.maintainabilityIndex < 50) {
     issues.push({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       lineNumber: 1,
       description: `Low maintainability index (${convertedComplexity.maintainabilityIndex}/100). Code may be difficult to maintain.`,
       severity: 'warning',

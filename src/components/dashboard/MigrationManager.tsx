@@ -52,19 +52,6 @@ export const useMigrationManager = () => {
 
   const handleCodeUpload = useCallback(async (uploadedFiles: any[]): Promise<FileItem[]> => {
     // Ensure a migration exists before uploading files
-    if (!currentMigrationId) {
-      await startNewMigration();
-    }
-    const migrationId = currentMigrationId || (await (async () => {
-      const { data } = await supabase
-        .from('migrations')
-        .select('id')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      return data?.id;
-    })());
     const convertedFiles: FileItem[] = uploadedFiles.map(file => ({
       id: file.id,
       name: file.name,
@@ -78,40 +65,9 @@ export const useMigrationManager = () => {
       convertedContent: undefined,
       errorMessage: undefined,
     }));
-    try {
-      if (!migrationId) {
-        console.error('No migration ID available');
-        toast({
-          title: "Upload Failed",
-          description: "No migration ID available",
-          variant: "destructive",
-        });
-        return convertedFiles;
-      }
-      for (const file of convertedFiles) {
-        await supabase.from('migration_files').insert({
-          migration_id: migrationId,
-          file_name: file.name,
-          file_path: file.path,
-          file_type: file.type,
-          original_content: file.content,
-          conversion_status: 'pending',
-        });
-      }
-      toast({
-        title: "Files Uploaded",
-        description: `Successfully uploaded ${convertedFiles.length} file${convertedFiles.length > 1 ? 's' : ''}`,
-      });
-    } catch (error) {
-      console.error('Error saving files to Supabase:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to save the uploaded files",
-        variant: "destructive",
-      });
-    }
+    // No longer insert files into migration_files or migrations here. This is now done after deployment to Oracle.
     return convertedFiles;
-  }, [currentMigrationId, toast, startNewMigration, user]);
+  }, [user, toast, currentMigrationId, startNewMigration]);
 
   return {
     currentMigrationId,
