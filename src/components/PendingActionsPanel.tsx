@@ -218,6 +218,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 name: selectedFile.file_name,
                 content: selectedFile.original_code,
                 convertedContent: editingFile === selectedFile.id ? editedContent : selectedFile.converted_code,
+                aiGeneratedCode: selectedFile.ai_generated_code || selectedFile.converted_code || '',
                 conversionStatus: 'pending',
                 errorMessage: undefined,
                 type: (() => {

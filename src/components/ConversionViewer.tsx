@@ -53,6 +53,7 @@ interface FileItem {
   content: string;
   conversionStatus: 'pending' | 'success' | 'failed';
   convertedContent?: string;
+  aiGeneratedCode?: string; // Add this field for human edits
   errorMessage?: string;
   dataTypeMapping?: DataTypeMapping[];
   issues?: ConversionIssue[];
