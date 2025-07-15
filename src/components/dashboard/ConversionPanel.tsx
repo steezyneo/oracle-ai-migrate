@@ -89,6 +89,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
           onClear={onClear}
+          hideActions={false}
         />
       </div>
 

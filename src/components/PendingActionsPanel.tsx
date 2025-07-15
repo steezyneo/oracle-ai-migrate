@@ -116,7 +116,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       <div className="col-span-4">
         <FileTreeView
           files={unreviewedFiles.map(f => {
-            let type = 'other';
+            let type: 'table' | 'procedure' | 'trigger' | 'other' = 'other';
             const lower = f.file_name.toLowerCase();
             if (lower.includes('trig')) type = 'trigger';
             else if (lower.includes('proc')) type = 'procedure';
@@ -127,19 +127,29 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               content: f.original_code,
               convertedContent: f.converted_code,
               conversionStatus: 'pending',
-              errorMessage: f.error_message,
+              errorMessage: undefined,
               type,
+              path: f.file_name,
             };
-          })}
+          }) as any}
           onFileSelect={file => setSelectedFileId(file.id)}
-          selectedFile={{
+          selectedFile={selectedFile ? {
             ...selectedFile,
-            name: selectedFile?.file_name,
-            content: selectedFile?.original_code,
-            convertedContent: selectedFile?.converted_code,
+            name: selectedFile.file_name,
+            content: selectedFile.original_code,
+            convertedContent: selectedFile.converted_code,
             conversionStatus: 'pending',
-            errorMessage: selectedFile?.error_message,
-          }}
+            errorMessage: undefined,
+            type: (() => {
+              const lower = selectedFile.file_name.toLowerCase();
+              if (lower.includes('trig')) return 'trigger';
+              if (lower.includes('proc')) return 'procedure';
+              if (lower.includes('tab') || lower.includes('table')) return 'table';
+              return 'other';
+            })() as 'table' | 'procedure' | 'trigger' | 'other',
+            path: selectedFile.file_name,
+          } : null}
+          hideActions={true}
         />
       </div>
       <div className="col-span-8">
