@@ -90,6 +90,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           convertingFileIds={convertingFileIds}
           onClear={onClear}
           hideActions={false}
+          defaultExpandedSections={['tables','procedures','triggers']}
         />
       </div>
 
