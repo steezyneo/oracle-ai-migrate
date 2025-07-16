@@ -304,7 +304,7 @@ const Dashboard = () => {
       navigate(`/report/${data.id}`);
     } catch (error) {
       console.error('Error generating report:', error);
-    toast({
+      toast({
         title: "Report Generation Failed",
         description: "Failed to generate the conversion report",
         variant: "destructive",
@@ -388,13 +388,6 @@ const Dashboard = () => {
                 className="mr-2"
               >
                 Convert Selected
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleResetAndUpload}
-              >
-                Reset Migration
               </Button>
             </div>
             <FileTreeView
