@@ -4,13 +4,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save, Clock } from 'lucide-react';
+import { Edit, Save, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 import ConversionIssuesPanel from './ConversionIssuesPanel';
 import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
+<<<<<<< HEAD
 import { useAuth } from '@/hooks/useAuth';
+=======
+import CodeDiffViewer from './CodeDiffViewer';
+import { diffChars } from 'diff';
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -52,6 +57,7 @@ interface FileItem {
   content: string;
   conversionStatus: 'pending' | 'success' | 'failed' | 'pending_review';
   convertedContent?: string;
+  aiGeneratedCode?: string; // Add this field for human edits
   errorMessage?: string;
   dataTypeMapping?: DataTypeMapping[];
   issues?: ConversionIssue[];
@@ -67,24 +73,43 @@ interface ConversionViewerProps {
   file: FileItem;
   onManualEdit: (newContent: string) => void;
   onDismissIssue: (issueId: string) => void;
+<<<<<<< HEAD
   onNavigateFile?: (fileId: string) => void;
   fileList?: FileItem[];
   onCommentAdded?: (fileId: string) => void;
+=======
+  onSaveEdit?: (newContent: string) => void | Promise<void>; // Accepts edited content
+  hideEdit?: boolean; // Hide edit option
+  onPrevFile?: () => void;
+  onNextFile?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
   onManualEdit,
   onDismissIssue,
+<<<<<<< HEAD
   onNavigateFile,
   fileList,
   onCommentAdded,
+=======
+  onSaveEdit,
+  hideEdit,
+  onPrevFile,
+  onNextFile,
+  hasPrev,
+  hasNext,
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
   const { profile: currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+<<<<<<< HEAD
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [suggestion, setSuggestion] = useState('');
   const [isReconverting, setIsReconverting] = useState(false);
@@ -101,11 +126,15 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   const currentIndex = fileList ? fileList.findIndex(f => f.id === file.id) : -1;
   const hasPrev = fileList && currentIndex > 0;
   const hasNext = fileList && fileList.length > 0 && currentIndex < fileList.length - 1;
+=======
+  const [isMarkedUnreviewed, setIsMarkedUnreviewed] = useState(false);
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
 
+<<<<<<< HEAD
   useEffect(() => {
     supabase.from('profiles').select('id,username,full_name,email').then(({ data }) => {
       setAllUsers(data || []);
@@ -125,6 +154,33 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     onManualEdit(editedContent);
     setIsEditing(false);
     // Save to Supabase
+=======
+  // Helper to calculate human edit percentage (character-based)
+  function getEditPercentage(aiCode: string, finalCode: string): number {
+    if (!aiCode || !finalCode) return 0;
+    const diff = diffChars(aiCode, finalCode);
+    let changed = 0;
+    let total = aiCode.length;
+    diff.forEach(part => {
+      if (part.added || part.removed) {
+        changed += part.count || part.value.length;
+      }
+    });
+    return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
+  }
+  const aiCode = (file as any).aiGeneratedCode || file.convertedContent || '';
+  const finalCode = file.convertedContent || '';
+  const humanEditPercent = getEditPercentage(aiCode, finalCode);
+
+  const handleSaveEdit = async () => {
+    onManualEdit(editedContent);
+    setIsEditing(false);
+    if (onSaveEdit) {
+      await onSaveEdit(editedContent);
+      return;
+    }
+    // Persist to Supabase
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
     if (file.id) {
       const { error } = await supabase
         .from('migration_files')
@@ -145,6 +201,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
+<<<<<<< HEAD
   // Mark this file as needing review (adds to unreviewed list)
   const handleMarkAsUnreviewed = async () => {
     if (!file.convertedContent) {
@@ -245,6 +302,8 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
+=======
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   return (
     <Card className="h-full">
       <CardHeader>
@@ -266,22 +325,11 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
             </Badge>
             <Badge variant="outline">{file.type}</Badge>
             {file.convertedContent && (
-              <>
-                <FileDownloader
-                  fileName={file.name}
-                  content={file.convertedContent}
-                  fileType={file.type}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleMarkAsUnreviewed}
-                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-                >
-                  <Clock className="h-4 w-4 mr-1" />
-                  Mark as Unreviewed
-                </Button>
-              </>
+              <FileDownloader
+                fileName={file.name}
+                content={file.convertedContent}
+                fileType={file.type}
+              />
             )}
           </div>
         </CardTitle>
@@ -292,15 +340,12 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="code">Code</TabsTrigger>
             <TabsTrigger value="mapping">Data Types</TabsTrigger>
-            <TabsTrigger value="issues">
-              Issues {file.issues && file.issues.length > 0 && (
-                <Badge variant="outline" className="ml-1">{file.issues.length}</Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="issues">Issues {file.issues && file.issues.length > 0 && (<Badge variant="outline" className="ml-1">{file.issues.length}</Badge>)}</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
+<<<<<<< HEAD
             {/* AI Explanations for Explainable AI */}
             {file.explanations && file.explanations.length > 0 && (
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-4">
@@ -308,6 +353,99 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {file.explanations.map((explanation, idx) => (
                   <p key={idx} className="text-blue-900 text-sm mb-1 whitespace-pre-line">{explanation}</p>
                 ))}
+=======
+            {file.convertedContent ? (
+              <div className="grid grid-cols-2 gap-4 relative">
+                {/* Left Arrow */}
+                {hasPrev && onPrevFile && (
+                  <button
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onPrevFile}
+                    style={{ left: '-2.5rem' }}
+                    aria-label="Previous file"
+                  >
+                    <ArrowLeft className="h-6 w-6" />
+                  </button>
+                )}
+                {/* Right Arrow */}
+                {hasNext && onNextFile && (
+                  <button
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onNextFile}
+                    style={{ right: '-2.5rem' }}
+                    aria-label="Next file"
+                  >
+                    <ArrowRight className="h-6 w-6" />
+                  </button>
+                )}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                  <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                    {file.content}
+                  </pre>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
+                  {/* Human Edits Metric */}
+                  {isEditing ? (
+                    hideEdit ? (
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                    ) : (
+                      <>
+                        <Textarea
+                          value={editedContent}
+                          onChange={e => setEditedContent(e.target.value)}
+                          className="min-h-64 font-mono text-sm mb-2"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleSaveEdit}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                      {!hideEdit && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(true)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                  {file.content}
+                </pre>
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
               </div>
             )}
             
@@ -412,6 +550,20 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-4">
+            {/* Human Edits Metric in Performance Tab */}
+            <Card className="mb-4">
+              <CardContent className="py-4 flex flex-col items-center">
+                <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded px-2 py-1 mb-1">Human Edits</span>
+                <span className="text-2xl font-bold text-purple-700">{humanEditPercent}%</span>
+                <span className="text-xs text-muted-foreground mt-1">Percentage of AI-generated code changed by a human</span>
+                <div className="mt-4 w-full">
+                  <h4 className="text-sm font-medium mb-2">AI-Generated Code vs. Final Code Diff (character-based)</h4>
+                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap">
+                    {aiCode !== finalCode ? `AI Output:\n${aiCode}\n\nFinal Code:\n${finalCode}` : 'No changes detected.'}
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
             {file.performanceMetrics ? (
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>
@@ -512,6 +664,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   </Card>
                 )}
 
+<<<<<<< HEAD
                 {/* Conversion Time */}
                 {file.performanceMetrics.conversionTimeMs && (
                   <Card className="p-4">
@@ -521,8 +674,41 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                         {file.performanceMetrics.conversionTimeMs}ms
                       </p>
                     </div>
+=======
+                {/* Enhanced Performance Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Lines Reduced */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Lines Reduced</h4>
+                    <p className="text-2xl font-bold text-green-600">
+                      {file.performanceMetrics.linesReduced || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {file.performanceMetrics.originalLines || 0} → {file.performanceMetrics.convertedLines || 0}
+                    </p>
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                   </Card>
-                )}
+                  
+                  {/* Loops Reduced */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Loops Reduced</h4>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {file.performanceMetrics.loopsReduced || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {file.performanceMetrics.originalLoops || 0} → {file.performanceMetrics.convertedLoops || 0}
+                    </p>
+                  </Card>
+                  
+                  {/* Conversion Time */}
+                  <Card className="p-4 text-center">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {file.performanceMetrics.conversionTimeMs || 0}ms
+                    </p>
+                    <p className="text-xs text-gray-500">Processing Time</p>
+                  </Card>
+                </div>
                 
                 {/* Recommendations */}
                 {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (

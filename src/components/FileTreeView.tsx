@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { 
   Folder, 
   FolderOpen, 
@@ -34,15 +35,25 @@ interface FileItem {
 interface FileTreeViewProps {
   files: FileItem[];
   onFileSelect: (file: FileItem) => void;
-  onConvertFile: (fileId: string) => void;
-  onConvertAllByType: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
-  onConvertAll: () => void;
-  onFixFile: (fileId: string) => void;
+  onConvertFile?: (fileId: string) => void;
+  onConvertAllByType?: (type: 'table' | 'procedure' | 'trigger' | 'other') => void;
+  onConvertAll?: () => void;
+  onFixFile?: (fileId: string) => void;
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileIds?: string[];
+<<<<<<< HEAD
   selectedFileIds?: string[];
   onBulkSelect?: (ids: string[]) => void;
+=======
+  onClear?: () => void;
+  hideActions?: boolean;
+  defaultExpandedSections?: string[];
+  searchTerm?: string;
+  statusFilter?: string;
+  onSearchTermChange?: (term: string) => void;
+  onStatusFilterChange?: (status: string) => void;
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -55,15 +66,37 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   selectedFile,
   isConverting = false,
   convertingFileIds = [],
+<<<<<<< HEAD
   selectedFileIds = [],
   onBulkSelect
+=======
+  onClear,
+  hideActions = false,
+  defaultExpandedSections = [],
+  searchTerm = '',
+  statusFilter = 'All',
+  onSearchTermChange,
+  onStatusFilterChange,
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['tables', 'procedures', 'triggers'])
+    new Set(defaultExpandedSections)
   );
   const [localSelected, setLocalSelected] = useState<string[]>(selectedFileIds);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'success' | 'failed' | 'pending_review'>('all');
+
+  // Filter files by search and status
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'All' ? true :
+      statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
+      statusFilter === 'Success' ? file.conversionStatus === 'success' :
+      statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
+      statusFilter === 'Reviewed' ? file.conversionStatus === 'reviewed' : true;
+    return matchesSearch && matchesStatus;
+  });
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -76,6 +109,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getFilesByType = (type: string) => {
+<<<<<<< HEAD
     return files.filter(file => file.type === type);
   };
 
@@ -94,6 +128,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       default:
         return <Play className="h-4 w-4 text-gray-400" />;
     }
+=======
+    return filteredFiles.filter(file => file.type === type);
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   };
 
   const getSectionIcon = (type: string) => {
@@ -109,21 +146,25 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     }
   };
 
-  const getPendingFilesCount = (sectionFiles: FileItem[]) => {
-    return sectionFiles.filter(f => f.conversionStatus === 'pending').length;
-  };
-
-  const getTotalPendingFiles = () => {
-    return files.filter(f => f.conversionStatus === 'pending').length;
+  const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
+    if (isConverting && convertingFileIds.includes(fileId)) {
+      return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
+    }
+    if (status === 'success') {
+      return <Check className="h-4 w-4 text-green-600" />;
+    }
+    if (status === 'failed') {
+      return <X className="h-4 w-4 text-red-600" />;
+    }
+    return null;
   };
 
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
     const isExpanded = expandedSections.has(sectionKey);
-    const pendingCount = getPendingFilesCount(sectionFiles);
+    const pendingCount = sectionFiles.filter(f => f.conversionStatus === 'pending').length;
     const typeKey = sectionKey === 'tables' ? 'table' : 
                    sectionKey === 'procedures' ? 'procedure' : 
                    sectionKey === 'triggers' ? 'trigger' : 'other';
-    
     return (
       <div key={sectionKey} className="mb-2">
         <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
@@ -140,20 +181,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             {getSectionIcon(sectionKey)}
             <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
           </Button>
-          
-          {pendingCount > 0 && (
+          {!hideActions && pendingCount > 0 && onConvertAllByType && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
-              className="text-xs px-2 py-1 h-6 ml-2"
+              className="text-xs px-2 py-1 h-6"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Convert All ({pendingCount})
             </Button>
           )}
         </div>
-        
         {isExpanded && (
           <div className="ml-4 space-y-1">
             <div className="flex items-center mb-1 ml-4">
@@ -208,37 +247,38 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                     {file.conversionStatus === 'pending_review' && <span className="ml-1 text-xs text-yellow-600">(Marked for Review)</span>}
                   </span>
                 </div>
-                
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {getStatusIcon(file.conversionStatus, file.id)}
-                  {file.conversionStatus === 'pending' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onConvertFile(file.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6"
-                    >
-                      Convert
-                    </Button>
-                  )}
-                  {file.conversionStatus === 'failed' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFixFile(file.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6 text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Fix
-                    </Button>
-                  )}
-                </div>
+                {!hideActions && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {onConvertFile && getStatusIcon(file.conversionStatus, file.id)}
+                    {file.conversionStatus === 'pending' && onConvertFile && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onConvertFile(file.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6"
+                      >
+                        Convert
+                      </Button>
+                    )}
+                    {file.conversionStatus === 'failed' && onFixFile && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFixFile(file.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-6 text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Fix
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -247,6 +287,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     );
   };
 
+<<<<<<< HEAD
   // Filtered files based on search and status
   const filteredFiles = files.filter(f =>
     (statusFilter === 'all' || f.conversionStatus === statusFilter) &&
@@ -259,23 +300,60 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const triggers = filteredFiles.filter(f => f.type === 'trigger');
   const others = filteredFiles.filter(f => f.type === 'other');
   const totalPending = filteredFiles.filter(f => f.conversionStatus === 'pending').length;
+=======
+  const tables = getFilesByType('table');
+  const procedures = getFilesByType('procedure');
+  const triggers = getFilesByType('trigger');
+  const others = getFilesByType('other');
+  const totalPending = files.filter(f => f.conversionStatus === 'pending').length;
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Project Structure</CardTitle>
-          {totalPending > 0 && (
-            <Button
-              onClick={onConvertAll}
-              className="text-xs px-3 py-1 h-7"
+      {!hideActions && (
+        <CardHeader className="pb-3 flex flex-col gap-2">
+          <div className="flex flex-row items-center justify-between w-full mb-2">
+            <CardTitle className="text-lg">Project Structure</CardTitle>
+            <div className="flex gap-2">
+              {onClear && files.length > 0 && (
+                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
+                  Clear
+                </Button>
+              )}
+              {onConvertAll && totalPending > 0 && (
+                <Button
+                  onClick={onConvertAll}
+                  className="text-xs px-3 py-1 h-7 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Convert All ({totalPending})
+                </Button>
+              )}
+            </div>
+          </div>
+          {/* Search and Filter Row */}
+          <div className="flex flex-row gap-2 w-full mb-2">
+            <Input
+              type="text"
+              placeholder="Search files..."
+              value={searchTerm}
+              onChange={e => onSearchTermChange ? onSearchTermChange(e.target.value) : undefined}
+              className="flex-1 h-8 text-sm"
+            />
+            <select
+              value={statusFilter}
+              onChange={e => onStatusFilterChange ? onStatusFilterChange(e.target.value) : undefined}
+              className="h-8 text-sm border rounded px-2"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Convert All ({totalPending})
-            </Button>
-          )}
-        </div>
-      </CardHeader>
+              <option value="All">All</option>
+              <option value="Pending">Pending</option>
+              <option value="Success">Success</option>
+              <option value="Failed">Failed</option>
+              <option value="Reviewed">Reviewed</option>
+            </select>
+          </div>
+        </CardHeader>
+      )}
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4">
           <div className="flex gap-2 mb-2">

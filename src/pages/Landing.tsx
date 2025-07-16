@@ -5,6 +5,7 @@ import { Database, FileText, Zap, Shield, Clock, Users, ArrowRight, History, Hel
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Help from '@/components/Help';
+import UserDropdown from '@/components/UserDropdown';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Landing = () => {
 
   const handleGoToHistory = () => {
     if (user) {
-      navigate('/history');
+      navigate('/history', { state: { fromLanding: true } });
     } else {
       navigate('/auth');
     }
@@ -53,9 +54,13 @@ const Landing = () => {
                     <History className="h-4 w-4 mr-2" />
                     History
                   </Button>
+<<<<<<< HEAD
                   <Button onClick={async () => { await signOut(); navigate('/'); }}>
                     Sign Out
                   </Button>
+=======
+                  <UserDropdown />
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                 </>
               ) : (
                 <>

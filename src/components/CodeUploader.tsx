@@ -12,7 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+<<<<<<< HEAD
 import { validateTSQLContent } from '@/utils/conversionUtils';
+=======
+import { v4 as uuidv4 } from 'uuid';
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
@@ -67,7 +71,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
           }
           
           const newFile: CodeFile = {
-            id: crypto.randomUUID(),
+            id: uuidv4(),
             name: file.name,
             content: content,
             type: determineFileType(file.name, content),
@@ -298,7 +302,7 @@ const CodeUploader: React.FC<CodeUploaderProps> = ({ onComplete }) => {
       }
     }
     const newFile: CodeFile = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       name: manualFileName,
       content: manualContent,
       type: templateType,
@@ -643,6 +647,21 @@ END`;
                   </TabsTrigger>
                 </TabsList>
                 
+                {files.length > 0 && (
+                  <div className="flex justify-end mb-4">
+                    <Button variant="destructive" onClick={() => {
+                      setFiles([]);
+                      toast({
+                        title: 'Files Reset',
+                        description: 'All uploaded files have been removed.'
+                      });
+                    }}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear
+                    </Button>
+                  </div>
+                )}
+
                 {(['tables', 'procedures', 'triggers', 'other'] as const).map(tabValue => (
                   <TabsContent key={tabValue} value={tabValue}>
                     <ScrollArea className="h-[300px] rounded-md border p-4">

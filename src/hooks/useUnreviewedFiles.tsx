@@ -20,7 +20,7 @@ export const useUnreviewedFiles = () => {
         .from('unreviewed_files')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'unreviewed')
+        .in('status', ['unreviewed', 'reviewed'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       setUnreviewedFiles((data || []) as UnreviewedFile[]);
@@ -47,6 +47,14 @@ export const useUnreviewedFiles = () => {
           user_id: user.id,
           status: 'unreviewed',
           original_code: fileData.original_code,
+<<<<<<< HEAD
+=======
+          converted_code: fileData.converted_code,
+          ai_generated_code: fileData.ai_generated_code || fileData.converted_code, // Store original AI output
+          data_type_mapping: fileData.data_type_mapping || [],
+          issues: fileData.issues || [],
+          performance_metrics: fileData.performance_metrics || {},
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
         });
       if (error) throw error;
       toast({
@@ -70,14 +78,25 @@ export const useUnreviewedFiles = () => {
   // Update an unreviewed file (e.g., after editing)
   const updateUnreviewedFile = async (updateData: UnreviewedFileUpdate) => {
     try {
+      const updateFields: any = {
+        updated_at: new Date().toISOString()
+      };
+      if (updateData.converted_code !== undefined) updateFields.converted_code = updateData.converted_code;
+      if (updateData.original_code !== undefined) updateFields.original_code = updateData.original_code;
+      if (updateData.status !== undefined) updateFields.status = updateData.status;
+
       const { error } = await supabase
         .from('unreviewed_files')
+<<<<<<< HEAD
         .update({
           converted_code: updateData.converted_code,
           original_code: updateData.original_code,
           status: updateData.status,
           updated_at: new Date().toISOString()
         })
+=======
+        .update(updateFields)
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
         .eq('id', updateData.id);
       if (error) throw error;
       toast({
@@ -98,6 +117,7 @@ export const useUnreviewedFiles = () => {
     }
   };
 
+<<<<<<< HEAD
   // Mark a file as reviewed and move it to migration history
   const markAsReviewed = async (id: string, fileName: string, convertedCode: string) => {
     if (!user) return false;
@@ -134,14 +154,23 @@ export const useUnreviewedFiles = () => {
         });
       if (fileError) throw fileError;
       // Mark the unreviewed file as reviewed
+=======
+  // Mark a file as reviewed (do NOT move to history yet)
+  const markAsReviewed = async (id: string, fileName: string, convertedCode: string, originalCode: string) => {
+    if (!user) return false;
+    try {
+      // Only update the unreviewed file status to 'reviewed'
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
       const success = await updateUnreviewedFile({
         id,
-        status: 'reviewed'
+        status: 'reviewed',
+        converted_code: convertedCode,
+        original_code: originalCode,
       });
       if (success) {
         toast({
           title: "File Reviewed",
-          description: `${fileName} has been marked as reviewed and added to history.`,
+          description: `${fileName} has been marked as reviewed.`,
         });
       }
       return success;
@@ -199,3 +228,4 @@ export const useUnreviewedFiles = () => {
     refreshUnreviewedFiles: fetchUnreviewedFiles
   };
 };
+//

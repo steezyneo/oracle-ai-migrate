@@ -19,12 +19,15 @@ const Auth = () => {
     password: '' 
   });
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
   const [signupPasswordVisible, setSignupPasswordVisible] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -77,6 +80,7 @@ const Auth = () => {
   };
 
   const handleForgotPassword = async () => {
+<<<<<<< HEAD
     setResetLoading(true);
     if (!loginData.email) {
       toast({
@@ -103,6 +107,39 @@ const Auth = () => {
       });
     }
     setResetLoading(false);
+=======
+    if (!loginData.email) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address to reset your password.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(loginData.email);
+      if (error) {
+        toast({
+          title: 'Reset Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Reset Email Sent',
+          description: 'Check your email for a password reset link.',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: 'Reset Failed',
+        description: 'An error occurred while sending the reset email.',
+        variant: 'destructive',
+      });
+    }
+    setIsLoading(false);
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   };
 
   return (
@@ -144,6 +181,7 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="login-password">Password</Label>
+<<<<<<< HEAD
                     <Input
                       id="login-password"
                       type={loginPasswordVisible ? 'text' : 'password'}
@@ -162,6 +200,29 @@ const Auth = () => {
                   </div>
                   <div className="flex justify-end mb-2">
                     <Button type="button" variant="link" className="p-0 text-sm" onClick={handleForgotPassword} disabled={resetLoading}>
+=======
+                    <div className="relative">
+                      <Input
+                        id="login-password"
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                        onClick={() => setShowLoginPassword((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="button" variant="link" className="px-0" onClick={handleForgotPassword}>
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                       Forgot Password?
                     </Button>
                   </div>
@@ -196,6 +257,7 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="signup-password">Password</Label>
+<<<<<<< HEAD
                     <Input
                       id="signup-password"
                       type={signupPasswordVisible ? 'text' : 'password'}
@@ -211,6 +273,26 @@ const Auth = () => {
                     >
                       {signupPasswordVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
+=======
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignupPassword ? 'text' : 'password'}
+                        value={signupData.password}
+                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                        onClick={() => setShowSignupPassword((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

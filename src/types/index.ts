@@ -25,12 +25,17 @@ export interface CodeFile {
 export interface ConversionResult {
   id: string;
   originalFile: CodeFile;
+  aiGeneratedCode: string; // Original AI-generated Oracle code
   convertedCode: string;
   issues: ConversionIssue[];
   dataTypeMapping?: DataTypeMapping[];
   performance?: PerformanceMetrics;
   status: 'success' | 'warning' | 'error';
+<<<<<<< HEAD
   explanations?: string[]; // Optional: AI explanations for the conversion
+=======
+  explanations?: string[];
+>>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 // Issue found during conversion (error, warning, or info)
@@ -65,6 +70,13 @@ export interface PerformanceMetrics {
     commentRatio: number;
     complexityLevel: 'Low' | 'Medium' | 'High';
   };
+  // Enhanced metrics for performance analysis
+  linesReduced?: number;
+  loopsReduced?: number;
+  originalLines?: number;
+  convertedLines?: number;
+  originalLoops?: number;
+  convertedLoops?: number;
   recommendations?: string[];
   notes?: string[];
 }

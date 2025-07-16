@@ -19,6 +19,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, onSuccess?: () => void) => Promise<{ error: any }>;
   signIn: (email: string, password: string, onSuccess?: () => void) => Promise<{ error: any }>;
   signOut: (onSuccess?: () => void) => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 // Auth context and provider for Supabase authentication
@@ -132,9 +133,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setProfile(null);
     if (onSuccess) {
       onSuccess();
-    } else {
-      window.location.href = '/auth';
     }
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset`,
+    });
+    return { error };
   };
 
   return (
@@ -145,7 +151,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       loading,
       signUp,
       signIn,
-      signOut
+      signOut,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>
