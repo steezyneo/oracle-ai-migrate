@@ -160,55 +160,12 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 
     setIsDeploying(true);
     try {
-<<<<<<< HEAD
       // Calculate lines of SQL and file count from the selected files
       const selectedResults = report.results.filter(r => selectedFileIds.includes(r.id));
       const linesOfSql = selectedResults.reduce((sum, r) => sum + (r.convertedCode?.split('\n').length || 0), 0);
       const fileCount = selectedResults.length;
       let allSuccess = true;
-      
       for (const result of selectedResults) {
-=======
-      // Calculate lines of SQL and file count from the report
-      const linesOfSql = report.summary.split('\n').length;
-      const fileCount = report.filesProcessed;
-      let allSuccess = true;
-      let filesToInsert = [];
-      // Fetch latest reviewed files from unreviewed_files
-      let latestFiles = [];
-      if (user) {
-        const { data: unreviewed, error } = await supabase
-          .from('unreviewed_files')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'reviewed');
-        if (!error && unreviewed && unreviewed.length > 0) {
-          latestFiles = unreviewed.map(f => ({
-            file_name: f.file_name,
-            file_path: f.file_name,
-            file_type: (f.file_name.toLowerCase().includes('trig') ? 'trigger' : f.file_name.toLowerCase().includes('proc') ? 'procedure' : f.file_name.toLowerCase().includes('tab') ? 'table' : 'other'),
-            converted_content: f.converted_code,
-            original_content: f.original_code,
-            conversion_status: 'success',
-          }));
-        }
-      }
-      if (latestFiles.length > 0) {
-        filesToInsert = latestFiles;
-      } else {
-        // fallback to report.results
-        filesToInsert = report.results.map(r => ({
-          file_name: r.originalFile.name,
-          file_path: r.originalFile.name,
-          file_type: r.originalFile.type,
-          converted_content: r.convertedCode,
-          original_content: r.originalFile.content,
-          conversion_status: r.status,
-        }));
-      }
-      // Simulate deployment for each file (replace with real logic as needed)
-      for (const file of filesToInsert) {
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
         const deployResult = await deployToOracle(
           { 
             type: 'oracle',
@@ -218,10 +175,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
             password: 'password',
             database: 'ORCL'
           },
-          file.converted_content
+          result.convertedCode
         );
-<<<<<<< HEAD
-        
         if (deployResult.success) {
           // Update existing migration_files record to mark as deployed and set deployment timestamp
           const deploymentTimestamp = new Date().toISOString();
@@ -235,27 +190,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         }
         if (!deployResult.success) allSuccess = false;
       }
-      
-=======
-        if (!deployResult.success) allSuccess = false;
-      }
-      // After deployment, create a migration/project and insert all files into migration_files
-      const { data: migration, error: migrationError } = await supabase
-        .from('migrations')
-        .insert({
-          user_id: user?.id,
-          project_name: `Oracle Deployment: ${new Date().toLocaleString()}`
-        })
-        .select()
-        .single();
-      if (!migrationError && migration) {
-        await supabase.from('migration_files').insert(
-          filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
-        );
-        // After inserting into migration_files, delete only reviewed files from unreviewed_files
-        await supabase.from('unreviewed_files').delete().eq('user_id', user.id).eq('status', 'reviewed');
-      }
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
       // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
         allSuccess ? 'Success' : 'Failed',
@@ -263,13 +197,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         fileCount,
         allSuccess ? undefined : 'One or more files failed to deploy.'
       );
-      
       toast({
         title: allSuccess ? 'Deployment Successful' : 'Deployment Failed',
         description: allSuccess ? 'All selected files deployed successfully.' : 'Some files failed to deploy.',
         variant: allSuccess ? 'default' : 'destructive',
       });
-      
       if (logEntry) {
         console.log('Deployment log saved:', logEntry);
       }

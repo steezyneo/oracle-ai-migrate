@@ -10,12 +10,9 @@ import FileDownloader from './FileDownloader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
-<<<<<<< HEAD
 import { useAuth } from '@/hooks/useAuth';
-=======
 import CodeDiffViewer from './CodeDiffViewer';
 import { diffChars } from 'diff';
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
 interface DataTypeMapping {
   sybaseType: string;
@@ -73,88 +70,42 @@ interface ConversionViewerProps {
   file: FileItem;
   onManualEdit: (newContent: string) => void;
   onDismissIssue: (issueId: string) => void;
-<<<<<<< HEAD
   onNavigateFile?: (fileId: string) => void;
   fileList?: FileItem[];
   onCommentAdded?: (fileId: string) => void;
-=======
   onSaveEdit?: (newContent: string) => void | Promise<void>; // Accepts edited content
   hideEdit?: boolean; // Hide edit option
   onPrevFile?: () => void;
   onNextFile?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 const ConversionViewer: React.FC<ConversionViewerProps> = ({
   file,
   onManualEdit,
   onDismissIssue,
-<<<<<<< HEAD
   onNavigateFile,
   fileList,
   onCommentAdded,
-=======
   onSaveEdit,
   hideEdit,
   onPrevFile,
   onNextFile,
   hasPrev,
   hasNext,
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }) => {
   const { toast } = useToast();
   const { addUnreviewedFile } = useUnreviewedFiles();
   const { profile: currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-<<<<<<< HEAD
-  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-  const [suggestion, setSuggestion] = useState('');
-  const [isReconverting, setIsReconverting] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [assignUserId, setAssignUserId] = useState(file.assignedTo || '');
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [reviewActionLoading, setReviewActionLoading] = useState(false);
-  const [allUsers, setAllUsers] = useState([]);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentText, setEditingCommentText] = useState('');
-  const [showCommentPrompt, setShowCommentPrompt] = useState(false);
-
-  const currentIndex = fileList ? fileList.findIndex(f => f.id === file.id) : -1;
-  const hasPrev = fileList && currentIndex > 0;
-  const hasNext = fileList && fileList.length > 0 && currentIndex < fileList.length - 1;
-=======
   const [isMarkedUnreviewed, setIsMarkedUnreviewed] = useState(false);
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
   useEffect(() => {
     setEditedContent(file.convertedContent || '');
   }, [file.convertedContent]);
 
-<<<<<<< HEAD
-  useEffect(() => {
-    supabase.from('profiles').select('id,username,full_name,email').then(({ data }) => {
-      setAllUsers(data || []);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (file.convertedContent && (!file.reviewComments || file.reviewComments.length === 0)) {
-      setShowCommentPrompt(true);
-    } else {
-      setShowCommentPrompt(false);
-    }
-  }, [file.convertedContent, file.reviewComments]);
-
-  // Save the edited code to the database and update UI
-  const handleSaveEdit = async () => {
-    onManualEdit(editedContent);
-    setIsEditing(false);
-    // Save to Supabase
-=======
   // Helper to calculate human edit percentage (character-based)
   function getEditPercentage(aiCode: string, finalCode: string): number {
     if (!aiCode || !finalCode) return 0;
@@ -180,7 +131,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
       return;
     }
     // Persist to Supabase
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
     if (file.id) {
       const { error } = await supabase
         .from('migration_files')
@@ -201,7 +151,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
-<<<<<<< HEAD
   // Mark this file as needing review (adds to unreviewed list)
   const handleMarkAsUnreviewed = async () => {
     if (!file.convertedContent) {
@@ -302,8 +251,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
     }
   };
 
-=======
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   return (
     <Card className="h-full">
       <CardHeader>
@@ -345,7 +292,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
           </TabsList>
           
           <TabsContent value="code" className="space-y-4">
-<<<<<<< HEAD
             {/* AI Explanations for Explainable AI */}
             {file.explanations && file.explanations.length > 0 && (
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-4">
@@ -353,99 +299,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 {file.explanations.map((explanation, idx) => (
                   <p key={idx} className="text-blue-900 text-sm mb-1 whitespace-pre-line">{explanation}</p>
                 ))}
-=======
-            {file.convertedContent ? (
-              <div className="grid grid-cols-2 gap-4 relative">
-                {/* Left Arrow */}
-                {hasPrev && onPrevFile && (
-                  <button
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
-                    onClick={onPrevFile}
-                    style={{ left: '-2.5rem' }}
-                    aria-label="Previous file"
-                  >
-                    <ArrowLeft className="h-6 w-6" />
-                  </button>
-                )}
-                {/* Right Arrow */}
-                {hasNext && onNextFile && (
-                  <button
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
-                    onClick={onNextFile}
-                    style={{ right: '-2.5rem' }}
-                    aria-label="Next file"
-                  >
-                    <ArrowRight className="h-6 w-6" />
-                  </button>
-                )}
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-                  <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                    {file.content}
-                  </pre>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
-                  {/* Human Edits Metric */}
-                  {isEditing ? (
-                    hideEdit ? (
-                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                        {file.convertedContent}
-                      </pre>
-                    ) : (
-                      <>
-                        <Textarea
-                          value={editedContent}
-                          onChange={e => setEditedContent(e.target.value)}
-                          className="min-h-64 font-mono text-sm mb-2"
-                        />
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={handleSaveEdit}
-                          >
-                            <Save className="h-4 w-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setIsEditing(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </>
-                    )
-                  ) : (
-                    <>
-                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                        {file.convertedContent}
-                      </pre>
-                      {!hideEdit && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setIsEditing(true)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                  {file.content}
-                </pre>
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
               </div>
             )}
             
@@ -454,7 +307,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
               {/* Original Sybase Code */}
               <div>
                 <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
                   {file.content}
                 </pre>
               </div>
@@ -477,7 +330,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                       <Textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="min-h-96 font-mono text-sm"
+                        className="min-h-64 font-mono text-sm"
                       />
                       <Button onClick={handleSaveEdit} size="sm">
                         <Save className="h-4 w-4 mr-1" />
@@ -485,7 +338,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                       </Button>
                     </div>
                   ) : (
-                    <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+                    <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
                       {file.convertedContent}
                     </pre>
                   )}
@@ -664,17 +517,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                   </Card>
                 )}
 
-<<<<<<< HEAD
-                {/* Conversion Time */}
-                {file.performanceMetrics.conversionTimeMs && (
-                  <Card className="p-4">
-                    <div className="text-center">
-                      <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Conversion Time</h4>
-                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                        {file.performanceMetrics.conversionTimeMs}ms
-                      </p>
-                    </div>
-=======
                 {/* Enhanced Performance Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Lines Reduced */}
@@ -686,7 +528,6 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     <p className="text-xs text-gray-500">
                       {file.performanceMetrics.originalLines || 0} → {file.performanceMetrics.convertedLines || 0}
                     </p>
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                   </Card>
                   
                   {/* Loops Reduced */}

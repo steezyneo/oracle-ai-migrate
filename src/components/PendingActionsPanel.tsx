@@ -119,12 +119,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     setEditedContent('');
   };
 
-<<<<<<< HEAD
-  // Save changes to a file's converted code
-  const handleSaveEdit = async (file: UnreviewedFile) => {
-=======
   const handleSaveEdit = async (file: UnreviewedFile, newCode: string) => {
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
     const success = await updateUnreviewedFile({
       id: file.id,
       converted_code: newCode

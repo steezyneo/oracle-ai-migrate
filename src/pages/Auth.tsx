@@ -80,34 +80,6 @@ const Auth = () => {
   };
 
   const handleForgotPassword = async () => {
-<<<<<<< HEAD
-    setResetLoading(true);
-    if (!loginData.email) {
-      toast({
-        title: 'Enter Email',
-        description: 'Please enter your email to reset your password.',
-        variant: 'destructive',
-      });
-      setResetLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(loginData.email, {
-      redirectTo: window.location.origin + '/auth',
-    });
-    if (error) {
-      toast({
-        title: 'Reset Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Reset Email Sent',
-        description: 'Check your email for a password reset link.',
-      });
-    }
-    setResetLoading(false);
-=======
     if (!loginData.email) {
       toast({
         title: 'Email Required',
@@ -139,7 +111,6 @@ const Auth = () => {
       });
     }
     setIsLoading(false);
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   };
 
   return (
@@ -181,26 +152,6 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="login-password">Password</Label>
-<<<<<<< HEAD
-                    <Input
-                      id="login-password"
-                      type={loginPasswordVisible ? 'text' : 'password'}
-                      value={loginData.password}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-8 text-gray-500"
-                      tabIndex={-1}
-                      onClick={() => setLoginPasswordVisible(v => !v)}
-                    >
-                      {loginPasswordVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  <div className="flex justify-end mb-2">
-                    <Button type="button" variant="link" className="p-0 text-sm" onClick={handleForgotPassword} disabled={resetLoading}>
-=======
                     <div className="relative">
                       <Input
                         id="login-password"
@@ -222,7 +173,6 @@ const Auth = () => {
                   </div>
                   <div className="flex justify-end">
                     <Button type="button" variant="link" className="px-0" onClick={handleForgotPassword}>
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                       Forgot Password?
                     </Button>
                   </div>
@@ -257,23 +207,6 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="signup-password">Password</Label>
-<<<<<<< HEAD
-                    <Input
-                      id="signup-password"
-                      type={signupPasswordVisible ? 'text' : 'password'}
-                      value={signupData.password}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-8 text-gray-500"
-                      tabIndex={-1}
-                      onClick={() => setSignupPasswordVisible(v => !v)}
-                    >
-                      {signupPasswordVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-=======
                     <div className="relative">
                       <Input
                         id="signup-password"
@@ -292,7 +225,6 @@ const Auth = () => {
                         {showSignupPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

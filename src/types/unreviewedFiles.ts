@@ -4,10 +4,7 @@ export interface UnreviewedFile {
   file_name: string;
   converted_code: string;
   original_code: string;
-<<<<<<< HEAD
-=======
   ai_generated_code?: string; // Original AI output
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   status: 'unreviewed' | 'reviewed';
   created_at: string;
   updated_at: string;
@@ -21,10 +18,7 @@ export interface UnreviewedFileInsert {
   file_name: string;
   converted_code: string;
   original_code: string;
-<<<<<<< HEAD
-=======
-  ai_generated_code?: string; // Original AI output
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
+  ai_generated_code?: string;
   status?: 'unreviewed' | 'reviewed';
   data_type_mapping?: any;
   issues?: any;

@@ -12,11 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-<<<<<<< HEAD
 import { validateTSQLContent } from '@/utils/conversionUtils';
-=======
 import { v4 as uuidv4 } from 'uuid';
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
 interface CodeUploaderProps {
   onComplete: (files: CodeFile[]) => void;
