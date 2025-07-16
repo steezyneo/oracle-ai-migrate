@@ -31,3 +31,20 @@ This project is built with:
 4. Review the converted code and resolve any issues
 5. Generate a comprehensive migration report
 6. Download or deploy the Oracle-compatible code
+
+## Docker
+
+### Prerequisites
+- [Docker](https://www.docker.com/get-started) installed on your system
+
+### Build the Docker image
+```sh
+docker build -t sybase-oracle .
+```
+
+### Run the Docker container
+```sh
+docker run -p 8080:80 sybase-oracle
+```
+
+The application will be available at [http://localhost:8080](http://localhost:8080)
