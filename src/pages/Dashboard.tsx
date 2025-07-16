@@ -20,6 +20,7 @@ import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboar
 import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
 import { useMigrationManager } from '@/components/dashboard/MigrationManager';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
+import FileTreeView from '@/components/FileTreeView';
 
 interface FileItem {
   id: string;
@@ -51,6 +52,8 @@ const Dashboard = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const [isStartingMigration, setIsStartingMigration] = useState(false);
 
   const { handleCodeUpload } = useMigrationManager();
   const { unreviewedFiles, addUnreviewedFile, refreshUnreviewedFiles } = useUnreviewedFiles();
@@ -309,6 +312,31 @@ const Dashboard = () => {
     }
   };
 
+  const handleConvertSelected = async () => {
+    if (!selectedFile) return;
+    setIsStartingMigration(true);
+    try {
+      const convertedFile = await handleConvertFile(selectedFile.id);
+      setFiles(prevFiles => prevFiles.map(f =>
+        f.id === selectedFile.id ? convertedFile : f
+      ));
+      setSelectedFile(convertedFile);
+      toast({
+        title: "File Converted",
+        description: `File "${selectedFile.name}" converted.`,
+      });
+    } catch (error) {
+      console.error('Error converting file:', error);
+      toast({
+        title: "Conversion Failed",
+        description: `Failed to convert file "${selectedFile.name}".`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingMigration(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -331,38 +359,52 @@ const Dashboard = () => {
         onGoHome={handleGoHome}
         onShowHelp={() => setShowHelp(true)}
       />
-
       <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'conversion' | 'devReview' | 'metrics')}>
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-8">
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Upload Code
-            </TabsTrigger>
-            <TabsTrigger value="conversion" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Conversion
-            </TabsTrigger>
-            <TabsTrigger value="devReview" className="flex items-center gap-2 relative">
-              <Clock className="h-4 w-4" />
-              Dev Review
-              {unreviewedFiles.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {unreviewedFiles.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="metrics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Performance
-            </TabsTrigger>
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="upload">Upload</TabsTrigger>
+            <TabsTrigger value="conversion">Conversion</TabsTrigger>
+            <TabsTrigger value="devReview">Dev Review</TabsTrigger>
+            <TabsTrigger value="metrics">Metrics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
+            {activeTab === 'upload' && (
+              <Button onClick={handleStartMigration} disabled={isStartingMigration}>
+                {isStartingMigration ? 'Starting Migration...' : 'Start Migration'}
+              </Button>
+            )}
             <CodeUploader onComplete={handleCodeUploadWrapper} />
           </TabsContent>
 
           <TabsContent value="conversion">
+            {/* Convert Selected (left) and Reset Migration (right) above project structure */}
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleConvertSelected}
+                disabled={selectedFileIds.length === 0}
+                className="mr-2"
+              >
+                Convert Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleResetAndUpload}
+              >
+                Reset Migration
+              </Button>
+            </div>
+            <FileTreeView
+              files={files}
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              selectedFileIds={selectedFileIds}
+              onSelectedFileIdsChange={setSelectedFileIds}
+              // Do not pass onClear to remove the Clear button
+            />
             <ConversionPanel
               files={files}
               selectedFile={selectedFile}
@@ -377,7 +419,7 @@ const Dashboard = () => {
               onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
               onUploadRedirect={handleResetAndUpload}
-              onClear={handleResetAndUpload}
+              // onClear removed
               onMoveToDevReview={handleMoveToDevReview}
               canCompleteMigration={canCompleteMigration}
             />
