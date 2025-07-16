@@ -1,9 +1,5 @@
 import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 as uuidv4 } from 'uuid';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Enhanced AI-based code conversion with comprehensive Sybase to Oracle rules
 export const convertSybaseToOracle = async (
@@ -25,12 +21,20 @@ export const convertSybaseToOracle = async (
   const prompt = customPrompt && customPrompt.trim().length > 0
     ? `${customPrompt}\n\nSybase code:\n${file.content}`
     : `Convert the following Sybase SQL code to Oracle PL/SQL. Ensure 100% accuracy and best practices. Output only the converted Oracle code.\n\nSybase code:\n${file.content}`;
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+
   let convertedCode = '';
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    convertedCode = response.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
+    const response = await fetch('/.netlify/functions/convert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: file.content, prompt, aiModel: 'gemini-2.5-pro' }),
+    });
+    const data = await response.json();
+    if (data.convertedCode) {
+      convertedCode = data.convertedCode;
+    } else {
+      throw new Error(data.error || 'Conversion failed');
+    }
   } catch (e) {
     console.error(`[CONVERT] Error converting file: ${file.name}`, e);
     throw new Error(`Conversion failed for file: ${file.name}`);
@@ -61,15 +65,7 @@ export const convertSybaseToOracle = async (
   // Optionally skip AI explanation for speed
   let explanations: string[] = [];
   if (!skipExplanation) {
-    try {
-      const explanationPrompt = `Explain the main changes and rationale for converting the following Sybase SQL code to Oracle PL/SQL. Highlight any complex rewrites, data type changes, and best practices applied.\n\nSybase code:\n${file.content}\n\nOracle code:\n${convertedCode}`;
-      const explanationResult = await model.generateContent(explanationPrompt);
-      const explanationResponse = await explanationResult.response;
-      const explanationText = explanationResponse.text().replace(/^```[a-zA-Z]*|```$/g, '').trim();
-      explanations = [explanationText];
-    } catch (e) {
-      explanations = ["Explanation not available due to an error."];
-    }
+    explanations = ["Explanation not available in this deployment."];
   }
 
   console.log(`[CONVERT] Success for file: ${file.name} in ${conversionTime}ms`);
