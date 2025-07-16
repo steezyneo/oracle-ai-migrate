@@ -34,13 +34,10 @@ interface ConversionPanelProps {
   onDismissIssue: (issueId: string) => void;
   onGenerateReport: () => void;
   onUploadRedirect: () => void;
-<<<<<<< HEAD
   onConvertSelected: (fileIds: string[]) => void;
-=======
   onClear: () => void;
   onMoveToDevReview: () => void;
   canCompleteMigration: boolean;
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -57,13 +54,10 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onDismissIssue,
   onGenerateReport,
   onUploadRedirect,
-<<<<<<< HEAD
   onConvertSelected,
-=======
   onClear,
   onMoveToDevReview,
   canCompleteMigration,
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }) => {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [assignUserId, setAssignUserId] = useState('');
@@ -184,10 +178,8 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
-<<<<<<< HEAD
           selectedFileIds={selectedFileIds}
           onBulkSelect={setSelectedFileIds}
-=======
           onClear={onClear}
           hideActions={false}
           defaultExpandedSections={['tables','procedures','triggers']}
@@ -195,7 +187,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           statusFilter={statusFilter}
           onSearchTermChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
         />
       </div>
 
@@ -206,28 +197,11 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
               file={selectedFile}
               onManualEdit={onManualEdit}
               onDismissIssue={onDismissIssue}
-<<<<<<< HEAD
-              fileList={files}
-              onNavigateFile={fileId => {
-                const nextFile = files.find(f => f.id === fileId);
-                if (nextFile) handleFileSelect(nextFile);
-              }}
-              onCommentAdded={async (fileId) => {
-                // After adding a comment, fetch the latest file data
-                const latest = await fetchFileById(fileId);
-                if (latest) {
-                  onFileSelect({ ...selectedFile, ...latest });
-                  // Optionally update the files array as well
-                  // setFiles(prev => prev.map(f => f.id === fileId ? { ...f, ...latest } : f));
-                }
-              }}
-=======
               hideEdit={true}
               onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
               onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
               hasPrev={hasPrev}
               hasNext={hasNext}
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
             />
             {files.some(f => f.conversionStatus === 'success') && (
               <div className="flex justify-end gap-2 mt-4">

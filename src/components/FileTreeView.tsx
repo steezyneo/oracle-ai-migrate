@@ -42,10 +42,8 @@ interface FileTreeViewProps {
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileIds?: string[];
-<<<<<<< HEAD
   selectedFileIds?: string[];
   onBulkSelect?: (ids: string[]) => void;
-=======
   onClear?: () => void;
   hideActions?: boolean;
   defaultExpandedSections?: string[];
@@ -53,7 +51,6 @@ interface FileTreeViewProps {
   statusFilter?: string;
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -66,10 +63,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   selectedFile,
   isConverting = false,
   convertingFileIds = [],
-<<<<<<< HEAD
   selectedFileIds = [],
-  onBulkSelect
-=======
+  onBulkSelect,
   onClear,
   hideActions = false,
   defaultExpandedSections = [],
@@ -77,14 +72,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   statusFilter = 'All',
   onSearchTermChange,
   onStatusFilterChange,
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
   );
   const [localSelected, setLocalSelected] = useState<string[]>(selectedFileIds);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'success' | 'failed' | 'pending_review'>('all');
 
   // Filter files by search and status
   const filteredFiles = files.filter(file => {
@@ -94,7 +86,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
       statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Reviewed' ? file.conversionStatus === 'reviewed' : true;
+      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
     return matchesSearch && matchesStatus;
   });
 
@@ -109,15 +101,13 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getFilesByType = (type: string) => {
-<<<<<<< HEAD
-    return files.filter(file => file.type === type);
+    return filteredFiles.filter(file => file.type === type);
   };
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed' | 'pending_review', fileId: string) => {
-    if (convertingFileIds && convertingFileIds.includes(fileId)) {
+    if (isConverting && convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
-    
     switch (status) {
       case 'success':
         return <Check className="h-4 w-4 text-green-600" />;
@@ -128,9 +118,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       default:
         return <Play className="h-4 w-4 text-gray-400" />;
     }
-=======
-    return filteredFiles.filter(file => file.type === type);
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   };
 
   const getSectionIcon = (type: string) => {
@@ -144,19 +131,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       default:
         return <FileText className="h-4 w-4 text-gray-600" />;
     }
-  };
-
-  const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
-    if (isConverting && convertingFileIds.includes(fileId)) {
-      return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
-    }
-    if (status === 'success') {
-      return <Check className="h-4 w-4 text-green-600" />;
-    }
-    if (status === 'failed') {
-      return <X className="h-4 w-4 text-red-600" />;
-    }
-    return null;
   };
 
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
@@ -287,26 +261,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     );
   };
 
-<<<<<<< HEAD
   // Filtered files based on search and status
-  const filteredFiles = files.filter(f =>
-    (statusFilter === 'all' || f.conversionStatus === statusFilter) &&
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Use filteredFiles for sections
   const tables = filteredFiles.filter(f => f.type === 'table');
   const procedures = filteredFiles.filter(f => f.type === 'procedure');
   const triggers = filteredFiles.filter(f => f.type === 'trigger');
   const others = filteredFiles.filter(f => f.type === 'other');
   const totalPending = filteredFiles.filter(f => f.conversionStatus === 'pending').length;
-=======
-  const tables = getFilesByType('table');
-  const procedures = getFilesByType('procedure');
-  const triggers = getFilesByType('trigger');
-  const others = getFilesByType('other');
-  const totalPending = files.filter(f => f.conversionStatus === 'pending').length;
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
   return (
     <Card className="h-full">
@@ -349,7 +309,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Pending">Pending</option>
               <option value="Success">Success</option>
               <option value="Failed">Failed</option>
-              <option value="Reviewed">Reviewed</option>
+              <option value="Pending Review">Pending Review</option>
             </select>
           </div>
         </CardHeader>
@@ -360,20 +320,20 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             <input
               type="text"
               placeholder="Search files..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={e => onSearchTermChange ? onSearchTermChange(e.target.value) : undefined}
               className="border p-1 rounded text-sm flex-1"
             />
             <select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as any)}
+              onChange={e => onStatusFilterChange ? onStatusFilterChange(e.target.value) : undefined}
               className="border p-1 rounded text-sm"
             >
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="success">Success</option>
-              <option value="failed">Failed</option>
-              <option value="pending_review">Pending Review</option>
+              <option value="All">All</option>
+              <option value="Pending">Pending</option>
+              <option value="Success">Success</option>
+              <option value="Failed">Failed</option>
+              <option value="Pending Review">Pending Review</option>
             </select>
           </div>
           <div className="flex items-center mb-2">
