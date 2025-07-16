@@ -5,11 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionResult, ConversionReport } from '@/types';
-<<<<<<< HEAD
-=======
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 import { Button } from '@/components/ui/button';
 
 import CodeUploader from '@/components/CodeUploader';
@@ -17,16 +14,10 @@ import ReportViewer from '@/components/ReportViewer';
 import Help from '@/components/Help';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ConversionPanel from '@/components/dashboard/ConversionPanel';
-<<<<<<< HEAD
 import PendingActionsPanel from '@/components/PendingActionsPanel';
+import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboard';
 import { useEnhancedConversionLogic } from '@/components/EnhancedConversionLogic';
 import { useMigrationManager } from '@/components/MigrationManager';
-=======
-import DevReviewPanel from '@/components/PendingActionsPanel';
-import PerformanceMetricsDashboard from '@/components/PerformanceMetricsDashboard';
-import { useConversionLogic } from '@/components/dashboard/ConversionLogic';
-import { useMigrationManager } from '@/components/dashboard/MigrationManager';
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -60,10 +51,11 @@ const Dashboard = () => {
   const [conversionResults, setConversionResults] = useState<ConversionResult[]>([]);
   const [selectedAiModel, setSelectedAiModel] = useState<string>('gemini-2.5-pro');
   const [showHelp, setShowHelp] = useState(false);
-<<<<<<< HEAD
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
 
   // Try to initialize hooks with error handling
   let migrationManager;
@@ -91,13 +83,6 @@ const Dashboard = () => {
 
   const { handleCodeUpload, currentMigrationId, startNewMigration, cleanupEmptyMigrations } = migrationManager;
   const { unreviewedFiles: unreviewedFilesData } = unreviewedFiles;
-=======
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingCompleteMigration, setPendingCompleteMigration] = useState(false);
-
-  const { handleCodeUpload } = useMigrationManager();
-  const { unreviewedFiles, addUnreviewedFile, refreshUnreviewedFiles } = useUnreviewedFiles();
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   const {
     isConverting,
     convertingFileIds,
@@ -126,7 +111,6 @@ const Dashboard = () => {
   }, [files, selectedFile]);
 
   useEffect(() => {
-<<<<<<< HEAD
     // Expose a reconvert handler for ConversionViewer
     (window as any).handleFileReconvert = async (fileId: string, customPrompt: string) => {
       setCustomPrompt(customPrompt); // Set the custom prompt for this reconversion
@@ -151,7 +135,8 @@ const Dashboard = () => {
       cleanupEmptyMigrations();
     }
   }, [user, loading, cleanupEmptyMigrations]);
-=======
+
+  useEffect(() => {
     if (selectedFile && files.length > 0) {
       const updated = files.find(f => f.id === selectedFile.id);
       if (updated && updated !== selectedFile) {
@@ -203,7 +188,6 @@ const Dashboard = () => {
       );
     }
   }, [activeTab, unreviewedFiles]);
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
 
   const handleCodeUploadWrapper = async (uploadedFiles: any[]) => {
     try {
@@ -283,26 +267,7 @@ const Dashboard = () => {
       console.log('Files with success status:', files.filter(f => f.conversionStatus === 'success'));
       
       const newReport = await handleGenerateReport();
-<<<<<<< HEAD
-      console.log('Generated report:', newReport);
-      
-      if (newReport) {
-        setReport(newReport);
-        setShowReport(true);
-        toast({
-          title: "Report Generated",
-          description: "Migration report has been generated successfully",
-        });
-      } else {
-        toast({
-          title: "Report Generation Failed",
-          description: "No report was generated. Please ensure you have converted files.",
-          variant: "destructive",
-        });
-      }
-=======
       navigate(`/report/${newReport.id}`);
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
@@ -321,33 +286,6 @@ const Dashboard = () => {
     navigate('/');
   };
 
-<<<<<<< HEAD
-  // Add this function to reset the migration state
-  const handleResetMigration = async () => {
-    setFiles([]);
-    setConversionResults([]);
-    setSelectedFile(null);
-    setReport(null);
-    setActiveTab('upload');
-    try {
-      await handleCodeUpload([]); // This will start a new migration session
-      toast({
-        title: 'Migration Reset',
-        description: 'The current migration has been reset. You can start a new conversion.',
-      });
-    } catch (error) {
-      console.error('Error resetting migration:', error);
-      toast({
-        title: 'Reset Error',
-        description: 'Failed to reset migration. Please try again.',
-        variant: "destructive",
-      });
-    }
-  };
-
-  console.log("Dashboard render - loading:", loading, "user:", user, "profile:", profile);
-
-=======
   const handleResetAndUpload = () => {
     setFiles([]);
     setSelectedFile(null);
@@ -460,7 +398,6 @@ const Dashboard = () => {
     }
   };
 
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   if (loading) {
     console.log("Dashboard showing loading state");
     return (
@@ -478,8 +415,8 @@ const Dashboard = () => {
     return null;
   }
 
-<<<<<<< HEAD
-  if (showReport && report) {
+  if (location.state?.activeTab === 'conversion' && location.state?.recentReport) {
+    const report = location.state.recentReport;
     return (
       <div className="min-h-screen bg-gray-50">
         <DashboardHeader
@@ -491,16 +428,13 @@ const Dashboard = () => {
         <main className="container mx-auto px-4 py-8">
           <ReportViewer 
             report={report} 
-            onBack={() => setShowReport(false)} 
+            onBack={() => setActiveTab('conversion')} 
           />
         </main>
       </div>
     );
   }
 
-  console.log("Dashboard rendering main content");
-=======
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader
@@ -522,15 +456,10 @@ const Dashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="devReview" className="flex items-center gap-2 relative">
               <Clock className="h-4 w-4" />
-<<<<<<< HEAD
-              Pending Actions
-              {unreviewedFilesData.length > 0 && (
-=======
               Dev Review
               {unreviewedFiles.length > 0 && (
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {unreviewedFilesData.length}
+                  {unreviewedFiles.length}
                 </span>
               )}
             </TabsTrigger>
@@ -545,31 +474,6 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="conversion">
-<<<<<<< HEAD
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-end">
-                <Button variant="destructive" onClick={handleResetMigration}>
-                  Reset Migration
-                </Button>
-              </div>
-              <ConversionPanel
-                files={files}
-                selectedFile={selectedFile}
-                isConverting={isConverting}
-                convertingFileIds={convertingFileIds}
-                onFileSelect={handleFileSelect}
-                onConvertFile={handleConvertFile}
-                onConvertAllByType={handleConvertAllByType}
-                onConvertAll={handleConvertAll}
-                onFixFile={handleFixFile}
-                onManualEdit={handleManualEdit}
-                onDismissIssue={handleDismissIssue}
-                onGenerateReport={handleGenerateReportWrapper}
-                onUploadRedirect={() => setActiveTab('upload')}
-                onConvertSelected={handleConvertSelected}
-              />
-            </div>
-=======
             <ConversionPanel
               files={files}
               selectedFile={selectedFile}
@@ -588,7 +492,6 @@ const Dashboard = () => {
               onMoveToDevReview={handleMoveToDevReview}
               canCompleteMigration={canCompleteMigration}
             />
->>>>>>> c87813688d0b740fce765260f0e1a703e70a7ea1
           </TabsContent>
 
           <TabsContent value="metrics">
