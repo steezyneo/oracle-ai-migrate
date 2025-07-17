@@ -337,6 +337,58 @@ export const useConversionLogic = (
     return { ...report, id: data.id };
   }, [files, user]);
 
+  const handleBatchConvertFiles = useCallback(async (fileIds: string[]) => {
+    setIsConverting(true);
+    setConvertingFileIds(fileIds);
+    await Promise.all(
+      fileIds.map(async (fileId) => {
+        try {
+          const file = files.find(f => f.id === fileId);
+          if (!file) return;
+          const result = await convertSybaseToOracle(file, selectedAiModel);
+          const conversionResult: ConversionResult = {
+            id: result.id,
+            originalFile: {
+              id: file.id,
+              name: file.name,
+              content: file.content,
+              type: file.type,
+              status: 'pending'
+            },
+            aiGeneratedCode: result.convertedCode,
+            convertedCode: result.convertedCode,
+            issues: result.issues,
+            dataTypeMapping: result.dataTypeMapping,
+            performance: result.performance,
+            status: result.status
+          };
+          setConversionResults(prev => [...prev, conversionResult]);
+          setFiles(prev => prev.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  conversionStatus: mapConversionStatus(result.status),
+                  convertedContent: result.convertedCode,
+                  dataTypeMapping: result.dataTypeMapping,
+                  issues: result.issues,
+                  performanceMetrics: result.performance
+                }
+              : f
+          ));
+          await supabase.from('migration_files').update({
+            conversion_status: mapConversionStatus(result.status),
+            converted_content: result.convertedCode
+          }).eq('file_name', file.name);
+        } catch (error) {
+          setFiles(prev => prev.map(f => f.id === fileId ? { ...f, conversionStatus: 'failed' } : f));
+        } finally {
+          setConvertingFileIds(prev => prev.filter(id => id !== fileId));
+        }
+      })
+    );
+    setIsConverting(false);
+  }, [files, selectedAiModel, setFiles, setConversionResults]);
+
   return {
     isConverting,
     convertingFileIds,
@@ -345,5 +397,6 @@ export const useConversionLogic = (
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
+    handleBatchConvertFiles, // export the new function
   };
 };

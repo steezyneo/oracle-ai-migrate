@@ -62,6 +62,7 @@ const Dashboard = () => {
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
+    handleBatchConvertFiles, // add this
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
 
   // Enable Complete Migration in Conversion tab if there is at least one successfully converted file
@@ -216,10 +217,12 @@ const Dashboard = () => {
   };
 
   const handleResetAndUpload = () => {
-    setFiles([]);
-    setSelectedFile(null);
-    setConversionResults([]);
     setActiveTab('upload');
+    setTimeout(() => {
+      setFiles([]);
+      setSelectedFile(null);
+      setConversionResults([]);
+    }, 0);
   };
 
   const handleMoveToDevReview = async () => {
@@ -394,10 +397,11 @@ const Dashboard = () => {
               onManualEdit={handleManualEdit}
               onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
-              onUploadRedirect={handleResetAndUpload}
-              onClear={handleResetAndUpload}
+              onUploadRedirect={handleResetAndUpload} // This will reset the migration
+              onClear={undefined} // Remove or set to undefined
               onMoveToDevReview={handleMoveToDevReview}
               canCompleteMigration={canCompleteMigration}
+              onBatchConvertFiles={handleBatchConvertFiles}
             />
           </TabsContent>
 

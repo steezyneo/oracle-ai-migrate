@@ -41,15 +41,16 @@ interface FileTreeViewProps {
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileIds?: string[];
-  onClear?: () => void;
+  // onClear?: () => void; // Remove this prop
   hideActions?: boolean;
   defaultExpandedSections?: string[];
   searchTerm?: string;
   statusFilter?: string;
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
-  // New prop to notify parent of selected files
   onSelectedFilesChange?: (selected: string[]) => void;
+  onResetMigration?: () => void; // Add this prop
+  // isBatchPaused?: boolean; // Remove this prop
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -62,7 +63,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   selectedFile,
   isConverting = false,
   convertingFileIds = [],
-  onClear,
+  // onClear, // Remove this prop
   hideActions = false,
   defaultExpandedSections = [],
   searchTerm = '',
@@ -70,6 +71,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onSearchTermChange,
   onStatusFilterChange,
   onSelectedFilesChange,
+  onResetMigration, // Add this prop
+  // isBatchPaused, // Remove this prop
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
@@ -142,7 +145,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
-    if (isConverting && convertingFileIds.includes(fileId)) {
+    if (isConverting && convertingFileIds && convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
     if (status === 'success') {
@@ -177,6 +180,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         const allChecked = sectionFiles.length > 0 && sectionFiles.every(f => selectedFiles.includes(f.id));
         const someChecked = sectionFiles.some(f => selectedFiles.includes(f.id));
         ref.indeterminate = someChecked && !allChecked;
+        ref.checked = allChecked;
       }
     });
   }, [selectedFiles, filteredFiles]);
@@ -319,9 +323,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <CardTitle className="text-lg">Project Structure</CardTitle>
             </div>
             <div className="flex gap-2">
-              {onClear && files.length > 0 && (
-                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                  Clear
+              {/* Remove Clear button, add Reset Migration button */}
+              {onResetMigration && (
+                <Button variant="destructive" onClick={onResetMigration} className="text-xs px-3 py-1 h-7">
+                  Reset Migration
                 </Button>
               )}
               {onConvertAll && totalPending > 0 && (
@@ -355,6 +360,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Failed">Failed</option>
               <option value="Reviewed">Reviewed</option>
             </select>
+          </div>
+          {/* Select All Button */}
+          <div className="flex flex-row items-center gap-2 mb-2">
+            <Button
+              variant={filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id)) ? 'default' : 'outline'}
+              size="sm"
+              onClick={selectAllFiles}
+              className="text-xs px-3 py-1 h-7"
+            >
+              {filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id)) ? 'Deselect All' : 'Select All'}
+            </Button>
+            <span className="text-xs text-gray-500">({selectedFiles.length} selected)</span>
           </div>
         </CardHeader>
       )}

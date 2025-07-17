@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Loader2 } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface FileItem {
   id: string;
@@ -37,6 +37,7 @@ interface ConversionPanelProps {
   onClear: () => void;
   onMoveToDevReview: () => void;
   canCompleteMigration: boolean;
+  onBatchConvertFiles?: (fileIds: string[]) => Promise<void>;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -56,35 +57,41 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onClear,
   onMoveToDevReview,
   canCompleteMigration,
+  onBatchConvertFiles,
 }) => {
   // State for selected files and batch conversion
   const [selectedFileIds, setSelectedFileIds] = React.useState<string[]>([]);
   const [isBatchConverting, setIsBatchConverting] = React.useState(false);
   const [batchProgress, setBatchProgress] = React.useState<number>(0);
-  const [isBatchPaused, setIsBatchPaused] = React.useState(false);
   const [isBatchCancelled, setIsBatchCancelled] = React.useState(false);
+  const [showResetDialog, setShowResetDialog] = React.useState(false);
 
   // Handler for batch conversion
   const handleBatchConvert = async () => {
     setIsBatchConverting(true);
     setBatchProgress(0);
-    setIsBatchPaused(false);
     setIsBatchCancelled(false);
     const ids = [...selectedFileIds];
     let processed = 0;
-    for (let i = 0; i < ids.length; i += 5) {
+    let shouldContinue = true;
+    for (let i = 0; i < ids.length && shouldContinue; i += 5) {
       if (isBatchCancelled) break;
-      while (isBatchPaused) {
-        await new Promise(res => setTimeout(res, 500));
-      }
       const batch = ids.slice(i, i + 5);
-      await Promise.all(batch.map(async (fileId) => {
-        onConvertFile(fileId);
-        // Wait for conversion to start (simulate API call delay)
-        await new Promise(res => setTimeout(res, 100));
-      }));
-      processed += batch.length;
-      setBatchProgress(processed);
+      for (const fileId of batch) {
+        if (isBatchCancelled) {
+          shouldContinue = false;
+          break;
+        }
+        if (onBatchConvertFiles) {
+          await onBatchConvertFiles([fileId]);
+        } else {
+          onConvertFile(fileId);
+          await new Promise(res => setTimeout(res, 100));
+        }
+        processed += 1;
+        setBatchProgress(processed);
+      }
+      if (!shouldContinue) break;
       if (i + 5 < ids.length) {
         await new Promise(res => setTimeout(res, 2000)); // 2 seconds between batches
       }
@@ -92,13 +99,18 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     setIsBatchConverting(false);
   };
 
-  // Handler for pause/cancel
-  const handlePause = () => setIsBatchPaused(true);
-  const handleResume = () => setIsBatchPaused(false);
-  const handleCancel = () => {
-    setIsBatchCancelled(true);
-    setIsBatchConverting(false);
-    setIsBatchPaused(false);
+  // Handler to reset migration
+  const handleResetMigration = () => {
+    setShowResetDialog(true);
+  };
+  const confirmResetMigration = () => {
+    setShowResetDialog(false);
+    if (typeof onUploadRedirect === 'function') {
+      onUploadRedirect();
+    }
+  };
+  const cancelResetMigration = () => {
+    setShowResetDialog(false);
   };
 
   if (files.length === 0) {
@@ -129,7 +141,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
       statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
+      true;
     return matchesSearch && matchesStatus;
   });
   // Group filtered files by type to match sidebar order
@@ -162,10 +174,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           {isBatchConverting && (
             <>
               <span className="text-xs text-gray-600">{batchProgress}/{selectedFileIds.length} converted</span>
-              <Button size="sm" variant="outline" onClick={isBatchPaused ? handleResume : handlePause}>
-                {isBatchPaused ? 'Resume' : 'Pause'}
-              </Button>
-              <Button size="sm" variant="destructive" onClick={handleCancel}>
+              <Button size="sm" variant="destructive" onClick={() => setIsBatchCancelled(true)}>
                 Cancel
               </Button>
             </>
@@ -181,7 +190,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
-          onClear={onClear}
           hideActions={false}
           defaultExpandedSections={['tables','procedures','triggers']}
           searchTerm={searchTerm}
@@ -189,7 +197,21 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onSearchTermChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
           onSelectedFilesChange={setSelectedFileIds}
+          onResetMigration={handleResetMigration}
         />
+        {/* Confirmation Dialog for Reset Migration */}
+        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Migration?</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">Are you sure you want to reset the current migration? This will clear all uploaded files and progress.</div>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelResetMigration}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmResetMigration}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="col-span-8">
