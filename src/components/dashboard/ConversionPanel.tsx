@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface FileItem {
   id: string;
@@ -65,6 +66,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   const [batchProgress, setBatchProgress] = React.useState<number>(0);
   const [isBatchPaused, setIsBatchPaused] = React.useState(false);
   const [isBatchCancelled, setIsBatchCancelled] = React.useState(false);
+  const [showResetDialog, setShowResetDialog] = React.useState(false);
 
   // Handler for batch conversion
   const handleBatchConvert = async () => {
@@ -104,6 +106,20 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     setIsBatchCancelled(true);
     setIsBatchConverting(false);
     setIsBatchPaused(false);
+  };
+
+  // Handler to reset migration
+  const handleResetMigration = () => {
+    setShowResetDialog(true);
+  };
+  const confirmResetMigration = () => {
+    setShowResetDialog(false);
+    if (typeof onUploadRedirect === 'function') {
+      onUploadRedirect();
+    }
+  };
+  const cancelResetMigration = () => {
+    setShowResetDialog(false);
   };
 
   if (files.length === 0) {
@@ -186,7 +202,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
-          onClear={onClear}
           hideActions={false}
           defaultExpandedSections={['tables','procedures','triggers']}
           searchTerm={searchTerm}
@@ -194,7 +209,21 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onSearchTermChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
           onSelectedFilesChange={setSelectedFileIds}
+          onResetMigration={handleResetMigration}
         />
+        {/* Confirmation Dialog for Reset Migration */}
+        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Migration?</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">Are you sure you want to reset the current migration? This will clear all uploaded files and progress.</div>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelResetMigration}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmResetMigration}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="col-span-8">

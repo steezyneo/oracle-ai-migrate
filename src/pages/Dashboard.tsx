@@ -395,11 +395,11 @@ const Dashboard = () => {
               onManualEdit={handleManualEdit}
               onDismissIssue={handleDismissIssue}
               onGenerateReport={handleGenerateReportWrapper}
-              onUploadRedirect={handleResetAndUpload}
-              onClear={handleResetAndUpload}
+              onUploadRedirect={handleResetAndUpload} // This will reset the migration
+              onClear={undefined} // Remove or set to undefined
               onMoveToDevReview={handleMoveToDevReview}
               canCompleteMigration={canCompleteMigration}
-              onBatchConvertFiles={handleBatchConvertFiles} // pass the batch handler
+              onBatchConvertFiles={handleBatchConvertFiles}
             />
           </TabsContent>
 

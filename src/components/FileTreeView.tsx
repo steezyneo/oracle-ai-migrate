@@ -41,15 +41,15 @@ interface FileTreeViewProps {
   selectedFile: FileItem | null;
   isConverting?: boolean;
   convertingFileIds?: string[];
-  onClear?: () => void;
+  // onClear?: () => void; // Remove this prop
   hideActions?: boolean;
   defaultExpandedSections?: string[];
   searchTerm?: string;
   statusFilter?: string;
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
-  // New prop to notify parent of selected files
   onSelectedFilesChange?: (selected: string[]) => void;
+  onResetMigration?: () => void; // Add this prop
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -62,7 +62,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   selectedFile,
   isConverting = false,
   convertingFileIds = [],
-  onClear,
+  // onClear, // Remove this prop
   hideActions = false,
   defaultExpandedSections = [],
   searchTerm = '',
@@ -70,6 +70,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onSearchTermChange,
   onStatusFilterChange,
   onSelectedFilesChange,
+  onResetMigration, // Add this prop
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
@@ -319,9 +320,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <CardTitle className="text-lg">Project Structure</CardTitle>
             </div>
             <div className="flex gap-2">
-              {onClear && files.length > 0 && (
-                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                  Clear
+              {/* Remove Clear button, add Reset Migration button */}
+              {onResetMigration && (
+                <Button variant="destructive" onClick={onResetMigration} className="text-xs px-3 py-1 h-7">
+                  Reset Migration
                 </Button>
               )}
               {onConvertAll && totalPending > 0 && (
