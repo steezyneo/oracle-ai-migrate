@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Pause, Loader2 } from 'lucide-react';
+import { FileText, Download, Loader2 } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -64,7 +64,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   const [selectedFileIds, setSelectedFileIds] = React.useState<string[]>([]);
   const [isBatchConverting, setIsBatchConverting] = React.useState(false);
   const [batchProgress, setBatchProgress] = React.useState<number>(0);
-  const [isBatchPaused, setIsBatchPaused] = React.useState(false);
   const [isBatchCancelled, setIsBatchCancelled] = React.useState(false);
   const [showResetDialog, setShowResetDialog] = React.useState(false);
 
@@ -72,7 +71,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   const handleBatchConvert = async () => {
     setIsBatchConverting(true);
     setBatchProgress(0);
-    setIsBatchPaused(false);
     setIsBatchCancelled(false);
     const ids = [...selectedFileIds];
     let processed = 0;
@@ -80,16 +78,11 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     for (let i = 0; i < ids.length && shouldContinue; i += 5) {
       if (isBatchCancelled) break;
       const batch = ids.slice(i, i + 5);
-      // For each file in the batch, check pause before starting
       for (const fileId of batch) {
-        while (isBatchPaused) {
-          await new Promise(res => setTimeout(res, 100));
-          if (isBatchCancelled) {
-            shouldContinue = false;
-            break;
-          }
+        if (isBatchCancelled) {
+          shouldContinue = false;
+          break;
         }
-        if (!shouldContinue) break;
         if (onBatchConvertFiles) {
           await onBatchConvertFiles([fileId]);
         } else {
@@ -105,15 +98,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       }
     }
     setIsBatchConverting(false);
-  };
-
-  // Handler for pause/cancel
-  const handlePause = () => setIsBatchPaused(true);
-  const handleResume = () => setIsBatchPaused(false);
-  const handleCancel = () => {
-    setIsBatchCancelled(true);
-    setIsBatchConverting(false);
-    setIsBatchPaused(false);
   };
 
   // Handler to reset migration
@@ -191,10 +175,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           {isBatchConverting && (
             <>
               <span className="text-xs text-gray-600">{batchProgress}/{selectedFileIds.length} converted</span>
-              <Button size="sm" variant="outline" onClick={isBatchPaused ? handleResume : handlePause}>
-                {isBatchPaused ? <><Pause className="h-4 w-4 mr-1" /> Resume</> : <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Pause</>}
-              </Button>
-              <Button size="sm" variant="destructive" onClick={handleCancel}>
+              <Button size="sm" variant="destructive" onClick={() => setIsBatchCancelled(true)}>
                 Cancel
               </Button>
             </>
@@ -218,7 +199,6 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onStatusFilterChange={setStatusFilter}
           onSelectedFilesChange={setSelectedFileIds}
           onResetMigration={handleResetMigration}
-          isBatchPaused={isBatchPaused}
         />
         {/* Confirmation Dialog for Reset Migration */}
         <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>

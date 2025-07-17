@@ -16,8 +16,7 @@ import {
   ChevronRight,
   RefreshCw,
   AlertTriangle,
-  Loader2,
-  Pause
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +50,7 @@ interface FileTreeViewProps {
   onStatusFilterChange?: (status: string) => void;
   onSelectedFilesChange?: (selected: string[]) => void;
   onResetMigration?: () => void; // Add this prop
-  isBatchPaused?: boolean; // Add this prop
+  // isBatchPaused?: boolean; // Remove this prop
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -73,7 +72,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onStatusFilterChange,
   onSelectedFilesChange,
   onResetMigration, // Add this prop
-  isBatchPaused, // Add this prop
+  // isBatchPaused, // Remove this prop
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
@@ -147,9 +146,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
     if (isConverting && convertingFileIds && convertingFileIds.includes(fileId)) {
-      if (isBatchPaused) {
-        return <Pause className="h-4 w-4 text-blue-600" />;
-      }
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
     if (status === 'success') {
