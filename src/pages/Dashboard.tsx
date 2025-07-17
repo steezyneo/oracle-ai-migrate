@@ -423,7 +423,7 @@ const Dashboard = () => {
         <Help onClose={() => setShowHelp(false)} />
       )}
       <footer className="w-full text-center py-4 text-gray-500 text-sm border-t bg-white/80 mt-8">
-        © 2025 Migration Platform. All rights reserved. Developed by Mouktik (steezyneo) | GitHub: steezyneo/oracle-ai-migrate
+        © 2025 Migration Platform. All rights reserved. Developed by CosmoAgents | <a href="https://www.github.com/steezyneo/oracle-ai-migrate" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>GitHub</a>
       </footer>
     </div>
   );
