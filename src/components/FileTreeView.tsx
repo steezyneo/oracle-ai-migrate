@@ -142,7 +142,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   const getStatusIcon = (status: 'pending' | 'success' | 'failed', fileId: string) => {
-    if (isConverting && convertingFileIds.includes(fileId)) {
+    if (isConverting && convertingFileIds && convertingFileIds.includes(fileId)) {
       return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
     }
     if (status === 'success') {
@@ -355,6 +355,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Failed">Failed</option>
               <option value="Reviewed">Reviewed</option>
             </select>
+          </div>
+          {/* Select All Button */}
+          <div className="flex flex-row items-center gap-2 mb-2">
+            <Button
+              variant={filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id)) ? 'default' : 'outline'}
+              size="sm"
+              onClick={selectAllFiles}
+              className="text-xs px-3 py-1 h-7"
+            >
+              {filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id)) ? 'Deselect All' : 'Select All'}
+            </Button>
+            <span className="text-xs text-gray-500">({selectedFiles.length} selected)</span>
           </div>
         </CardHeader>
       )}
