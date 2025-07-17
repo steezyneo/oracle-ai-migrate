@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -142,7 +141,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
       statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Pending Review' ? file.conversionStatus === 'pending_review' : true;
+      true;
     return matchesSearch && matchesStatus;
   });
   // Group filtered files by type to match sidebar order
