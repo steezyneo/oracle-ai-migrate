@@ -227,16 +227,8 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 px-4">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <Database className="h-6 w-6" />
-            <span className="text-lg font-semibold">Sybase to Oracle Migration</span>
-          </div>
-          <p className="text-gray-400">
-            © 2024 Migration Platform. All rights reserved.
-          </p>
-        </div>
+      <footer className="w-full text-center py-4 text-gray-500 text-sm border-t bg-white/80 mt-8">
+        © 2025 Migration Platform. All rights reserved. Developed by CosmoAgents | <a href="https://www.github.com/steezyneo/oracle-ai-migrate" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>GitHub</a>
       </footer>
     </div>
   );
