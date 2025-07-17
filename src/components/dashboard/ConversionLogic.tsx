@@ -317,7 +317,7 @@ export const useConversionLogic = (
       timestamp: new Date().toISOString(),
       filesProcessed: files.length,
       successCount: files.filter(f => f.conversionStatus === 'success').length,
-      warningCount: 0,
+      warningCount: files.filter(f => f.conversionStatus === 'warning').length,
       errorCount: files.filter(f => f.conversionStatus === 'failed').length,
       results: conversionResults,
       summary: reportSummary,
