@@ -79,26 +79,27 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     let shouldContinue = true;
     for (let i = 0; i < ids.length && shouldContinue; i += 5) {
       if (isBatchCancelled) break;
-      // Wait for resume if paused
-      while (isBatchPaused) {
-        await new Promise(res => setTimeout(res, 100));
-        if (isBatchCancelled) {
-          shouldContinue = false;
-          break;
-        }
-      }
-      if (!shouldContinue) break;
       const batch = ids.slice(i, i + 5);
-      if (onBatchConvertFiles) {
-        await onBatchConvertFiles(batch);
-      } else {
-        await Promise.all(batch.map(async (fileId) => {
+      // For each file in the batch, check pause before starting
+      for (const fileId of batch) {
+        while (isBatchPaused) {
+          await new Promise(res => setTimeout(res, 100));
+          if (isBatchCancelled) {
+            shouldContinue = false;
+            break;
+          }
+        }
+        if (!shouldContinue) break;
+        if (onBatchConvertFiles) {
+          await onBatchConvertFiles([fileId]);
+        } else {
           onConvertFile(fileId);
           await new Promise(res => setTimeout(res, 100));
-        }));
+        }
+        processed += 1;
+        setBatchProgress(processed);
       }
-      processed += batch.length;
-      setBatchProgress(processed);
+      if (!shouldContinue) break;
       if (i + 5 < ids.length) {
         await new Promise(res => setTimeout(res, 2000)); // 2 seconds between batches
       }

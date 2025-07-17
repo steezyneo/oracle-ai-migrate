@@ -218,9 +218,11 @@ const Dashboard = () => {
 
   const handleResetAndUpload = () => {
     setActiveTab('upload');
-    setFiles([]);
-    setSelectedFile(null);
-    setConversionResults([]);
+    setTimeout(() => {
+      setFiles([]);
+      setSelectedFile(null);
+      setConversionResults([]);
+    }, 0);
   };
 
   const handleMoveToDevReview = async () => {
