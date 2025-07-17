@@ -217,10 +217,10 @@ const Dashboard = () => {
   };
 
   const handleResetAndUpload = () => {
+    setActiveTab('upload');
     setFiles([]);
     setSelectedFile(null);
     setConversionResults([]);
-    setActiveTab('upload');
   };
 
   const handleMoveToDevReview = async () => {
