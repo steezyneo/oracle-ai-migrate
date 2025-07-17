@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Pause, Loader2 } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -184,7 +184,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             <>
               <span className="text-xs text-gray-600">{batchProgress}/{selectedFileIds.length} converted</span>
               <Button size="sm" variant="outline" onClick={isBatchPaused ? handleResume : handlePause}>
-                {isBatchPaused ? 'Resume' : 'Pause'}
+                {isBatchPaused ? <Pause className="h-4 w-4 mr-1" /> : <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               </Button>
               <Button size="sm" variant="destructive" onClick={handleCancel}>
                 Cancel
@@ -210,6 +210,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           onStatusFilterChange={setStatusFilter}
           onSelectedFilesChange={setSelectedFileIds}
           onResetMigration={handleResetMigration}
+          isBatchPaused={isBatchPaused}
         />
         {/* Confirmation Dialog for Reset Migration */}
         <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
