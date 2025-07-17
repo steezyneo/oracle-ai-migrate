@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,8 @@ interface FileTreeViewProps {
   statusFilter?: string;
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
+  // New prop to notify parent of selected files
+  onSelectedFilesChange?: (selected: string[]) => void;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -67,10 +69,38 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   statusFilter = 'All',
   onSearchTermChange,
   onStatusFilterChange,
+  onSelectedFilesChange,
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
   );
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+
+  // Notify parent when selected files change
+  React.useEffect(() => {
+    if (typeof onSelectedFilesChange === 'function') {
+      onSelectedFilesChange(selectedFiles);
+    }
+  }, [selectedFiles, onSelectedFilesChange]);
+
+  const isFileSelected = (fileId: string) => selectedFiles.includes(fileId);
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles(prev =>
+      prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
+    );
+  };
+  const selectAllInSection = (sectionFiles: FileItem[]) => {
+    const sectionIds = sectionFiles.map(f => f.id);
+    const allSelected = sectionIds.every(id => selectedFiles.includes(id));
+    setSelectedFiles(prev =>
+      allSelected ? prev.filter(id => !sectionIds.includes(id)) : Array.from(new Set([...prev, ...sectionIds]))
+    );
+  };
+  const selectAllFiles = () => {
+    const allIds = filteredFiles.map(f => f.id);
+    const allSelected = allIds.every(id => selectedFiles.includes(id));
+    setSelectedFiles(allSelected ? [] : allIds);
+  };
 
   // Filter files by search and status
   const filteredFiles = files.filter(file => {
@@ -124,6 +154,33 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return null;
   };
 
+  // Refs for indeterminate checkboxes
+  const allFilesCheckboxRef = useRef<HTMLInputElement>(null);
+  const sectionCheckboxRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Set indeterminate state for all files checkbox
+  useEffect(() => {
+    if (allFilesCheckboxRef.current) {
+      const allChecked = filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id));
+      const someChecked = filteredFiles.some(f => selectedFiles.includes(f.id));
+      allFilesCheckboxRef.current.indeterminate = someChecked && !allChecked;
+    }
+    // Set indeterminate for each section
+    ['tables', 'procedures', 'triggers', 'other'].forEach(sectionKey => {
+      const sectionFiles = getFilesByType(
+        sectionKey === 'tables' ? 'table' :
+        sectionKey === 'procedures' ? 'procedure' :
+        sectionKey === 'triggers' ? 'trigger' : 'other'
+      );
+      const ref = sectionCheckboxRefs.current[sectionKey];
+      if (ref) {
+        const allChecked = sectionFiles.length > 0 && sectionFiles.every(f => selectedFiles.includes(f.id));
+        const someChecked = sectionFiles.some(f => selectedFiles.includes(f.id));
+        ref.indeterminate = someChecked && !allChecked;
+      }
+    });
+  }, [selectedFiles, filteredFiles]);
+
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
     const isExpanded = expandedSections.has(sectionKey);
     const pendingCount = sectionFiles.filter(f => f.conversionStatus === 'pending').length;
@@ -133,19 +190,29 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return (
       <div key={sectionKey} className="mb-2">
         <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleSection(sectionKey)}
-            className="flex-1 justify-start p-0 h-auto font-medium"
-          >
-            {isExpanded ? 
-              <ChevronDown className="h-4 w-4 mr-2" /> : 
-              <ChevronRight className="h-4 w-4 mr-2" />
-            }
-            {getSectionIcon(sectionKey)}
-            <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              ref={el => { sectionCheckboxRefs.current[sectionKey] = el; }}
+              checked={sectionFiles.length > 0 && sectionFiles.every(f => selectedFiles.includes(f.id))}
+              onChange={() => selectAllInSection(sectionFiles)}
+              className="mr-2"
+              aria-label={`Select all ${sectionTitle}`}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleSection(sectionKey)}
+              className="flex-1 justify-start p-0 h-auto font-medium"
+            >
+              {isExpanded ? 
+                <ChevronDown className="h-4 w-4 mr-2" /> : 
+                <ChevronRight className="h-4 w-4 mr-2" />
+              }
+              {getSectionIcon(sectionKey)}
+              <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
+            </Button>
+          </div>
           {!hideActions && pendingCount > 0 && onConvertAllByType && (
             <Button
               size="sm"
@@ -170,6 +237,16 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 onClick={() => onFileSelect(file)}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={isFileSelected(file.id)}
+                    onChange={e => {
+                      e.stopPropagation();
+                      toggleFileSelection(file.id);
+                    }}
+                    className="mr-2"
+                    aria-label={`Select ${file.name}`}
+                  />
                   <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className={cn(
                     "text-sm truncate",
@@ -230,7 +307,17 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       {!hideActions && (
         <CardHeader className="pb-3 flex flex-col gap-2">
           <div className="flex flex-row items-center justify-between w-full mb-2">
-            <CardTitle className="text-lg">Project Structure</CardTitle>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                ref={allFilesCheckboxRef}
+                checked={filteredFiles.length > 0 && filteredFiles.every(f => selectedFiles.includes(f.id))}
+                onChange={selectAllFiles}
+                className="mr-2"
+                aria-label="Select all files"
+              />
+              <CardTitle className="text-lg">Project Structure</CardTitle>
+            </div>
             <div className="flex gap-2">
               {onClear && files.length > 0 && (
                 <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
