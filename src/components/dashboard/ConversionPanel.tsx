@@ -37,6 +37,7 @@ interface ConversionPanelProps {
   onClear: () => void;
   onMoveToDevReview: () => void;
   canCompleteMigration: boolean;
+  onBatchConvertFiles?: (fileIds: string[]) => Promise<void>;
 }
 
 const ConversionPanel: React.FC<ConversionPanelProps> = ({
@@ -56,6 +57,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onClear,
   onMoveToDevReview,
   canCompleteMigration,
+  onBatchConvertFiles,
 }) => {
   // State for selected files and batch conversion
   const [selectedFileIds, setSelectedFileIds] = React.useState<string[]>([]);
@@ -78,11 +80,14 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
         await new Promise(res => setTimeout(res, 500));
       }
       const batch = ids.slice(i, i + 5);
-      await Promise.all(batch.map(async (fileId) => {
-        onConvertFile(fileId);
-        // Wait for conversion to start (simulate API call delay)
-        await new Promise(res => setTimeout(res, 100));
-      }));
+      if (onBatchConvertFiles) {
+        await onBatchConvertFiles(batch);
+      } else {
+        await Promise.all(batch.map(async (fileId) => {
+          onConvertFile(fileId);
+          await new Promise(res => setTimeout(res, 100));
+        }));
+      }
       processed += batch.length;
       setBatchProgress(processed);
       if (i + 5 < ids.length) {

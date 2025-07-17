@@ -62,6 +62,7 @@ const Dashboard = () => {
     handleConvertAll,
     handleFixFile,
     handleGenerateReport,
+    handleBatchConvertFiles, // add this
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
 
   // Enable Complete Migration in Conversion tab if there is at least one successfully converted file
@@ -398,6 +399,7 @@ const Dashboard = () => {
               onClear={handleResetAndUpload}
               onMoveToDevReview={handleMoveToDevReview}
               canCompleteMigration={canCompleteMigration}
+              onBatchConvertFiles={handleBatchConvertFiles} // pass the batch handler
             />
           </TabsContent>
 
