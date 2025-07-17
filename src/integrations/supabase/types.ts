@@ -217,6 +217,44 @@ export type Database = {
         }
         Relationships: []
       }
+      file_comments: {
+        Row: {
+          id: string;
+          file_path: string;
+          content: string;
+          tag: 'Issue' | 'Suggestion' | 'Question' | 'Resolved' | 'Note' | 'Todo' | 'Praise';
+          created_at: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          id?: string;
+          file_path: string;
+          content: string;
+          tag: 'Issue' | 'Suggestion' | 'Question' | 'Resolved' | 'Note' | 'Todo' | 'Praise';
+          created_at?: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          id?: string;
+          file_path?: string;
+          content?: string;
+          tag?: 'Issue' | 'Suggestion' | 'Question' | 'Resolved' | 'Note' | 'Todo' | 'Praise';
+          created_at?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "file_comments_user_id_fkey",
+            columns: ["user_id"],
+            isOneToOne: false,
+            referencedRelation: "users",
+            referencedColumns: ["id"]
+          }
+        ];
+      };
     }
     Views: {
       [_ in never]: never

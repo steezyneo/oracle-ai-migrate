@@ -9,3 +9,43 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as strin
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+export const fetchCommentsByFile = async (filePath: string) => {
+  const { data, error } = await supabase
+    .from('file_comments')
+    .select('*')
+    .eq('file_path', filePath)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data as Database['public']['Tables']['file_comments']['Row'][];
+};
+
+export const addComment = async (comment: Omit<Database['public']['Tables']['file_comments']['Insert'], 'created_at' | 'updated_at' | 'id'>) => {
+  const { data, error } = await supabase
+    .from('file_comments')
+    .insert([{ ...comment }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Database['public']['Tables']['file_comments']['Row'];
+};
+
+export const editComment = async (id: string, content: string, tag: Database['public']['Tables']['file_comments']['Row']['tag']) => {
+  const { data, error } = await supabase
+    .from('file_comments')
+    .update({ content, tag, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Database['public']['Tables']['file_comments']['Row'];
+};
+
+export const deleteComment = async (id: string) => {
+  const { error } = await supabase
+    .from('file_comments')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+  return true;
+};
