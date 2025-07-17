@@ -66,10 +66,10 @@
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
   },
-  "author": "Mouktik <https://github.com/mouktikzz>",
+  "author": "Mouktik <https://github.com/steezyneo>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mouktikzz/sybase-oracle"
+    "url": "https://github.com/steezyneo/sybase-oracle"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
