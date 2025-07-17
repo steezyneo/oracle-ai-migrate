@@ -15,10 +15,11 @@ import { cn } from '@/lib/utils';
 interface DevReviewPanelProps {
   canCompleteMigration: boolean;
   onCompleteMigration: () => void;
+  onFileReviewed: () => void; // new prop
 }
 
-const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, onCompleteMigration }) => {
-  const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile } = useUnreviewedFiles();
+const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, onCompleteMigration, onFileReviewed }) => {
+  const { unreviewedFiles, isLoading, markAsReviewed, deleteUnreviewedFile, updateUnreviewedFile, refreshUnreviewedFiles } = useUnreviewedFiles();
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
@@ -136,7 +137,8 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       setEditingFile(null);
       setEditedContent('');
     }
-    // After marking as reviewed, select next pending file if available
+    // After marking as reviewed, trigger parent refresh
+    if (onFileReviewed) await onFileReviewed();
     setSelectedFileId(
       pendingFiles.filter(f => f.id !== file.id)[0]?.id ||
       reviewedFiles.concat([{ ...file, status: 'reviewed' }])[0]?.id ||
@@ -340,11 +342,15 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           <Trash2 className="h-4 w-4 mr-2" />
           Delete
         </Button>
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCompleteMigration}>
-            <Check className="h-4 w-4 mr-2" />
-            Complete Migration
-          </Button>
-        </div>
+        <Button 
+          className="bg-green-600 hover:bg-green-700" 
+          onClick={onCompleteMigration}
+          disabled={!canCompleteMigration}
+        >
+          <Check className="h-4 w-4 mr-2" />
+          Complete Migration
+        </Button>
+      </div>
     </div>
   );
 };

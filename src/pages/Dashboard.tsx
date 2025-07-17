@@ -64,7 +64,13 @@ const Dashboard = () => {
     handleGenerateReport,
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
 
-  const canCompleteMigration = unreviewedFiles.length === 0;
+  // Enable Complete Migration if there is at least one reviewed file
+  const canCompleteMigration = unreviewedFiles.filter(f => f.status === 'reviewed').length > 0;
+
+  // Add a callback to refresh unreviewed files after a file is reviewed
+  const handleFileReviewed = async () => {
+    await refreshUnreviewedFiles();
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -404,9 +410,11 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="devReview">
-            <DevReviewPanel canCompleteMigration={canCompleteMigration} onCompleteMigration={() => {
-              handleCompleteMigration();
-            }} />
+            <DevReviewPanel 
+              canCompleteMigration={canCompleteMigration} 
+              onCompleteMigration={() => { handleCompleteMigration(); }}
+              onFileReviewed={handleFileReviewed}
+            />
           </TabsContent>
         </Tabs>
       </main>
