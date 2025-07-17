@@ -76,11 +76,18 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     setIsBatchCancelled(false);
     const ids = [...selectedFileIds];
     let processed = 0;
-    for (let i = 0; i < ids.length; i += 5) {
+    let shouldContinue = true;
+    for (let i = 0; i < ids.length && shouldContinue; i += 5) {
       if (isBatchCancelled) break;
+      // Wait for resume if paused
       while (isBatchPaused) {
-        await new Promise(res => setTimeout(res, 500));
+        await new Promise(res => setTimeout(res, 100));
+        if (isBatchCancelled) {
+          shouldContinue = false;
+          break;
+        }
       }
+      if (!shouldContinue) break;
       const batch = ids.slice(i, i + 5);
       if (onBatchConvertFiles) {
         await onBatchConvertFiles(batch);
@@ -184,7 +191,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             <>
               <span className="text-xs text-gray-600">{batchProgress}/{selectedFileIds.length} converted</span>
               <Button size="sm" variant="outline" onClick={isBatchPaused ? handleResume : handlePause}>
-                {isBatchPaused ? <Pause className="h-4 w-4 mr-1" /> : <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                {isBatchPaused ? <><Pause className="h-4 w-4 mr-1" /> Resume</> : <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Pause</>}
               </Button>
               <Button size="sm" variant="destructive" onClick={handleCancel}>
                 Cancel
