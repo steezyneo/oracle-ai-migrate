@@ -57,6 +57,50 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   onMoveToDevReview,
   canCompleteMigration,
 }) => {
+  // State for selected files and batch conversion
+  const [selectedFileIds, setSelectedFileIds] = React.useState<string[]>([]);
+  const [isBatchConverting, setIsBatchConverting] = React.useState(false);
+  const [batchProgress, setBatchProgress] = React.useState<number>(0);
+  const [isBatchPaused, setIsBatchPaused] = React.useState(false);
+  const [isBatchCancelled, setIsBatchCancelled] = React.useState(false);
+
+  // Handler for batch conversion
+  const handleBatchConvert = async () => {
+    setIsBatchConverting(true);
+    setBatchProgress(0);
+    setIsBatchPaused(false);
+    setIsBatchCancelled(false);
+    const ids = [...selectedFileIds];
+    let processed = 0;
+    for (let i = 0; i < ids.length; i += 5) {
+      if (isBatchCancelled) break;
+      while (isBatchPaused) {
+        await new Promise(res => setTimeout(res, 500));
+      }
+      const batch = ids.slice(i, i + 5);
+      await Promise.all(batch.map(async (fileId) => {
+        onConvertFile(fileId);
+        // Wait for conversion to start (simulate API call delay)
+        await new Promise(res => setTimeout(res, 100));
+      }));
+      processed += batch.length;
+      setBatchProgress(processed);
+      if (i + 5 < ids.length) {
+        await new Promise(res => setTimeout(res, 2000)); // 2 seconds between batches
+      }
+    }
+    setIsBatchConverting(false);
+  };
+
+  // Handler for pause/cancel
+  const handlePause = () => setIsBatchPaused(true);
+  const handleResume = () => setIsBatchPaused(false);
+  const handleCancel = () => {
+    setIsBatchCancelled(true);
+    setIsBatchConverting(false);
+    setIsBatchPaused(false);
+  };
+
   if (files.length === 0) {
     return (
       <Card className="max-w-2xl mx-auto">
@@ -106,6 +150,27 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
+        {/* Convert Selected Button and Progress */}
+        <div className="flex items-center gap-2 mb-2">
+          <Button
+            onClick={handleBatchConvert}
+            disabled={isBatchConverting || selectedFileIds.length === 0}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Convert Selected ({selectedFileIds.length})
+          </Button>
+          {isBatchConverting && (
+            <>
+              <span className="text-xs text-gray-600">{batchProgress}/{selectedFileIds.length} converted</span>
+              <Button size="sm" variant="outline" onClick={isBatchPaused ? handleResume : handlePause}>
+                {isBatchPaused ? 'Resume' : 'Pause'}
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
         <FileTreeView
           files={files}
           onFileSelect={onFileSelect}
@@ -123,6 +188,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           statusFilter={statusFilter}
           onSearchTermChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
+          onSelectedFilesChange={setSelectedFileIds}
         />
       </div>
 
