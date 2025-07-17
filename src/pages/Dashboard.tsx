@@ -422,6 +422,9 @@ const Dashboard = () => {
       {showHelp && (
         <Help onClose={() => setShowHelp(false)} />
       )}
+      <footer className="w-full text-center py-4 text-gray-500 text-sm border-t bg-white/80 mt-8">
+        © 2025 Migration Platform. All rights reserved.
+      </footer>
     </div>
   );
 };
