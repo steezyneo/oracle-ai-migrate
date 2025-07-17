@@ -178,6 +178,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         const allChecked = sectionFiles.length > 0 && sectionFiles.every(f => selectedFiles.includes(f.id));
         const someChecked = sectionFiles.some(f => selectedFiles.includes(f.id));
         ref.indeterminate = someChecked && !allChecked;
+        ref.checked = allChecked;
       }
     });
   }, [selectedFiles, filteredFiles]);
