@@ -64,8 +64,10 @@ const Dashboard = () => {
     handleGenerateReport,
   } = useConversionLogic(files, setFiles, setConversionResults, selectedAiModel);
 
-  // Enable Complete Migration if there is at least one reviewed file
-  const canCompleteMigration = unreviewedFiles.filter(f => f.status === 'reviewed').length > 0;
+  // Enable Complete Migration in Conversion tab if there is at least one successfully converted file
+  const canCompleteMigration = activeTab === 'conversion'
+    ? files.some(f => f.conversionStatus === 'success')
+    : unreviewedFiles.filter(f => f.status === 'reviewed').length > 0;
 
   // Add a callback to refresh unreviewed files after a file is reviewed
   const handleFileReviewed = async () => {
