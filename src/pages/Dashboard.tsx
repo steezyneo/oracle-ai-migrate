@@ -170,7 +170,6 @@ const Dashboard = () => {
   const handleManualEdit = (newContent: string) => {
     if (selectedFile) {
       const updatedFile = { ...selectedFile, convertedContent: newContent };
-      
       setFiles(prevFiles =>
         prevFiles.map(file =>
           file.id === selectedFile.id
@@ -178,8 +177,19 @@ const Dashboard = () => {
             : file
         )
       );
-      
       setSelectedFile(updatedFile);
+      // Also update conversionResults for real-time metrics
+      setConversionResults(prevResults =>
+        prevResults.map(result =>
+          result.id === selectedFile.id
+            ? {
+                ...result,
+                convertedCode: newContent,
+                // Optionally recalculate human edits or other metrics here
+              }
+            : result
+        )
+      );
     }
   };
 
