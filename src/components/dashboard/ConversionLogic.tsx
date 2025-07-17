@@ -43,6 +43,32 @@ export const useConversionLogic = (
     }
   };
 
+  async function convertViaApi(file: FileItem, aiModel: string) {
+    const response = await fetch('/api/convert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: file.content,
+        name: file.name,
+        aiModel,
+        customPrompt: '',
+        skipExplanation: true
+      })
+    });
+    if (!response.ok) throw new Error('Conversion failed');
+    const data = await response.json();
+    return {
+      id: file.id,
+      originalFile: file,
+      convertedCode: data.convertedCode,
+      issues: [],
+      dataTypeMapping: [],
+      performance: {},
+      status: 'success',
+      explanations: data.fromCache ? ['Result from cache.'] : [],
+    };
+  }
+
   const handleConvertFile = useCallback(async (fileId: string) => {
     const file = files.find(f => f.id === fileId);
     if (!file) return;
@@ -51,7 +77,7 @@ export const useConversionLogic = (
     setIsConverting(true);
     
     try {
-      const result = await convertSybaseToOracle(file, selectedAiModel);
+      const result = await convertViaApi(file, selectedAiModel);
       
       const conversionResult: ConversionResult = {
         id: result.id,
@@ -109,7 +135,7 @@ export const useConversionLogic = (
     for (const file of typeFiles) {
       setConvertingFileIds([file.id]);
       try {
-        const result = await convertSybaseToOracle(file, selectedAiModel);
+        const result = await convertViaApi(file, selectedAiModel);
         
         const conversionResult: ConversionResult = {
           id: result.id,
@@ -171,7 +197,7 @@ export const useConversionLogic = (
       await Promise.all(
         batch.map(async (file) => {
           try {
-            const result = await convertSybaseToOracle(file, selectedAiModel);
+            const result = await convertViaApi(file, selectedAiModel);
 
             const conversionResult: ConversionResult = {
               id: result.id,
@@ -240,7 +266,7 @@ export const useConversionLogic = (
         return;
       }
       // Re-run the conversion logic for the failed file
-      const result = await convertSybaseToOracle(fileToFix, selectedAiModel);
+      const result = await convertViaApi(fileToFix, selectedAiModel);
       const conversionResult: ConversionResult = {
         id: result.id,
         originalFile: {

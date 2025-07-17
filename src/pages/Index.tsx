@@ -162,7 +162,7 @@ const Index = () => {
       // Find the original file from the results
       const originalFile = fileToReconvert.originalFile;
       
-      const newResult = await convertSybaseToOracle(originalFile, selectedAIModel);
+      const newResult = await convertViaApi(originalFile, selectedAIModel);
       
       setResults(prevResults => 
         prevResults.map(result => 
@@ -231,7 +231,7 @@ const Index = () => {
           )
         );
         
-        const result = await convertSybaseToOracle(file, selectedAIModel);
+        const result = await convertViaApi(file, selectedAIModel);
         newResults.push(result);
         
         setFiles(prevFiles => 
@@ -453,3 +453,29 @@ const Index = () => {
 };
 
 export default Index;
+
+async function convertViaApi(file, aiModel) {
+  const response = await fetch('/api/convert', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: file.content,
+      name: file.name,
+      aiModel,
+      customPrompt: '',
+      skipExplanation: true
+    })
+  });
+  if (!response.ok) throw new Error('Conversion failed');
+  const data = await response.json();
+  return {
+    id: file.id,
+    originalFile: file,
+    convertedCode: data.convertedCode,
+    issues: [],
+    dataTypeMapping: [],
+    performance: {},
+    status: 'success',
+    explanations: data.fromCache ? ['Result from cache.'] : [],
+  };
+}

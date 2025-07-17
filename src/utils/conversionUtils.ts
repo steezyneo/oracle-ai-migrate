@@ -1,6 +1,12 @@
 import { ConversionResult, CodeFile, ConversionIssue, DataTypeMapping } from '@/types';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+import crypto from 'crypto';
+
+function hashContent(content: string): string {
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -12,6 +18,26 @@ export const convertSybaseToOracle = async (
   customPrompt?: string,
   skipExplanation: boolean = true
 ): Promise<ConversionResult> => {
+  // Check cache first
+  const contentHash = hashContent(file.content);
+  const { data: cached, error: cacheError } = await supabase
+    .from('conversion_cache')
+    .select('converted_code')
+    .eq('content_hash', contentHash)
+    .single();
+  if (cached && cached.converted_code) {
+    return {
+      id: uuidv4(),
+      originalFile: file,
+      convertedCode: cached.converted_code,
+      issues: [],
+      dataTypeMapping: [],
+      performance: {},
+      status: 'success',
+      explanations: ['Result from cache.'],
+    };
+  }
+
   console.log(`[CONVERT] Starting conversion for file: ${file.name} with model: ${aiModel}`);
   const startTime = Date.now();
 
@@ -71,6 +97,15 @@ export const convertSybaseToOracle = async (
       explanations = ["Explanation not available due to an error."];
     }
   }
+
+  // After conversion, store in cache
+  await supabase.from('conversion_cache').insert([
+    {
+      content_hash: contentHash,
+      original_code: file.content,
+      converted_code: convertedCode,
+    }
+  ]);
 
   console.log(`[CONVERT] Success for file: ${file.name} in ${conversionTime}ms`);
   return {
