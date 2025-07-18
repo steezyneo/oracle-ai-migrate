@@ -48,6 +48,7 @@ interface FileTreeViewProps {
   statusFilter?: string;
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
+  onResetMigration?: () => void;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -67,6 +68,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   statusFilter = 'All',
   onSearchTermChange,
   onStatusFilterChange,
+  onResetMigration,
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
@@ -232,9 +234,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           <div className="flex flex-row items-center justify-between w-full mb-2">
             <CardTitle className="text-lg">Project Structure</CardTitle>
             <div className="flex gap-2">
-              {onClear && files.length > 0 && (
-                <Button variant="destructive" onClick={onClear} className="text-xs px-3 py-1 h-7">
-                  Clear
+              {/* Only show Reset Migration button, not Clear */}
+              {onResetMigration && (
+                <Button variant="destructive" onClick={onResetMigration} className="text-xs px-3 py-1 h-7">
+                  Reset Migration
                 </Button>
               )}
               {onConvertAll && totalPending > 0 && (

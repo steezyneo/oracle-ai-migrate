@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface FileItem {
   id: string;
@@ -103,6 +104,21 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < allFilteredFiles.length - 1;
 
+  const [showResetDialog, setShowResetDialog] = React.useState(false);
+
+  const handleResetMigration = () => {
+    setShowResetDialog(true);
+  };
+  const confirmResetMigration = () => {
+    setShowResetDialog(false);
+    if (typeof onUploadRedirect === 'function') {
+      onUploadRedirect();
+    }
+  };
+  const cancelResetMigration = () => {
+    setShowResetDialog(false);
+  };
+
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-4">
@@ -116,14 +132,27 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           selectedFile={selectedFile}
           isConverting={isConverting}
           convertingFileIds={convertingFileIds}
-          onClear={onClear}
           hideActions={false}
           defaultExpandedSections={['tables','procedures','triggers']}
           searchTerm={searchTerm}
           statusFilter={statusFilter}
           onSearchTermChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
+          onResetMigration={handleResetMigration}
         />
+        {/* Confirmation Dialog for Reset Migration */}
+        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Migration?</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">Are you sure you want to reset the current migration? This will clear all uploaded files and progress.</div>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelResetMigration}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmResetMigration}>OK</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="col-span-8">
