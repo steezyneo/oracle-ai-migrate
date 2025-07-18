@@ -108,6 +108,14 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
   const linesColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
   const percentColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
 
+  // Loops improvements
+  const loopDiff = totalConvertedLoops - totalOriginalLoops;
+  const percentLoopChange = totalOriginalLoops > 0 ? ((totalConvertedLoops - totalOriginalLoops) / totalOriginalLoops) * 100 : 0;
+  const loopsLabel = loopDiff < 0 ? 'Loops Reduced' : loopDiff > 0 ? 'Loops Increased' : 'No Change';
+  const loopsColor = loopDiff < 0 ? 'text-blue-600' : loopDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const loopsPercentColor = loopDiff < 0 ? 'text-blue-600' : loopDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const loopsDescription = loopDiff < 0 ? 'Loop optimizations achieved during conversion' : loopDiff > 0 ? 'Loops added during conversion' : 'No change in total loops during conversion';
+
   // Complexity improvements
   const diffComplexity = totalConvertedComplexity - totalOriginalComplexity;
   const percentComplexityChange = totalOriginalComplexity > 0 
@@ -242,17 +250,17 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-blue-500" />
-              Loops Reduced
+              {loopsLabel}
             </CardTitle>
             <CardDescription>
-              Loop optimizations achieved during conversion
+              {loopsDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-blue-600">{totalLoopsReduced}</p>
-                <p className="text-sm text-muted-foreground">Total loops reduced</p>
+                <p className={`text-3xl font-bold ${loopsColor}`}>{Math.abs(loopDiff)}</p>
+                <p className="text-sm text-muted-foreground">{loopsLabel === 'No Change' ? 'No change in loops' : `Total ${loopsLabel.toLowerCase()}`}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -263,10 +271,10 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
                   <span>Converted Loops</span>
                   <span className="font-medium">{totalConvertedLoops}</span>
                 </div>
-                <div className="flex justify-between text-sm text-blue-600">
-                  <span>Reduction</span>
+                <div className={`flex justify-between text-sm ${loopsPercentColor}`}>
+                  <span>{loopDiff < 0 ? 'Reduction' : loopDiff > 0 ? 'Increase' : 'Change'}</span>
                   <span className="font-medium">
-                    {totalOriginalLoops > 0 ? Math.round(((totalOriginalLoops - totalConvertedLoops) / totalOriginalLoops) * 100) : 0}%
+                    {totalOriginalLoops > 0 ? `${Math.abs(Math.round(percentLoopChange))}%` : '0%'}
                   </span>
                 </div>
               </div>
