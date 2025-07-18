@@ -101,6 +101,41 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
     return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
   }
 
+  // Calculate line difference and percent change
+  const lineDiff = totalConvertedLines - totalOriginalLines;
+  const percentChange = totalOriginalLines > 0 ? ((totalConvertedLines - totalOriginalLines) / totalOriginalLines) * 100 : 0;
+  const linesLabel = lineDiff < 0 ? 'Lines Reduced' : lineDiff > 0 ? 'Lines Increased' : 'No Change';
+  const linesColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const percentColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
+
+  // Loops improvements
+  const loopDiff = totalConvertedLoops - totalOriginalLoops;
+  const percentLoopChange = totalOriginalLoops > 0 ? ((totalConvertedLoops - totalOriginalLoops) / totalOriginalLoops) * 100 : 0;
+  const loopsLabel = loopDiff < 0 ? 'Loops Reduced' : loopDiff > 0 ? 'Loops Increased' : 'No Change';
+  const loopsColor = loopDiff < 0 ? 'text-blue-600' : loopDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const loopsPercentColor = loopDiff < 0 ? 'text-blue-600' : loopDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const loopsDescription = loopDiff < 0 ? 'Loop optimizations achieved during conversion' : loopDiff > 0 ? 'Loops added during conversion' : 'No change in total loops during conversion';
+
+  // Complexity improvements
+  const diffComplexity = totalConvertedComplexity - totalOriginalComplexity;
+  const percentComplexityChange = totalOriginalComplexity > 0 
+    ? ((totalConvertedComplexity - totalOriginalComplexity) / totalOriginalComplexity) * 100 
+    : 0;
+  let complexityLabel, complexityColor, complexityPercentLabel;
+  if (diffComplexity < 0) {
+    complexityLabel = 'Complexity Reduction';
+    complexityColor = 'text-purple-600';
+    complexityPercentLabel = `${Math.abs(Math.round(percentComplexityChange))}%`;
+  } else if (diffComplexity > 0) {
+    complexityLabel = 'Complexity Increase';
+    complexityColor = 'text-red-600';
+    complexityPercentLabel = `${Math.abs(Math.round(percentComplexityChange))}%`;
+  } else {
+    complexityLabel = 'No Change';
+    complexityColor = 'text-gray-600';
+    complexityPercentLabel = '0%';
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,17 +213,17 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="h-5 w-5 text-green-500" />
-              Lines Reduced
+              {linesLabel}
             </CardTitle>
             <CardDescription>
-              Total lines of code optimized during conversion
+              {lineDiff < 0 ? 'Total lines of code optimized during conversion' : lineDiff > 0 ? 'Total lines of code added during conversion' : 'No change in total lines during conversion'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-green-600">{totalLinesReduced}</p>
-                <p className="text-sm text-muted-foreground">Total lines reduced</p>
+                <p className={`text-3xl font-bold ${linesColor}`}>{Math.abs(lineDiff)}</p>
+                <p className="text-sm text-muted-foreground">{linesLabel === 'No Change' ? 'No change in lines' : `Total ${linesLabel.toLowerCase()}`}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -199,10 +234,10 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
                   <span>Converted Lines</span>
                   <span className="font-medium">{totalConvertedLines}</span>
                 </div>
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Reduction</span>
+                <div className={`flex justify-between text-sm ${percentColor}`}>
+                  <span>{lineDiff < 0 ? 'Reduction' : lineDiff > 0 ? 'Increase' : 'Change'}</span>
                   <span className="font-medium">
-                    {totalOriginalLines > 0 ? Math.round(((totalOriginalLines - totalConvertedLines) / totalOriginalLines) * 100) : 0}%
+                    {totalOriginalLines > 0 ? `${Math.abs(Math.round(percentChange))}%` : '0%'}
                   </span>
                 </div>
               </div>
@@ -215,17 +250,17 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-blue-500" />
-              Loops Reduced
+              {loopsLabel}
             </CardTitle>
             <CardDescription>
-              Loop optimizations achieved during conversion
+              {loopsDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-blue-600">{totalLoopsReduced}</p>
-                <p className="text-sm text-muted-foreground">Total loops reduced</p>
+                <p className={`text-3xl font-bold ${loopsColor}`}>{Math.abs(loopDiff)}</p>
+                <p className="text-sm text-muted-foreground">{loopsLabel === 'No Change' ? 'No change in loops' : `Total ${loopsLabel.toLowerCase()}`}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -236,10 +271,10 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
                   <span>Converted Loops</span>
                   <span className="font-medium">{totalConvertedLoops}</span>
                 </div>
-                <div className="flex justify-between text-sm text-blue-600">
-                  <span>Reduction</span>
+                <div className={`flex justify-between text-sm ${loopsPercentColor}`}>
+                  <span>{loopDiff < 0 ? 'Reduction' : loopDiff > 0 ? 'Increase' : 'Change'}</span>
                   <span className="font-medium">
-                    {totalOriginalLoops > 0 ? Math.round(((totalOriginalLoops - totalConvertedLoops) / totalOriginalLoops) * 100) : 0}%
+                    {totalOriginalLoops > 0 ? `${Math.abs(Math.round(percentLoopChange))}%` : '0%'}
                   </span>
                 </div>
               </div>
@@ -309,18 +344,16 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
               <p className="text-sm text-muted-foreground">Converted Complexity</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">
-                {Math.round(averageComplexityReduction)}%
-              </p>
-              <p className="text-sm text-muted-foreground">Complexity Reduction</p>
+              <p className={`text-2xl font-bold ${complexityColor}`}>{complexityPercentLabel}</p>
+              <p className="text-sm text-muted-foreground">{complexityLabel}</p>
             </div>
           </div>
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Complexity Improvement</span>
-              <span>{Math.round(averageComplexityReduction)}%</span>
+              <span className={complexityColor}>{complexityPercentLabel}</span>
             </div>
-            <Progress value={Math.min(Math.abs(averageComplexityReduction), 100)} className="h-2" />
+            <Progress value={Math.min(Math.abs(percentComplexityChange), 100)} className="h-2" />
           </div>
         </CardContent>
       </Card>
