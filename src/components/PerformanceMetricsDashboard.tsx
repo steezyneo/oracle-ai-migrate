@@ -101,6 +101,13 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
     return total > 0 ? Math.min(100, Math.round((changed / total) * 100)) : 0;
   }
 
+  // Calculate line difference and percent change
+  const lineDiff = totalConvertedLines - totalOriginalLines;
+  const percentChange = totalOriginalLines > 0 ? ((totalConvertedLines - totalOriginalLines) / totalOriginalLines) * 100 : 0;
+  const linesLabel = lineDiff < 0 ? 'Lines Reduced' : lineDiff > 0 ? 'Lines Increased' : 'No Change';
+  const linesColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
+  const percentColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,17 +185,17 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="h-5 w-5 text-green-500" />
-              Lines Reduced
+              {linesLabel}
             </CardTitle>
             <CardDescription>
-              Total lines of code optimized during conversion
+              {lineDiff < 0 ? 'Total lines of code optimized during conversion' : lineDiff > 0 ? 'Total lines of code added during conversion' : 'No change in total lines during conversion'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-green-600">{totalLinesReduced}</p>
-                <p className="text-sm text-muted-foreground">Total lines reduced</p>
+                <p className={`text-3xl font-bold ${linesColor}`}>{Math.abs(lineDiff)}</p>
+                <p className="text-sm text-muted-foreground">{linesLabel === 'No Change' ? 'No change in lines' : `Total ${linesLabel.toLowerCase()}`}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -199,10 +206,10 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
                   <span>Converted Lines</span>
                   <span className="font-medium">{totalConvertedLines}</span>
                 </div>
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Reduction</span>
+                <div className={`flex justify-between text-sm ${percentColor}`}>
+                  <span>{lineDiff < 0 ? 'Reduction' : lineDiff > 0 ? 'Increase' : 'Change'}</span>
                   <span className="font-medium">
-                    {totalOriginalLines > 0 ? Math.round(((totalOriginalLines - totalConvertedLines) / totalOriginalLines) * 100) : 0}%
+                    {totalOriginalLines > 0 ? `${Math.abs(Math.round(percentChange))}%` : '0%'}
                   </span>
                 </div>
               </div>
