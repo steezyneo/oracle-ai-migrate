@@ -108,6 +108,26 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
   const linesColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
   const percentColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
 
+  // Complexity improvements
+  const diffComplexity = totalConvertedComplexity - totalOriginalComplexity;
+  const percentComplexityChange = totalOriginalComplexity > 0 
+    ? ((totalConvertedComplexity - totalOriginalComplexity) / totalOriginalComplexity) * 100 
+    : 0;
+  let complexityLabel, complexityColor, complexityPercentLabel;
+  if (diffComplexity < 0) {
+    complexityLabel = 'Complexity Reduction';
+    complexityColor = 'text-purple-600';
+    complexityPercentLabel = `${Math.abs(Math.round(percentComplexityChange))}%`;
+  } else if (diffComplexity > 0) {
+    complexityLabel = 'Complexity Increase';
+    complexityColor = 'text-red-600';
+    complexityPercentLabel = `${Math.abs(Math.round(percentComplexityChange))}%`;
+  } else {
+    complexityLabel = 'No Change';
+    complexityColor = 'text-gray-600';
+    complexityPercentLabel = '0%';
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -316,18 +336,16 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
               <p className="text-sm text-muted-foreground">Converted Complexity</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">
-                {Math.round(averageComplexityReduction)}%
-              </p>
-              <p className="text-sm text-muted-foreground">Complexity Reduction</p>
+              <p className={`text-2xl font-bold ${complexityColor}`}>{complexityPercentLabel}</p>
+              <p className="text-sm text-muted-foreground">{complexityLabel}</p>
             </div>
           </div>
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Complexity Improvement</span>
-              <span>{Math.round(averageComplexityReduction)}%</span>
+              <span className={complexityColor}>{complexityPercentLabel}</span>
             </div>
-            <Progress value={Math.min(Math.abs(averageComplexityReduction), 100)} className="h-2" />
+            <Progress value={Math.min(Math.abs(percentComplexityChange), 100)} className="h-2" />
           </div>
         </CardContent>
       </Card>
