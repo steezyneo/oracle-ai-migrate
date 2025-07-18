@@ -404,6 +404,12 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
               const aiCode = result.aiGeneratedCode || result.convertedCode || '';
               const finalCode = result.convertedCode || '';
               const editPercent = getEditPercentage(aiCode, finalCode);
+              // Calculate per-file line diff
+              const originalLines = result.performance?.originalLines || 0;
+              const convertedLines = result.performance?.convertedLines || 0;
+              const lineDiff = convertedLines - originalLines;
+              const linesColor = lineDiff < 0 ? 'text-green-600' : lineDiff > 0 ? 'text-red-600' : 'text-gray-600';
+              const linesLabel = lineDiff < 0 ? 'Lines Reduced' : lineDiff > 0 ? 'Lines Increased' : 'No Change';
               return (
                 <div key={result.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
@@ -413,35 +419,26 @@ const PerformanceMetricsDashboard: React.FC<PerformanceMetricsDashboardProps> = 
                       <p className="text-sm text-muted-foreground">{result.originalFile.type}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-green-600">
-                        {result.performance?.linesReduced || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Lines</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-blue-600">
-                        {result.performance?.loopsReduced || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Loops</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-orange-600">
-                        {result.performance?.conversionTimeMs || 0}ms
-                      </p>
-                      <p className="text-xs text-muted-foreground">Time</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-purple-600">
-                        {editPercent}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">Human Edits</p>
-                    </div>
-                    <Badge variant="outline" className={getStatusColor(result.status)}>
-                      {result.status}
-                    </Badge>
+                  <div className="text-center">
+                    <p className={`text-sm font-medium ${linesColor}`}>{Math.abs(lineDiff)}</p>
+                    <p className="text-xs text-muted-foreground">{linesLabel}</p>
+                    <p className="text-xs text-gray-400">{originalLines} → {convertedLines}</p>
                   </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-blue-600">{result.performance?.loopsReduced || 0}</p>
+                    <p className="text-xs text-muted-foreground">Loops</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-orange-600">{result.performance?.conversionTimeMs || 0}ms</p>
+                    <p className="text-xs text-muted-foreground">Time</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-purple-600">{editPercent}%</p>
+                    <p className="text-xs text-muted-foreground">Human Edits</p>
+                  </div>
+                  <Badge variant="outline" className={getStatusColor(result.status)}>
+                    {result.status}
+                  </Badge>
                 </div>
               );
             })}

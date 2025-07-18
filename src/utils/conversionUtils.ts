@@ -193,10 +193,14 @@ const analyzeCodeComplexity = (code: string) => {
   const functions = (code.match(/\b(create|procedure|function|trigger)\b/gi) || []).length;
   const complexity = controlStructures + functions + 1;
   
-  // Calculate maintainability index
+  // Calculate maintainability index (remove clamp for debugging)
   let maintainabilityIndex = 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1);
-  maintainabilityIndex = Math.max(0, Math.min(100, maintainabilityIndex));
-  
+  // maintainabilityIndex = Math.max(0, Math.min(100, maintainabilityIndex)); // REMOVE CLAMP
+  console.log('[PERF] complexity:', complexity);
+  console.log('[PERF] codeLines:', codeLines);
+  console.log('[PERF] commentLines:', commentLines);
+  console.log('[PERF] raw maintainabilityIndex:', maintainabilityIndex);
+
   return {
     totalLines,
     codeLines,
@@ -248,12 +252,34 @@ const generatePerformanceMetrics = (
   const originalLines = originalComplexity.totalLines;
   const convertedLines = convertedComplexity.totalLines;
   const linesReduced = originalLines - convertedLines;
-  
+
   // Calculate loops reduced
   const originalLoops = analyzeLoops(originalCode);
   const convertedLoops = analyzeLoops(convertedCode);
   const loopsReduced = originalLoops - convertedLoops;
-  
+
+  // Calculate complexity increase
+  const complexityIncrease = Math.max(0, convertedComplexity.cyclomaticComplexity - originalComplexity.cyclomaticComplexity);
+  const linesIncrease = Math.max(0, convertedLines - originalLines);
+  const loopsIncrease = Math.max(0, convertedLoops - originalLoops);
+
+  // Debug logs
+  console.log('[PERF] maintainabilityIndex:', convertedComplexity.maintainabilityIndex);
+  console.log('[PERF] complexityIncrease:', complexityIncrease);
+  console.log('[PERF] linesIncrease:', linesIncrease);
+  console.log('[PERF] loopsIncrease:', loopsIncrease);
+
+  // Performance score: start from maintainability index, penalize increases (much harsher)
+  let performanceScore = convertedComplexity.maintainabilityIndex;
+  performanceScore -= complexityIncrease * 10; // much harsher penalty
+  performanceScore -= linesIncrease * 2;      // much harsher penalty
+  performanceScore -= loopsIncrease * 10;     // much harsher penalty
+  if (complexityIncrease > 0 || linesIncrease > 0 || loopsIncrease > 0) {
+    performanceScore = 40; // force low score if any increase
+  }
+  performanceScore = Math.max(0, Math.min(100, Math.round(performanceScore)));
+  console.log('[PERF] final performanceScore:', performanceScore);
+
   const recommendations = [];
   
   if (convertedComplexity.cyclomaticComplexity > 10) {
@@ -276,10 +302,6 @@ const generatePerformanceMetrics = (
   if (loopsReduced > 0) {
     recommendations.push(`Loop optimization: ${loopsReduced} loops reduced`);
   }
-  
-  const performanceScore = Math.round(
-    (convertedComplexity.maintainabilityIndex / 100) * 100
-  );
   
   return {
     originalComplexity: originalComplexity.cyclomaticComplexity,
