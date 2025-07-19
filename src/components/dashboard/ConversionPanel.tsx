@@ -215,11 +215,28 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
           <>
             <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-blue-100 dark:border-slate-800">
+                <span className="text-xl font-bold">{selectedFile.name}</span>
                 <div className="flex items-center gap-3">
-                  <FileText className="h-6 w-6 text-blue-500" />
-                  <CardTitle className="text-xl font-bold">{selectedFile.name}</CardTitle>
-                  <span className="capitalize text-sm px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 ml-2">{selectedFile.type}</span>
-                  <span className={`text-xs px-2 py-1 rounded ml-2 ${selectedFile.conversionStatus === 'success' ? 'bg-green-100 text-green-700' : selectedFile.conversionStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.conversionStatus}</span>
+                  <span className="capitalize text-sm px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200">{selectedFile.type}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${selectedFile.conversionStatus === 'success' ? 'bg-green-100 text-green-700' : selectedFile.conversionStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.conversionStatus}</span>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = new Blob([selectedFile.content], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = selectedFile.name;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Download original code"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-4 pb-2">

@@ -64,6 +64,7 @@ interface FileItem {
   dataTypeMapping?: DataTypeMapping[];
   issues?: ConversionIssue[];
   performanceMetrics?: PerformanceMetrics;
+  status: 'reviewed' | 'unreviewed'; // New field for status
 }
 
 interface ConversionViewerProps {
@@ -145,70 +146,40 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>{file.name}</span>
-          <div className="flex items-center gap-2">
-            <Badge variant={
-              file.conversionStatus === 'success' ? 'default' : 
-              file.conversionStatus === 'failed' ? 'destructive' : 'secondary'
-            }>
-              {file.conversionStatus}
-            </Badge>
-            <Badge variant="outline">{file.type}</Badge>
-            {file.convertedContent && (
-              <FileDownloader
-                fileName={file.name}
-                content={file.convertedContent}
-                fileType={file.type}
-              />
-            )}
-          </div>
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent>
-        <Tabs defaultValue="code" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="code">Code</TabsTrigger>
-            <TabsTrigger value="mapping">Data Types</TabsTrigger>
-            <TabsTrigger value="issues">Issues {file.issues && file.issues.length > 0 && (<Badge variant="outline" className="ml-1">{file.issues.length}</Badge>)}</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="code" className="space-y-4">
-            {file.convertedContent ? (
-              <div className="grid grid-cols-2 gap-4 relative">
-                {/* Left Arrow */}
+    <>
+      {/* Removed top bar with filename, badges, and download button. Now only tabs and code sections remain. */}
+      <Tabs defaultValue="code" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="code">Code</TabsTrigger>
+          <TabsTrigger value="mapping">Data Types</TabsTrigger>
+          <TabsTrigger value="issues">Issues {file.issues && file.issues.length > 0 && (<Badge variant="outline" className="ml-1">{file.issues.length}</Badge>)}</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="code" className="space-y-4">
+          {file.convertedContent ? (
+            <div className="relative grid grid-cols-2 gap-4">
+              {/* Left Column: Original Sybase Code with Prev Arrow */}
+              <div className="flex items-start">
                 {hasPrev && onPrevFile && (
                   <button
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    className="mr-2 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
                     onClick={onPrevFile}
-                    style={{ left: '-2.5rem' }}
                     aria-label="Previous file"
                   >
                     <ArrowLeft className="h-6 w-6" />
                   </button>
                 )}
-                {/* Right Arrow */}
-                {hasNext && onNextFile && (
-                  <button
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
-                    onClick={onNextFile}
-                    style={{ right: '-2.5rem' }}
-                    aria-label="Next file"
-                  >
-                    <ArrowRight className="h-6 w-6" />
-                  </button>
-                )}
-                <div>
+                <div className="flex-1">
                   <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
                   <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
                     {file.content}
                   </pre>
                 </div>
-                <div>
+              </div>
+              {/* Right Column: Converted Oracle Code with Next Arrow */}
+              <div className="flex items-start">
+                <div className="flex-1">
                   <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
                   {/* Human Edits Metric */}
                   {isEditing ? (
@@ -262,257 +233,266 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                     </>
                   )}
                 </div>
+                {hasNext && onNextFile && (
+                  <button
+                    className="ml-2 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onNextFile}
+                    aria-label="Next file"
+                  >
+                    <ArrowRight className="h-6 w-6" />
+                  </button>
+                )}
               </div>
-            ) : (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                  {file.content}
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+              <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                {file.content}
+              </pre>
+            </div>
+          )}
+          
+          {file.errorMessage && (
+            <div>
+              <h3 className="text-sm font-medium mb-2 text-red-700">Error:</h3>
+              <div className="bg-red-50 p-4 rounded text-sm text-red-700">
+                {file.errorMessage}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="mapping" className="space-y-4">
+          {file.dataTypeMapping && file.dataTypeMapping.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">Data Type Mappings</h3>
+              <div className="grid gap-3">
+                {file.dataTypeMapping.map((mapping, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <h4 className="font-medium text-red-600 mb-2">Sybase Type</h4>
+                        <code className="bg-red-50 px-3 py-2 rounded text-sm font-mono block">
+                          {mapping.sybaseType}
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-green-600 mb-2">Oracle Type</h4>
+                        <code className="bg-green-50 px-3 py-2 rounded text-sm font-mono block">
+                          {mapping.oracleType}
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Description</h4>
+                        <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                          {mapping.description || 'Standard type conversion'}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No data type mappings available</p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="issues" className="space-y-4">
+          <ConversionIssuesPanel
+            issues={file.issues || []}
+            onDismissIssue={onDismissIssue}
+          />
+        </TabsContent>
+        
+        <TabsContent value="performance" className="space-y-4">
+          {/* Human Edits Metric in Performance Tab */}
+          <Card className="mb-4">
+            <CardContent className="py-4 flex flex-col items-center">
+              <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded px-2 py-1 mb-1">Human Edits</span>
+              <span className="text-2xl font-bold text-purple-700">{humanEditPercent}%</span>
+              <span className="text-xs text-muted-foreground mt-1">Percentage of AI-generated code changed by a human</span>
+              <div className="mt-4 w-full">
+                <h4 className="text-sm font-medium mb-2">AI-Generated Code vs. Final Code Diff (character-based)</h4>
+                <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap">
+                  {aiCode !== finalCode ? `AI Output:\n${aiCode}\n\nFinal Code:\n${finalCode}` : 'No changes detected.'}
                 </pre>
               </div>
-            )}
-            
-            {file.errorMessage && (
-              <div>
-                <h3 className="text-sm font-medium mb-2 text-red-700">Error:</h3>
-                <div className="bg-red-50 p-4 rounded text-sm text-red-700">
-                  {file.errorMessage}
+            </CardContent>
+          </Card>
+          {file.performanceMetrics ? (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>
+              
+              {/* Performance Score */}
+              <Card className="p-6">
+                <div className="text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Overall Performance Score</h4>
+                  <div className="text-4xl font-bold text-blue-600 mb-2">
+                    {file.performanceMetrics.performanceScore || 0}/100
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${file.performanceMetrics.performanceScore || 0}%` }}
+                    ></div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="mapping" className="space-y-4">
-            {file.dataTypeMapping && file.dataTypeMapping.length > 0 ? (
-              <div className="space-y-3">
-                <h3 className="text-lg font-medium">Data Type Mappings</h3>
-                <div className="grid gap-3">
-                  {file.dataTypeMapping.map((mapping, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <h4 className="font-medium text-red-600 mb-2">Sybase Type</h4>
-                          <code className="bg-red-50 px-3 py-2 rounded text-sm font-mono block">
-                            {mapping.sybaseType}
-                          </code>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-green-600 mb-2">Oracle Type</h4>
-                          <code className="bg-green-50 px-3 py-2 rounded text-sm font-mono block">
-                            {mapping.oracleType}
-                          </code>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-700 mb-2">Description</h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                            {mapping.description || 'Standard type conversion'}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No data type mappings available</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="issues" className="space-y-4">
-            <ConversionIssuesPanel
-              issues={file.issues || []}
-              onDismissIssue={onDismissIssue}
-            />
-          </TabsContent>
-          
-          <TabsContent value="performance" className="space-y-4">
-            {/* Human Edits Metric in Performance Tab */}
-            <Card className="mb-4">
-              <CardContent className="py-4 flex flex-col items-center">
-                <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded px-2 py-1 mb-1">Human Edits</span>
-                <span className="text-2xl font-bold text-purple-700">{humanEditPercent}%</span>
-                <span className="text-xs text-muted-foreground mt-1">Percentage of AI-generated code changed by a human</span>
-                <div className="mt-4 w-full">
-                  <h4 className="text-sm font-medium mb-2">AI-Generated Code vs. Final Code Diff (character-based)</h4>
-                  <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap">
-                    {aiCode !== finalCode ? `AI Output:\n${aiCode}\n\nFinal Code:\n${finalCode}` : 'No changes detected.'}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-            {file.performanceMetrics ? (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Quantitative Performance Analysis</h3>
+              </Card>
+
+              {/* Complexity Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Original Complexity</h4>
+                  <p className="text-2xl font-bold text-red-600">
+                    {file.performanceMetrics.originalComplexity || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
+                </Card>
                 
-                {/* Performance Score */}
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Converted Complexity</h4>
+                  <p className="text-2xl font-bold text-green-600">
+                    {file.performanceMetrics.convertedComplexity || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
+                </Card>
+                
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Improvement</h4>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {file.performanceMetrics.improvementPercentage || 0}%
+                  </p>
+                  <p className="text-xs text-gray-500">Performance Gain</p>
+                </Card>
+              </div>
+
+              {/* Code Quality Metrics */}
+              {file.performanceMetrics.codeQuality && (
                 <Card className="p-6">
-                  <div className="text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Overall Performance Score</h4>
-                    <div className="text-4xl font-bold text-blue-600 mb-2">
-                      {file.performanceMetrics.performanceScore || 0}/100
+                  <h4 className="text-lg font-medium mb-4">Code Quality Metrics</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.totalLines}</p>
+                      <p className="text-sm text-gray-600">Total Lines</p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${file.performanceMetrics.performanceScore || 0}%` }}
-                      ></div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.codeLines}</p>
+                      <p className="text-sm text-gray-600">Code Lines</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.commentRatio}%</p>
+                      <p className="text-sm text-gray-600">Comment Ratio</p>
+                    </div>
+                    <div className="text-center">
+                      <Badge variant={
+                        file.performanceMetrics.codeQuality.complexityLevel === 'Low' ? 'default' :
+                        file.performanceMetrics.codeQuality.complexityLevel === 'Medium' ? 'secondary' : 'destructive'
+                      }>
+                        {file.performanceMetrics.codeQuality.complexityLevel}
+                      </Badge>
+                      <p className="text-sm text-gray-600 mt-1">Complexity</p>
                     </div>
                   </div>
                 </Card>
+              )}
 
-                {/* Complexity Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Original Complexity</h4>
-                    <p className="text-2xl font-bold text-red-600">
-                      {file.performanceMetrics.originalComplexity || 0}
-                    </p>
-                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
-                  </Card>
-                  
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Converted Complexity</h4>
-                    <p className="text-2xl font-bold text-green-600">
-                      {file.performanceMetrics.convertedComplexity || 0}
-                    </p>
-                    <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
-                  </Card>
-                  
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Improvement</h4>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {file.performanceMetrics.improvementPercentage || 0}%
-                    </p>
-                    <p className="text-xs text-gray-500">Performance Gain</p>
-                  </Card>
-                </div>
-
-                {/* Code Quality Metrics */}
-                {file.performanceMetrics.codeQuality && (
-                  <Card className="p-6">
-                    <h4 className="text-lg font-medium mb-4">Code Quality Metrics</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.totalLines}</p>
-                        <p className="text-sm text-gray-600">Total Lines</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.codeLines}</p>
-                        <p className="text-sm text-gray-600">Code Lines</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-800">{file.performanceMetrics.codeQuality.commentRatio}%</p>
-                        <p className="text-sm text-gray-600">Comment Ratio</p>
-                      </div>
-                      <div className="text-center">
-                        <Badge variant={
-                          file.performanceMetrics.codeQuality.complexityLevel === 'Low' ? 'default' :
-                          file.performanceMetrics.codeQuality.complexityLevel === 'Medium' ? 'secondary' : 'destructive'
-                        }>
-                          {file.performanceMetrics.codeQuality.complexityLevel}
-                        </Badge>
-                        <p className="text-sm text-gray-600 mt-1">Complexity</p>
-                      </div>
+              {/* Maintainability Index */}
+              {file.performanceMetrics.maintainabilityIndex && (
+                <Card className="p-6">
+                  <h4 className="text-lg font-medium mb-4">Maintainability Index</h4>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600 mb-2">
+                      {file.performanceMetrics.maintainabilityIndex}/100
                     </div>
-                  </Card>
-                )}
-
-                {/* Maintainability Index */}
-                {file.performanceMetrics.maintainabilityIndex && (
-                  <Card className="p-6">
-                    <h4 className="text-lg font-medium mb-4">Maintainability Index</h4>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-purple-600 mb-2">
-                        {file.performanceMetrics.maintainabilityIndex}/100
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-purple-600 h-3 rounded-full transition-all duration-300"
-                          style={{ width: `${file.performanceMetrics.maintainabilityIndex}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        {file.performanceMetrics.maintainabilityIndex >= 80 ? 'Excellent' :
-                         file.performanceMetrics.maintainabilityIndex >= 60 ? 'Good' :
-                         file.performanceMetrics.maintainabilityIndex >= 40 ? 'Fair' : 'Poor'} Maintainability
-                      </p>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${file.performanceMetrics.maintainabilityIndex}%` }}
+                      ></div>
                     </div>
-                  </Card>
-                )}
+                    <p className="text-sm text-gray-600 mt-2">
+                      {file.performanceMetrics.maintainabilityIndex >= 80 ? 'Excellent' :
+                       file.performanceMetrics.maintainabilityIndex >= 60 ? 'Good' :
+                       file.performanceMetrics.maintainabilityIndex >= 40 ? 'Fair' : 'Poor'} Maintainability
+                    </p>
+                  </div>
+                </Card>
+              )}
 
-                {/* Enhanced Performance Metrics */}
-                {/* Lines Reduced/Increased */}
-                <Card className="p-4 text-center">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
-                    const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
-                    if (diff < 0) return 'Lines Reduced';
-                    if (diff > 0) return 'Lines Increased';
-                    return 'No Change';
-                  })()}</h4>
-                  <p className={`text-2xl font-bold ${(() => {
-                    const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
-                    if (diff < 0) return 'text-green-600';
-                    if (diff > 0) return 'text-red-600';
-                    return 'text-gray-600';
-                  })()}`}>{Math.abs((file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0))}</p>
-                  <p className="text-xs text-gray-500">
-                    {(file.performanceMetrics.originalLines || 0)} → {(file.performanceMetrics.convertedLines || 0)}
-                  </p>
+              {/* Enhanced Performance Metrics */}
+              {/* Lines Reduced/Increased */}
+              <Card className="p-4 text-center">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
+                  const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
+                  if (diff < 0) return 'Lines Reduced';
+                  if (diff > 0) return 'Lines Increased';
+                  return 'No Change';
+                })()}</h4>
+                <p className={`text-2xl font-bold ${(() => {
+                  const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
+                  if (diff < 0) return 'text-green-600';
+                  if (diff > 0) return 'text-red-600';
+                  return 'text-gray-600';
+                })()}`}>{Math.abs((file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0))}</p>
+                <p className="text-xs text-gray-500">
+                  {(file.performanceMetrics.originalLines || 0)} → {(file.performanceMetrics.convertedLines || 0)}
+                </p>
+              </Card>
+              {/* Loops Reduced/Increased */}
+              <Card className="p-4 text-center">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
+                  const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
+                  if (diff < 0) return 'Loops Reduced';
+                  if (diff > 0) return 'Loops Increased';
+                  return 'No Change';
+                })()}</h4>
+                <p className={`text-2xl font-bold ${(() => {
+                  const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
+                  if (diff < 0) return 'text-blue-600';
+                  if (diff > 0) return 'text-red-600';
+                  return 'text-gray-600';
+                })()}`}>{Math.abs((file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0))}</p>
+                <p className="text-xs text-gray-500">
+                  {(file.performanceMetrics.originalLoops || 0)} → {(file.performanceMetrics.convertedLoops || 0)}
+                </p>
+              </Card>
+              
+              {/* Conversion Time */}
+              <Card className="p-4 text-center">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
+                <p className="text-2xl font-bold text-orange-600">
+                  {file.performanceMetrics.conversionTimeMs || 0}ms
+                </p>
+                <p className="text-xs text-gray-500">Processing Time</p>
+              </Card>
+              
+              {/* Recommendations */}
+              {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (
+                <Card className="p-6">
+                  <h4 className="text-lg font-medium mb-4">Performance Recommendations</h4>
+                  <ul className="space-y-3">
+                    {file.performanceMetrics.recommendations.map((rec, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="text-sm text-gray-700">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </Card>
-                {/* Loops Reduced/Increased */}
-                <Card className="p-4 text-center">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
-                    const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
-                    if (diff < 0) return 'Loops Reduced';
-                    if (diff > 0) return 'Loops Increased';
-                    return 'No Change';
-                  })()}</h4>
-                  <p className={`text-2xl font-bold ${(() => {
-                    const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
-                    if (diff < 0) return 'text-blue-600';
-                    if (diff > 0) return 'text-red-600';
-                    return 'text-gray-600';
-                  })()}`}>{Math.abs((file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0))}</p>
-                  <p className="text-xs text-gray-500">
-                    {(file.performanceMetrics.originalLoops || 0)} → {(file.performanceMetrics.convertedLoops || 0)}
-                  </p>
-                </Card>
-                
-                {/* Conversion Time */}
-                <Card className="p-4 text-center">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {file.performanceMetrics.conversionTimeMs || 0}ms
-                  </p>
-                  <p className="text-xs text-gray-500">Processing Time</p>
-                </Card>
-                
-                {/* Recommendations */}
-                {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (
-                  <Card className="p-6">
-                    <h4 className="text-lg font-medium mb-4">Performance Recommendations</h4>
-                    <ul className="space-y-3">
-                      {file.performanceMetrics.recommendations.map((rec, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-gray-700">{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No performance metrics available</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No performance metrics available</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </>
   );
 };
 

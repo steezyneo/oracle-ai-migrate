@@ -70,9 +70,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onStatusFilterChange,
   onResetMigration,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(defaultExpandedSections)
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
+    if (defaultExpandedSections && defaultExpandedSections.length > 0) {
+      return new Set(defaultExpandedSections);
+    }
+    return new Set(['tables', 'procedures', 'triggers']);
+  });
 
   // Filter files by search and status
   const filteredFiles = files.filter(file => {
@@ -133,7 +136,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                    sectionKey === 'triggers' ? 'trigger' : 'other';
     return (
       <div key={sectionKey} className="mb-2">
-        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded sticky top-0 z-10 bg-white dark:bg-slate-900" style={{ boxShadow: '0 1px 0 0 #e5e7eb' }}>
           <Button
             variant="ghost"
             size="sm"
@@ -233,7 +236,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           <div className="flex flex-row items-center justify-between w-full mb-2">
             <CardTitle className="text-lg">Project Structure</CardTitle>
             <div className="flex gap-2">
-              {/* Only show Reset Migration button, not Clear */}
               {onConvertAll && totalPending > 0 && (
                 <Button
                   onClick={onConvertAll}
@@ -245,7 +247,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               )}
             </div>
           </div>
-          {/* Search and Filter Row */}
           <div className="flex flex-row gap-2 w-full mb-2">
             <Input
               type="text"
@@ -268,7 +269,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         </CardHeader>
       )}
       <CardContent className="p-0">
-        <div className="space-y-1 px-4 pb-4">
+        <div className="space-y-1 px-4 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
           {renderSection('tables', 'Tables', tables)}
           {renderSection('procedures', 'Procedures', procedures)}
           {renderSection('triggers', 'Triggers', triggers)}
