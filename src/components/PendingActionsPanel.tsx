@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, Check, Edit3, Trash2, FileText, Folder, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Check, Edit3, Trash2, FileText, Folder, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { useUnreviewedFiles } from '@/hooks/useUnreviewedFiles';
 import { UnreviewedFile } from '@/types/unreviewedFiles';
 import MarkedForReviewPanel from './MarkedForReviewPanel';
@@ -338,7 +338,31 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         {/* Main File Review Card */}
         {selectedFile ? (
           <>
-            {/* Removed file name/status bar for minimal look */}
+            {/* Card header with filename, review status, and download button */}
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-green-800">
+              <span className="text-xl font-bold">{selectedFile.file_name}</span>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs px-2 py-1 rounded ${selectedFile.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.status}</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    const blob = new Blob([selectedFile.original_code], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = selectedFile.file_name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                  title="Download original code"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
             <div className="pt-4 pb-2">
             <ConversionViewer
                 file={mapToFileItem(selectedFile)}
