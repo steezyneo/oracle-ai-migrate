@@ -79,6 +79,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               name: f.file_name,
               content: f.original_code,
               convertedContent: f.converted_code,
+              aiGeneratedCode: f.ai_generated_code || f.aiGeneratedCode || '',
               conversionStatus: 'pending',
       errorMessage: undefined,
               type,
@@ -140,14 +141,19 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     setEditedContent('');
   };
 
+  // Fix handleSaveEdit to update aiGeneratedCode and converted_code
   const handleSaveEdit = async (file: UnreviewedFile, newCode: string) => {
+    // Save previous converted_code as ai_generated_code
+    const prevAICode = file.ai_generated_code || file.converted_code;
     const success = await updateUnreviewedFile({
       id: file.id,
-      converted_code: newCode
+      converted_code: newCode,
+      ai_generated_code: prevAICode,
     });
     if (success) {
       setEditingFile(null);
       setEditedContent('');
+      // Optionally refreshUnreviewedFiles() here if needed
     }
   };
 
@@ -366,9 +372,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               <CardContent className="pt-4 pb-2">
                 <ConversionViewer
                   file={mapToFileItem(selectedFile)}
-                  onManualEdit={newContent => setEditedContent(newContent)}
+                  onManualEdit={newContent => handleSaveEdit(selectedFile, newContent)}
                   onDismissIssue={() => {}}
-                  hideEdit={true}
+                  hideEdit={selectedFile.status === 'reviewed'}
                   onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
                   onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
                   hasPrev={hasPrev}
