@@ -30,7 +30,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
-
+  
   useEffect(() => {
     fetchDeploymentLogs();
     const channel = supabase
@@ -94,7 +94,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
       return null;
     }
   };
-
+  
   const handleDownload = () => {
     const blob = new Blob([report.summary], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -150,7 +150,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
       }
       for (const file of filesToInsert) {
         const deployResult = await deployToOracle(
-          {
+          { 
             type: 'oracle',
             host: 'localhost',
             port: '1521',
@@ -207,7 +207,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
       setIsDeploying(false);
     }
   };
-
+  
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
@@ -308,7 +308,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
                 ))}
               </tbody>
             </table>
-          </ScrollArea>
+            </ScrollArea>
         </CardContent>
       </Card>
 
@@ -323,9 +323,9 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleDeploy}
-                    disabled={isDeploying}
+              <Button 
+                onClick={handleDeploy} 
+                disabled={isDeploying}
                     className="px-6 py-3 text-lg font-semibold rounded-lg shadow-md transition-all duration-200
                       bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0
                       hover:from-blue-600 hover:to-indigo-700 hover:shadow-xl
@@ -346,27 +346,27 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
                         <span>Deploy to Oracle</span>
                       </span>
                     )}
-                  </Button>
+              </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-base max-w-xs">
                   Deploy all successfully converted files to your Oracle database. This will insert the converted SQL into your configured Oracle instance and log the deployment.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          </div>
+            </div>
         </CardHeader>
         <CardContent>
           <h3 className="text-lg font-medium mb-3 flex items-center gap-2"><Database className="h-5 w-5 text-blue-500" /> Deployment Logs</h3>
           <ScrollArea className="h-64 border rounded-md">
-            {deploymentLogs.length === 0 ? (
+                {deploymentLogs.length === 0 ? (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">
                   <Database className="h-12 w-12 mx-auto mb-2 opacity-20" />
                   <p>No deployment logs yet</p>
                   <p className="text-sm">Click "Deploy to Oracle" to start</p>
                 </div>
-              </div>
-            ) : (
+                  </div>
+                ) : (
               <ol className="relative border-l border-blue-200 dark:border-blue-900 ml-4 mt-2">
                 {deploymentLogs.map((log, idx) => (
                   <li key={log.id} className="mb-8 ml-6">
@@ -375,22 +375,22 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
                       <Badge variant={log.status === 'Success' ? 'default' : 'destructive'}>{log.status}</Badge>
                       <span className="text-xs text-gray-400">ID: {log.id.slice(0, 8)}...</span>
                       <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
-                    </div>
+                          </div>
                     <div className="grid grid-cols-2 gap-4 text-xs mb-1">
                       <div>Files: <strong>{log.file_count}</strong></div>
                       <div>SQL Lines: <strong>{log.lines_of_sql}</strong></div>
-                    </div>
-                    {log.error_message && (
+                        </div>
+                        {log.error_message && (
                       <div className="mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-700 dark:text-red-300">
                         <X className="inline h-4 w-4 mr-1 align-text-bottom" />
                         Error: {log.error_message}
                       </div>
                     )}
                   </li>
-                ))}
+                    ))}
               </ol>
-            )}
-          </ScrollArea>
+                )}
+              </ScrollArea>
         </CardContent>
       </Card>
 
