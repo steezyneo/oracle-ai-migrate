@@ -338,44 +338,44 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         {/* Main File Review Card */}
         {selectedFile ? (
           <>
-            {/* Card header with filename, review status, and download button */}
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-green-800">
-              <span className="text-xl font-bold">{selectedFile.file_name}</span>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded ${selectedFile.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.status}</span>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => {
-                    const blob = new Blob([selectedFile.original_code], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = selectedFile.file_name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }}
-                  title="Download original code"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <div className="pt-4 pb-2">
-            <ConversionViewer
-                file={mapToFileItem(selectedFile)}
-                onManualEdit={newContent => setEditedContent(newContent)}
-              onDismissIssue={() => {}}
-                hideEdit={true}
-              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
-              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
-              hasPrev={hasPrev}
-              hasNext={hasNext}
-            />
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-4 mt-6">
+            <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-green-800">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-green-800">
+                <span className="text-xl font-bold">{selectedFile.file_name}</span>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2 py-1 rounded ${selectedFile.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.status}</span>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = new Blob([selectedFile.original_code], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = selectedFile.file_name;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Download original code"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 pb-2">
+                <ConversionViewer
+                  file={mapToFileItem(selectedFile)}
+                  onManualEdit={newContent => setEditedContent(newContent)}
+                  onDismissIssue={() => {}}
+                  hideEdit={true}
+                  onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+                  onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+                  hasPrev={hasPrev}
+                  hasNext={hasNext}
+                />
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-4 mt-6">
               {selectedFile.status !== 'reviewed' && (
               <Button
                 onClick={() => handleMarkAsReviewed(selectedFile)}
@@ -393,7 +393,8 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                   Delete File
                 </Button>
               </div>
-            </div>
+            </CardContent>
+            </Card>
             {/* Complete Migration Button */}
             <div className="flex justify-end mt-8">
               <div className="relative group">
