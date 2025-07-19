@@ -239,37 +239,34 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     <div className="flex gap-8 relative min-h-[500px] pb-20">
       {/* Sidebar */}
       <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px]" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-        {/* Sticky Header */}
-        <div className="mb-4">
-          <div className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
-            <div className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl px-6 pt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-6 w-6 text-orange-500" />
-                <span className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</span>
-              </div>
-              <div className="flex gap-2 w-full">
-                <input
-                  type="text"
-                  placeholder="Search files..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
-                />
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  className="px-2 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
-                >
-                  <option value="All">All</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Reviewed">Reviewed</option>
-                </select>
-              </div>
+        {/* Unified Dev Review Sidebar */}
+        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
+          {/* Header/Search/Filter */}
+          <div className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl px-6 pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-6 w-6 text-orange-500" />
+              <span className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</span>
+            </div>
+            <div className="flex gap-2 w-full">
+              <input
+                type="text"
+                placeholder="Search files..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="flex-1 px-3 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+              />
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="px-2 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+              >
+                <option value="All">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Reviewed">Reviewed</option>
+              </select>
             </div>
           </div>
-        </div>
-        {/* Unreviewed Files Section (no inner scroll) */}
-        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
+          {/* Unreviewed Files Section (no inner scroll) */}
           <CardHeader className="pb-2 bg-white dark:bg-slate-900 rounded-t-xl sticky top-0 z-20">
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
@@ -297,9 +294,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               />
             )}
           </CardContent>
-        </Card>
-        {/* Reviewed Files Section (no inner scroll) */}
-        <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
+          {/* Reviewed Files Section (no inner scroll) */}
           <CardHeader className="pb-2 bg-white dark:bg-slate-900 rounded-t-xl sticky top-0 z-20">
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
@@ -313,9 +308,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
-        <FileTreeView
+              <FileTreeView
                 files={mappedReviewedFiles}
-          onFileSelect={file => setSelectedFileId(file.id)}
+                onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
                 defaultExpandedSections={[]}
@@ -370,25 +365,25 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                 </div>
               </CardHeader>
               <CardContent className="pt-4 pb-2">
-                <ConversionViewer
-                  file={mapToFileItem(selectedFile)}
+            <ConversionViewer
+                file={mapToFileItem(selectedFile)}
                   onManualEdit={newContent => handleSaveEdit(selectedFile, newContent)}
-                  onDismissIssue={() => {}}
+              onDismissIssue={() => {}}
                   hideEdit={selectedFile.status === 'reviewed'}
-                  onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
-                  onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
-                  hasPrev={hasPrev}
-                  hasNext={hasNext}
-                />
+              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+            />
               </CardContent>
               <CardFooter className="flex justify-end gap-4">
                 {/* Action Buttons previously outside the card, now inside */}
                 {/* Place your Mark as Reviewed, Delete File, etc. buttons here. Example: */}
-                {selectedFile.status !== 'reviewed' && (
+              {selectedFile.status !== 'reviewed' && (
                   <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleMarkAsReviewed(selectedFile)}>
                     Mark as Reviewed
-                  </Button>
-                )}
+              </Button>
+              )}
                 <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDelete(selectedFile.id)}>
                   Delete File
                 </Button>
