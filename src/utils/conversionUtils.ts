@@ -77,6 +77,7 @@ export const convertSybaseToOracle = async (
     id: uuidv4(),
     originalFile: file,
     convertedCode,
+    aiGeneratedCode: '',
     issues,
     dataTypeMapping,
     performance: performanceMetrics,
@@ -182,7 +183,9 @@ const extractDataTypeMappings = (code: string): DataTypeMapping[] => {
 
 // Analyze code complexity quantitatively
 const analyzeCodeComplexity = (code: string) => {
-  const lines = code.split('\n');
+  // Remove trailing blank lines for consistent line counting
+  const cleanedCode = code.replace(/\n+$/, '');
+  const lines = cleanedCode.split('\n');
   const totalLines = lines.length;
   const commentLines = lines.filter(line => line.trim().startsWith('--') || line.trim().startsWith('/*')).length;
   const emptyLines = lines.filter(line => line.trim() === '').length;
@@ -193,13 +196,16 @@ const analyzeCodeComplexity = (code: string) => {
   const functions = (code.match(/\b(create|procedure|function|trigger)\b/gi) || []).length;
   const complexity = controlStructures + functions + 1;
   
-  // Calculate maintainability index (remove clamp for debugging)
-  let maintainabilityIndex = 171 - 5.2 * Math.log(complexity) - 0.23 * Math.log(codeLines) - 16.2 * Math.log(commentLines + 1);
-  // maintainabilityIndex = Math.max(0, Math.min(100, maintainabilityIndex)); // REMOVE CLAMP
+  // Custom maintainability index: more sensitive, not stuck at 100
+  let maintainabilityIndex = 100;
+  maintainabilityIndex -= (complexity - 1) * 2;
+  maintainabilityIndex -= (codeLines - 50) * 0.5;
+  maintainabilityIndex -= (commentLines < codeLines * 0.1 ? 10 : 0);
+  maintainabilityIndex = Math.max(0, Math.min(100, Math.round(maintainabilityIndex)));
   console.log('[PERF] complexity:', complexity);
   console.log('[PERF] codeLines:', codeLines);
   console.log('[PERF] commentLines:', commentLines);
-  console.log('[PERF] raw maintainabilityIndex:', maintainabilityIndex);
+  console.log('[PERF] maintainabilityIndex:', maintainabilityIndex);
 
   return {
     totalLines,
@@ -209,7 +215,7 @@ const analyzeCodeComplexity = (code: string) => {
     controlStructures,
     functions,
     cyclomaticComplexity: complexity,
-    maintainabilityIndex: Math.round(maintainabilityIndex),
+    maintainabilityIndex,
     commentRatio: commentLines / totalLines,
     codeDensity: codeLines / totalLines
   };
