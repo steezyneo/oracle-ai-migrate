@@ -218,36 +218,38 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     <div className="flex gap-8 relative min-h-[500px] pb-20">
       {/* Sidebar */}
       <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-        {/* Search/Filter Controls */}
-        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-6 w-6 text-orange-500" />
-              <CardTitle className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</CardTitle>
-            </div>
-            <div className="flex gap-2 w-full">
-              <input
-                type="text"
-                placeholder="Search files..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="flex-1 px-3 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
-              />
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="px-2 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
-              >
-                <option value="All">All</option>
-                <option value="Pending">Pending</option>
-                <option value="Reviewed">Reviewed</option>
-              </select>
-            </div>
-          </CardHeader>
-        </Card>
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-[inherit]">
+          <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
+            <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-6 w-6 text-orange-500" />
+                <CardTitle className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</CardTitle>
+              </div>
+              <div className="flex gap-2 w-full">
+                <input
+                  type="text"
+                  placeholder="Search files..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+                />
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="px-2 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+                >
+                  <option value="All">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Reviewed">Reviewed</option>
+                </select>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
         {/* Unreviewed Files Section */}
         <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[72px] z-10" style={{ background: 'inherit' }}>
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
                 <Folder className="h-4 w-4 text-orange-500" />
@@ -276,7 +278,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </Card>
         {/* Reviewed Files Section */}
         <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[168px] z-10" style={{ background: 'inherit' }}>
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
                 <Folder className="h-4 w-4 text-green-600" />
