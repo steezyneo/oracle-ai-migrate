@@ -49,7 +49,6 @@ interface FileTreeViewProps {
   onSearchTermChange?: (term: string) => void;
   onStatusFilterChange?: (status: string) => void;
   onResetMigration?: () => void;
-  stickySectionHeaders?: boolean;
 }
 
 const FileTreeView: React.FC<FileTreeViewProps> = ({
@@ -70,7 +69,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onSearchTermChange,
   onStatusFilterChange,
   onResetMigration,
-  stickySectionHeaders = false,
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(defaultExpandedSections)
@@ -127,12 +125,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     return null;
   };
 
-  const sectionTops = {
-    tables: 0,
-    procedures: 48,
-    triggers: 96,
-    other: 144,
-  };
   const renderSection = (sectionKey: string, sectionTitle: string, sectionFiles: FileItem[]) => {
     const isExpanded = expandedSections.has(sectionKey);
     const pendingCount = sectionFiles.filter(f => f.conversionStatus === 'pending').length;
@@ -141,34 +133,26 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                    sectionKey === 'triggers' ? 'trigger' : 'other';
     return (
       <div key={sectionKey} className="mb-2">
-        <div className="flex items-center">
-          <div
-            className={cn(
-              'flex-1 flex items-center p-2 hover:bg-gray-50 rounded',
-              stickySectionHeaders && 'sticky z-10',
-            )}
-            style={stickySectionHeaders ? { top: `${sectionTops[sectionKey] || 0}px`, background: 'inherit' } : {}}
+        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleSection(sectionKey)}
+            className="flex-1 justify-start p-0 h-auto font-medium"
           >
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleSection(sectionKey)}
-              className="flex-1 justify-start p-0 h-auto font-medium"
-            >
-              {isExpanded ? 
-                <ChevronDown className="h-4 w-4 mr-2" /> : 
-                <ChevronRight className="h-4 w-4 mr-2" />
-              }
-              {getSectionIcon(sectionKey)}
-              <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
-            </Button>
-          </div>
+            {isExpanded ? 
+              <ChevronDown className="h-4 w-4 mr-2" /> : 
+              <ChevronRight className="h-4 w-4 mr-2" />
+            }
+            {getSectionIcon(sectionKey)}
+            <span className="ml-2">{sectionTitle} ({sectionFiles.length})</span>
+          </Button>
           {!hideActions && pendingCount > 0 && onConvertAllByType && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => onConvertAllByType(typeKey as 'table' | 'procedure' | 'trigger' | 'other')}
-              className="text-xs px-2 py-1 h-6 w-full mt-2"
+              className="text-xs px-2 py-1 h-6"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Convert All ({pendingCount})

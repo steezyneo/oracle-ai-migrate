@@ -249,7 +249,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </div>
         {/* Unreviewed Files Section */}
         <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[72px] z-10" style={{ background: 'inherit' }}>
+          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[56px] z-10" style={{ background: 'inherit' }}>
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
                 <Folder className="h-4 w-4 text-orange-500" />
@@ -278,7 +278,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </Card>
         {/* Reviewed Files Section */}
         <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[168px] z-10" style={{ background: 'inherit' }}>
+          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[calc(56px+64px)] z-10" style={{ background: 'inherit' }}>
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
                 <Folder className="h-4 w-4 text-green-600" />

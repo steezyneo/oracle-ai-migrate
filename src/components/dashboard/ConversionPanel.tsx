@@ -127,9 +127,9 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
   const progressPercent = totalFiles > 0 ? Math.round((completedFiles / totalFiles) * 100) : 0;
 
   return (
-    <div className="flex gap-8 relative min-h-[500px] pb-20">
+    <div className="grid grid-cols-12 gap-8">
       {/* Sidebar */}
-      <div className="flex flex-col h-full w-[400px] min-w-[320px] max-w-[440px] overflow-y-auto overflow-x-hidden" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+      <div className="col-span-4">
         <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
           <CardHeader className="pb-3 flex flex-col gap-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
             <div className="flex flex-row items-center justify-between w-full mb-2">
@@ -164,25 +164,24 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
             </div>
           </CardHeader>
           <CardContent className="pt-2 pb-4">
-        <FileTreeView
-          files={files}
-          onFileSelect={onFileSelect}
-          onConvertFile={onConvertFile}
-          onConvertAllByType={onConvertAllByType}
-          onConvertAll={onConvertAll}
-          onFixFile={onFixFile}
-          selectedFile={selectedFile}
-          isConverting={isConverting}
-          convertingFileIds={convertingFileIds}
-          hideActions={false}
-          defaultExpandedSections={['tables','procedures','triggers']}
-          searchTerm={searchTerm}
-          statusFilter={statusFilter}
-          onSearchTermChange={setSearchTerm}
-          onStatusFilterChange={setStatusFilter}
-          onResetMigration={handleResetMigration}
-              stickySectionHeaders={true}
-        />
+            <FileTreeView
+              files={files}
+              onFileSelect={onFileSelect}
+              onConvertFile={onConvertFile}
+              onConvertAllByType={onConvertAllByType}
+              onConvertAll={onConvertAll}
+              onFixFile={onFixFile}
+              selectedFile={selectedFile}
+              isConverting={isConverting}
+              convertingFileIds={convertingFileIds}
+              hideActions={false}
+              defaultExpandedSections={['tables','procedures','triggers']}
+              searchTerm={searchTerm}
+              statusFilter={statusFilter}
+              onSearchTermChange={setSearchTerm}
+              onStatusFilterChange={setStatusFilter}
+              onResetMigration={handleResetMigration}
+            />
           </CardContent>
         </Card>
         {/* Confirmation Dialog for Reset Migration */}
@@ -201,7 +200,7 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
       </div>
 
       {/* Main Panel */}
-      <div className="flex-1 min-w-0">
+      <div className="col-span-8">
         {/* Progress Bar */}
         {showProgress && (
           <div className="mb-6">
@@ -224,39 +223,39 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
                 </div>
               </CardHeader>
               <CardContent className="pt-4 pb-2">
-            <ConversionViewer
-              file={selectedFile}
-              onManualEdit={onManualEdit}
-              onDismissIssue={onDismissIssue}
-              hideEdit={true}
-              onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
-              onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
-              hasPrev={hasPrev}
-              hasNext={hasNext}
-            />
+                <ConversionViewer
+                  file={selectedFile}
+                  onManualEdit={onManualEdit}
+                  onDismissIssue={onDismissIssue}
+                  hideEdit={true}
+                  onPrevFile={hasPrev ? () => onFileSelect(allFilteredFiles[currentIndex - 1]) : undefined}
+                  onNextFile={hasNext ? () => onFileSelect(allFilteredFiles[currentIndex + 1]) : undefined}
+                  hasPrev={hasPrev}
+                  hasNext={hasNext}
+                />
               </CardContent>
             </Card>
             {files.some(f => f.conversionStatus === 'success') && (
               <div className="flex justify-end gap-4 mt-6">
                 <div className="relative group">
-                <Button 
-                  onClick={onMoveToDevReview}
+                  <Button
+                    onClick={onMoveToDevReview}
                     className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-md hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center gap-2"
-                >
+                  >
                     <FileText className="h-5 w-5" />
-                  Move to Dev Review
-                </Button>
+                    Move to Dev Review
+                  </Button>
                   <span className="absolute left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 bg-black text-white text-xs rounded px-2 py-1 pointer-events-none transition-opacity">Send all successful files to Dev Review</span>
                 </div>
                 <div className="relative group">
-                <Button 
-                  onClick={onGenerateReport}
+                  <Button
+                    onClick={onGenerateReport}
                     className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
-                  disabled={!canCompleteMigration}
-                >
+                    disabled={!canCompleteMigration}
+                  >
                     <Download className="h-5 w-5" />
-                  Complete Migration
-                </Button>
+                    Complete Migration
+                  </Button>
                   <span className="absolute left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 bg-black text-white text-xs rounded px-2 py-1 pointer-events-none transition-opacity">Generate a migration report for all successful files</span>
                 </div>
               </div>
