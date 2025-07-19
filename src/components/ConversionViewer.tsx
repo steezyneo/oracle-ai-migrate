@@ -147,24 +147,7 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">{file.name}</h2>
-          {file.status === 'reviewed' ? (
-            <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">reviewed</Badge>
-          ) : (
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">unreviewed</Badge>
-          )}
-          <Badge variant="outline">{file.type}</Badge>
-        </div>
-        {file.convertedContent && (
-          <FileDownloader
-            fileName={file.name}
-            content={file.convertedContent}
-            fileType={file.type}
-          />
-        )}
-      </div>
+      {/* Removed top bar with filename, badges, and download button. Now only tabs and code sections remain. */}
       <Tabs defaultValue="code" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="code">Code</TabsTrigger>

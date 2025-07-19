@@ -220,6 +220,25 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
                   <CardTitle className="text-xl font-bold">{selectedFile.name}</CardTitle>
                   <span className="capitalize text-sm px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 ml-2">{selectedFile.type}</span>
                   <span className={`text-xs px-2 py-1 rounded ml-2 ${selectedFile.conversionStatus === 'success' ? 'bg-green-100 text-green-700' : selectedFile.conversionStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.conversionStatus}</span>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="ml-2"
+                    onClick={() => {
+                      const blob = new Blob([selectedFile.content], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = selectedFile.name;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Download original code"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-4 pb-2">
