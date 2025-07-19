@@ -208,14 +208,45 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6 relative min-h-[500px] pb-20">
+    <div className="grid grid-cols-12 gap-8 relative min-h-[500px] pb-20">
+      {/* Sidebar */}
       <div className="col-span-4 flex flex-col h-full">
-        <Card className="mb-4">
-          <CardHeader className="pb-2">
+        {/* Search/Filter Controls */}
+        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
+          <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+            <div className="flex flex-row items-center justify-between w-full mb-2">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-orange-700 dark:text-orange-200">
+                <Clock className="h-5 w-5 text-orange-500" />
+                Dev Review
+              </CardTitle>
+            </div>
+            <div className="flex gap-2 w-full">
+              <input
+                type="text"
+                placeholder="Search files..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="flex-1 px-3 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+              />
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="px-2 py-2 rounded border border-gray-200 focus:ring-2 focus:ring-orange-400 focus:outline-none text-sm bg-white dark:bg-slate-800"
+              >
+                <option value="All">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Reviewed">Reviewed</option>
+              </select>
+            </div>
+          </CardHeader>
+        </Card>
+        {/* Unreviewed Files Section */}
+        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
+          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
                 <Folder className="h-4 w-4 text-orange-500" />
-                UnReviewed Files ({pendingFiles.length})
+                Unreviewed Files <span className="ml-1 bg-orange-100 text-orange-700 rounded-full px-2 py-0.5 text-xs">{pendingFiles.length}</span>
               </div>
               <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
                 {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -224,27 +255,39 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showUnreviewed && (
-              <FileTreeView
-                files={mappedPendingFiles}
-                onFileSelect={file => setSelectedFileId(file.id)}
-                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                hideActions={true}
-                defaultExpandedSections={[]}
-                searchTerm={searchTerm}
-                statusFilter={statusFilter}
-                onSearchTermChange={setSearchTerm}
-                onStatusFilterChange={setStatusFilter}
-              />
+              <ScrollArea className="h-64 border rounded-md">
+                {mappedPendingFiles.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">No unreviewed files</div>
+                ) : (
+                  mappedPendingFiles.map(file => (
+                    <div
+                      key={file.id}
+                      className={cn(
+                        "flex items-center justify-between p-2 rounded cursor-pointer group transition-all duration-150",
+                        selectedFileId === file.id ? "bg-orange-50 border border-orange-200" : "hover:bg-orange-50"
+                      )}
+                      onClick={() => setSelectedFileId(file.id)}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm truncate font-medium text-orange-900 dark:text-orange-100">{file.name}</span>
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-orange-100 text-orange-700">{file.type}</span>
+                      </div>
+                      <Badge variant="secondary" className="ml-2">Pending</Badge>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
-        {/* Review Files Folder */}
-        <Card className="mt-6">
-          <CardHeader className="pb-2">
+        {/* Reviewed Files Section */}
+        <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
+          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
                 <Folder className="h-4 w-4 text-green-600" />
-                Reviewed Files ({reviewedFiles.length})
+                Reviewed Files <span className="ml-1 bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-xs">{reviewedFiles.length}</span>
               </div>
               <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
                 {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -253,17 +296,29 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
-        <FileTreeView
-                files={mappedReviewedFiles}
-          onFileSelect={file => setSelectedFileId(file.id)}
-                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                hideActions={true}
-                defaultExpandedSections={[]}
-                searchTerm={searchTerm}
-                statusFilter={statusFilter}
-                onSearchTermChange={setSearchTerm}
-                onStatusFilterChange={setStatusFilter}
-              />
+              <ScrollArea className="h-64 border rounded-md">
+                {mappedReviewedFiles.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">No reviewed files</div>
+                ) : (
+                  mappedReviewedFiles.map(file => (
+                    <div
+                      key={file.id}
+                      className={cn(
+                        "flex items-center justify-between p-2 rounded cursor-pointer group transition-all duration-150",
+                        selectedFileId === file.id ? "bg-green-50 border border-green-200" : "hover:bg-green-50"
+                      )}
+                      onClick={() => setSelectedFileId(file.id)}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm truncate font-medium text-green-900 dark:text-green-100">{file.name}</span>
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">{file.type}</span>
+                      </div>
+                      <Badge variant="default" className="ml-2">Reviewed</Badge>
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
