@@ -232,9 +232,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   return (
     <div className="flex gap-8 relative min-h-[500px] pb-20">
       {/* Sidebar */}
-      <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+      <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px]" style={{ maxHeight: 'calc(100vh - 120px)' }}>
         {/* Sticky Header */}
-        <div ref={searchCardRef} className="sticky top-0 z-10 bg-[inherit]">
+        <div className="sticky top-0 z-10 bg-[inherit]">
           <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
             <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
               <div className="flex items-center gap-2 mb-2">
@@ -262,64 +262,67 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             </CardHeader>
           </Card>
         </div>
-        {/* Unreviewed Files Section */}
-        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky z-10" style={{ background: 'inherit', top: stickyOffset }}>
-            <div className="flex items-center justify-between">
-              <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
-                <Folder className="h-4 w-4 text-orange-500" />
-                Unreviewed Files <Badge className="ml-1" variant="secondary">{pendingFiles.length}</Badge>
+        {/* Scrollable file sections */}
+        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px - 110px)' }}>
+          {/* Unreviewed Files Section */}
+          <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
+            <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-0 z-10" style={{ background: 'inherit' }}>
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-orange-500" />
+                  Unreviewed Files <Badge className="ml-1" variant="secondary">{pendingFiles.length}</Badge>
+                </div>
+                <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
+                  {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </button>
               </div>
-              <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
-                {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            {showUnreviewed && (
-              <FileTreeView
-                files={mappedPendingFiles}
-                onFileSelect={file => setSelectedFileId(file.id)}
-                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                hideActions={true}
-                defaultExpandedSections={[]}
-                searchTerm={searchTerm}
-                statusFilter={statusFilter}
-                onSearchTermChange={setSearchTerm}
-                onStatusFilterChange={setStatusFilter}
-              />
-            )}
-          </CardContent>
-        </Card>
-        {/* Reviewed Files Section */}
-        <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky z-10" style={{ background: 'inherit', top: stickyOffset * 2 }}>
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-green-700 flex items-center gap-2">
-                <Folder className="h-4 w-4 text-green-600" />
-                Reviewed Files <Badge className="ml-1" variant="secondary">{reviewedFiles.length}</Badge>
+            </CardHeader>
+            <CardContent className="pt-0 pb-2">
+              {showUnreviewed && (
+                <FileTreeView
+                  files={mappedPendingFiles}
+                  onFileSelect={file => setSelectedFileId(file.id)}
+                  selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                  hideActions={true}
+                  defaultExpandedSections={[]}
+                  searchTerm={searchTerm}
+                  statusFilter={statusFilter}
+                  onSearchTermChange={setSearchTerm}
+                  onStatusFilterChange={setStatusFilter}
+                />
+              )}
+            </CardContent>
+          </Card>
+          {/* Reviewed Files Section */}
+          <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
+            <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-0 z-10" style={{ background: 'inherit' }}>
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-green-700 flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-green-600" />
+                  Reviewed Files <Badge className="ml-1" variant="secondary">{reviewedFiles.length}</Badge>
+                </div>
+                <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
+                  {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </button>
               </div>
-              <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
-                {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            {showReviewed && (
-        <FileTreeView
-                files={mappedReviewedFiles}
-          onFileSelect={file => setSelectedFileId(file.id)}
-                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                hideActions={true}
-                defaultExpandedSections={[]}
-                searchTerm={searchTerm}
-                statusFilter={statusFilter}
-                onSearchTermChange={setSearchTerm}
-                onStatusFilterChange={setStatusFilter}
-              />
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="pt-0 pb-2">
+              {showReviewed && (
+                <FileTreeView
+                  files={mappedReviewedFiles}
+                  onFileSelect={file => setSelectedFileId(file.id)}
+                  selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                  hideActions={true}
+                  defaultExpandedSections={[]}
+                  searchTerm={searchTerm}
+                  statusFilter={statusFilter}
+                  onSearchTermChange={setSearchTerm}
+                  onStatusFilterChange={setStatusFilter}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
       {/* Main Panel */}
       <div className="flex-1 min-w-0">
