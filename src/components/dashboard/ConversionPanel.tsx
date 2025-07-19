@@ -6,6 +6,7 @@ import { FileText, Download } from 'lucide-react';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 
 interface FileItem {
   id: string;
@@ -119,6 +120,12 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
     setShowResetDialog(false);
   };
 
+  // Progress bar calculation
+  const totalFiles = files.length;
+  const completedFiles = files.filter(f => f.conversionStatus === 'success' || f.conversionStatus === 'failed').length;
+  const showProgress = totalFiles > 0 && completedFiles < totalFiles;
+  const progressPercent = totalFiles > 0 ? Math.round((completedFiles / totalFiles) * 100) : 0;
+
   return (
     <div className="grid grid-cols-12 gap-8">
       {/* Sidebar */}
@@ -194,6 +201,16 @@ const ConversionPanel: React.FC<ConversionPanelProps> = ({
 
       {/* Main Panel */}
       <div className="col-span-8">
+        {/* Progress Bar */}
+        {showProgress && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-200">Conversion Progress</span>
+              <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{completedFiles} / {totalFiles} files converted</span>
+            </div>
+            <Progress value={progressPercent} className="h-3 rounded-full bg-blue-100 dark:bg-blue-900/30" />
+          </div>
+        )}
         {selectedFile ? (
           <>
             <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
