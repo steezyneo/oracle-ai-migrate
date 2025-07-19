@@ -70,9 +70,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onStatusFilterChange,
   onResetMigration,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(defaultExpandedSections)
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
+    if (defaultExpandedSections && defaultExpandedSections.length > 0) {
+      return new Set(defaultExpandedSections);
+    }
+    return new Set(['tables', 'procedures', 'triggers']);
+  });
 
   // Filter files by search and status
   const filteredFiles = files.filter(file => {
@@ -133,7 +136,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                    sectionKey === 'triggers' ? 'trigger' : 'other';
     return (
       <div key={sectionKey} className="mb-2">
-        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded sticky top-0 z-10 bg-white dark:bg-slate-900" style={{ boxShadow: '0 1px 0 0 #e5e7eb' }}>
           <Button
             variant="ghost"
             size="sm"
