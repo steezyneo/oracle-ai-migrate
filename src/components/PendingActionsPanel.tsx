@@ -235,11 +235,11 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px]" style={{ maxHeight: 'calc(100vh - 120px)' }}>
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 bg-[inherit]">
-          <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
-            <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+          <div className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
+            <div className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl px-6 pt-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-6 w-6 text-orange-500" />
-                <CardTitle className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</CardTitle>
+                <span className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</span>
               </div>
               <div className="flex gap-2 w-full">
                 <input
@@ -259,70 +259,69 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                   <option value="Reviewed">Reviewed</option>
                 </select>
               </div>
-            </CardHeader>
-          </Card>
+            </div>
+          </div>
         </div>
-        {/* Scrollable file sections */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px - 110px)' }}>
-          {/* Unreviewed Files Section */}
-          <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
-            <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-0 z-10" style={{ background: 'inherit' }}>
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
-                  <Folder className="h-4 w-4 text-orange-500" />
-                  Unreviewed Files <Badge className="ml-1" variant="secondary">{pendingFiles.length}</Badge>
-                </div>
-                <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
-                  {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                </button>
+        {/* Unreviewed Files Section (no inner scroll) */}
+        <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
+          <CardHeader className="pb-2 bg-white dark:bg-slate-900 rounded-t-xl sticky top-0 z-20">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
+                <Folder className="h-4 w-4 text-orange-500" />
+                Unreviewed Files <Badge className="ml-1" variant="secondary">{pendingFiles.length}</Badge>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 pb-2">
-              {showUnreviewed && (
-                <FileTreeView
-                  files={mappedPendingFiles}
-                  onFileSelect={file => setSelectedFileId(file.id)}
-                  selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                  hideActions={true}
-                  defaultExpandedSections={[]}
-                  searchTerm={searchTerm}
-                  statusFilter={statusFilter}
-                  onSearchTermChange={setSearchTerm}
-                  onStatusFilterChange={setStatusFilter}
-                />
-              )}
-            </CardContent>
-          </Card>
-          {/* Reviewed Files Section */}
-          <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
-            <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-0 z-10" style={{ background: 'inherit' }}>
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-green-700 flex items-center gap-2">
-                  <Folder className="h-4 w-4 text-green-600" />
-                  Reviewed Files <Badge className="ml-1" variant="secondary">{reviewedFiles.length}</Badge>
-                </div>
-                <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
-                  {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                </button>
+              <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
+                {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            {showUnreviewed && (
+              <FileTreeView
+                files={mappedPendingFiles}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+                defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+                // Remove any inner scroll or maxHeight props
+              />
+            )}
+          </CardContent>
+        </Card>
+        {/* Reviewed Files Section (no inner scroll) */}
+        <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
+          <CardHeader className="pb-2 bg-white dark:bg-slate-900 rounded-t-xl sticky top-0 z-20">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-green-700 flex items-center gap-2">
+                <Folder className="h-4 w-4 text-green-600" />
+                Reviewed Files <Badge className="ml-1" variant="secondary">{reviewedFiles.length}</Badge>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 pb-2">
-              {showReviewed && (
-                <FileTreeView
-                  files={mappedReviewedFiles}
-                  onFileSelect={file => setSelectedFileId(file.id)}
-                  selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
-                  hideActions={true}
-                  defaultExpandedSections={[]}
-                  searchTerm={searchTerm}
-                  statusFilter={statusFilter}
-                  onSearchTermChange={setSearchTerm}
-                  onStatusFilterChange={setStatusFilter}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
+                {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            {showReviewed && (
+              <FileTreeView
+                files={mappedReviewedFiles}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+                defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+                // Remove any inner scroll or maxHeight props
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
       {/* Main Panel */}
       <div className="flex-1 min-w-0">

@@ -236,7 +236,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           <div className="flex flex-row items-center justify-between w-full mb-2">
             <CardTitle className="text-lg">Project Structure</CardTitle>
             <div className="flex gap-2">
-              {/* Only show Reset Migration button, not Clear */}
               {onConvertAll && totalPending > 0 && (
                 <Button
                   onClick={onConvertAll}
@@ -248,7 +247,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               )}
             </div>
           </div>
-          {/* Search and Filter Row */}
           <div className="flex flex-row gap-2 w-full mb-2">
             <Input
               type="text"
@@ -271,7 +269,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         </CardHeader>
       )}
       <CardContent className="p-0">
-        <div className="space-y-1 px-4 pb-4">
+        <div className="space-y-1 px-4 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
           {renderSection('tables', 'Tables', tables)}
           {renderSection('procedures', 'Procedures', procedures)}
           {renderSection('triggers', 'Triggers', triggers)}
