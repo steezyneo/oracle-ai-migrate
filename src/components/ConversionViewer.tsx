@@ -43,6 +43,12 @@ interface PerformanceMetrics {
   };
   maintainabilityIndex?: number;
   conversionTimeMs?: number;
+  originalLines?: number;
+  convertedLines?: number;
+  originalLoops?: number;
+  convertedLoops?: number;
+  linesReduced?: number;
+  loopsReduced?: number;
 }
 
 interface FileItem {
@@ -437,38 +443,51 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 )}
 
                 {/* Enhanced Performance Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Lines Reduced */}
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Lines Reduced</h4>
-                    <p className="text-2xl font-bold text-green-600">
-                      {file.performanceMetrics.linesReduced || 0}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {file.performanceMetrics.originalLines || 0} → {file.performanceMetrics.convertedLines || 0}
-                    </p>
-                  </Card>
-                  
-                  {/* Loops Reduced */}
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Loops Reduced</h4>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {file.performanceMetrics.loopsReduced || 0}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {file.performanceMetrics.originalLoops || 0} → {file.performanceMetrics.convertedLoops || 0}
-                    </p>
-                  </Card>
-                  
-                  {/* Conversion Time */}
-                  <Card className="p-4 text-center">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {file.performanceMetrics.conversionTimeMs || 0}ms
-                    </p>
-                    <p className="text-xs text-gray-500">Processing Time</p>
-                  </Card>
-                </div>
+                {/* Lines Reduced/Increased */}
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
+                    const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
+                    if (diff < 0) return 'Lines Reduced';
+                    if (diff > 0) return 'Lines Increased';
+                    return 'No Change';
+                  })()}</h4>
+                  <p className={`text-2xl font-bold ${(() => {
+                    const diff = (file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0);
+                    if (diff < 0) return 'text-green-600';
+                    if (diff > 0) return 'text-red-600';
+                    return 'text-gray-600';
+                  })()}`}>{Math.abs((file.performanceMetrics.convertedLines || 0) - (file.performanceMetrics.originalLines || 0))}</p>
+                  <p className="text-xs text-gray-500">
+                    {(file.performanceMetrics.originalLines || 0)} → {(file.performanceMetrics.convertedLines || 0)}
+                  </p>
+                </Card>
+                {/* Loops Reduced/Increased */}
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">{(() => {
+                    const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
+                    if (diff < 0) return 'Loops Reduced';
+                    if (diff > 0) return 'Loops Increased';
+                    return 'No Change';
+                  })()}</h4>
+                  <p className={`text-2xl font-bold ${(() => {
+                    const diff = (file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0);
+                    if (diff < 0) return 'text-blue-600';
+                    if (diff > 0) return 'text-red-600';
+                    return 'text-gray-600';
+                  })()}`}>{Math.abs((file.performanceMetrics.convertedLoops || 0) - (file.performanceMetrics.originalLoops || 0))}</p>
+                  <p className="text-xs text-gray-500">
+                    {(file.performanceMetrics.originalLoops || 0)} → {(file.performanceMetrics.convertedLoops || 0)}
+                  </p>
+                </Card>
+                
+                {/* Conversion Time */}
+                <Card className="p-4 text-center">
+                  <h4 className="text-sm font-medium text-gray-600 mb-2">Conversion Time</h4>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {file.performanceMetrics.conversionTimeMs || 0}ms
+                  </p>
+                  <p className="text-xs text-gray-500">Processing Time</p>
+                </Card>
                 
                 {/* Recommendations */}
                 {file.performanceMetrics.recommendations && file.performanceMetrics.recommendations.length > 0 && (

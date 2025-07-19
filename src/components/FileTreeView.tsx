@@ -81,8 +81,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       statusFilter === 'All' ? true :
       statusFilter === 'Pending' ? file.conversionStatus === 'pending' :
       statusFilter === 'Success' ? file.conversionStatus === 'success' :
-      statusFilter === 'Failed' ? file.conversionStatus === 'failed' :
-      statusFilter === 'Reviewed' ? file.conversionStatus === 'reviewed' : true;
+      statusFilter === 'Failed' ? file.conversionStatus === 'failed' : true;
     return matchesSearch && matchesStatus;
   });
 
@@ -235,11 +234,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             <CardTitle className="text-lg">Project Structure</CardTitle>
             <div className="flex gap-2">
               {/* Only show Reset Migration button, not Clear */}
-              {onResetMigration && (
-                <Button variant="destructive" onClick={onResetMigration} className="text-xs px-3 py-1 h-7">
-                  Reset Migration
-                </Button>
-              )}
               {onConvertAll && totalPending > 0 && (
                 <Button
                   onClick={onConvertAll}
@@ -269,7 +263,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               <option value="Pending">Pending</option>
               <option value="Success">Success</option>
               <option value="Failed">Failed</option>
-              <option value="Reviewed">Reviewed</option>
             </select>
           </div>
         </CardHeader>

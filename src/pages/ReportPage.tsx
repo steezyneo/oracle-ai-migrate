@@ -59,7 +59,7 @@ const ReportPage: React.FC = () => {
 
   // Always use the lastBackState if available, otherwise default
   const handleBackToResults = () => {
-    const state = lastBackState.current || { activeTab: 'conversion', recentReport: report };
+    const state = lastBackState.current || { activeTab: 'devReview', recentReport: report };
     navigate('/migration', { state });
   };
 
