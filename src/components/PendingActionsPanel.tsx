@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +28,21 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   const [showReviewed, setShowReviewed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  // Ref and state for sticky offset
+  const searchCardRef = useRef<HTMLDivElement>(null);
+  const [stickyOffset, setStickyOffset] = useState(0);
+
+  useEffect(() => {
+    function updateOffset() {
+      if (searchCardRef.current) {
+        setStickyOffset(searchCardRef.current.offsetHeight);
+      }
+    }
+    updateOffset();
+    window.addEventListener('resize', updateOffset);
+    return () => window.removeEventListener('resize', updateOffset);
+  }, []);
 
   // Split files into pending and reviewed
   const pendingFiles = unreviewedFiles.filter(f => f.status !== 'reviewed');
@@ -219,7 +234,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       {/* Sidebar */}
       <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-[inherit]">
+        <div ref={searchCardRef} className="sticky top-0 z-10 bg-[inherit]">
           <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
             <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
               <div className="flex items-center gap-2 mb-2">
@@ -249,7 +264,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </div>
         {/* Unreviewed Files Section */}
         <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-orange-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[56px] z-10" style={{ background: 'inherit' }}>
+          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky z-10" style={{ background: 'inherit', top: stickyOffset }}>
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
                 <Folder className="h-4 w-4 text-orange-500" />
@@ -278,7 +293,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </Card>
         {/* Reviewed Files Section */}
         <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
-          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky top-[calc(56px+64px)] z-10" style={{ background: 'inherit' }}>
+          <CardHeader className="pb-2 bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl sticky z-10" style={{ background: 'inherit', top: stickyOffset * 2 }}>
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
                 <Folder className="h-4 w-4 text-green-600" />
