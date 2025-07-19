@@ -11,6 +11,7 @@ import MarkedForReviewPanel from './MarkedForReviewPanel';
 import FileTreeView from '@/components/FileTreeView';
 import ConversionViewer from '@/components/ConversionViewer';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface DevReviewPanelProps {
   canCompleteMigration: boolean;
@@ -31,6 +32,12 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   // Split files into pending and reviewed
   const pendingFiles = unreviewedFiles.filter(f => f.status !== 'reviewed');
   const reviewedFiles = unreviewedFiles.filter(f => f.status === 'reviewed');
+
+  // Progress bar for review completion
+  const totalFiles = unreviewedFiles.length;
+  const reviewedCount = reviewedFiles.length;
+  const reviewProgress = totalFiles > 0 ? Math.round((reviewedCount / totalFiles) * 100) : 0;
+  const showReviewProgress = totalFiles > 0 && reviewedCount < totalFiles;
 
   // Filter helpers
   const filterFile = (file: UnreviewedFile) => {
@@ -213,12 +220,10 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       <div className="col-span-4 flex flex-col h-full">
         {/* Search/Filter Controls */}
         <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
-          <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
-            <div className="flex flex-row items-center justify-between w-full mb-2">
-              <CardTitle className="flex items-center gap-2 text-lg font-bold text-orange-700 dark:text-orange-200">
-                <Clock className="h-5 w-5 text-orange-500" />
-                Dev Review
-              </CardTitle>
+          <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-6 w-6 text-orange-500" />
+              <CardTitle className="text-lg font-bold text-orange-700 dark:text-orange-200">Dev Review Files</CardTitle>
             </div>
             <div className="flex gap-2 w-full">
               <input
@@ -246,7 +251,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             <div className="flex items-center justify-between">
               <div className="font-bold text-orange-600 text-lg flex items-center gap-2">
                 <Folder className="h-4 w-4 text-orange-500" />
-                Unreviewed Files <span className="ml-1 bg-orange-100 text-orange-700 rounded-full px-2 py-0.5 text-xs">{pendingFiles.length}</span>
+                Unreviewed Files <Badge className="ml-1" variant="secondary">{pendingFiles.length}</Badge>
               </div>
               <button onClick={() => setShowUnreviewed(v => !v)} className="focus:outline-none">
                 {showUnreviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -255,29 +260,17 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showUnreviewed && (
-              <ScrollArea className="h-64 border rounded-md">
-                {mappedPendingFiles.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">No unreviewed files</div>
-                ) : (
-                  mappedPendingFiles.map(file => (
-                    <div
-                      key={file.id}
-                      className={cn(
-                        "flex items-center justify-between p-2 rounded cursor-pointer group transition-all duration-150",
-                        selectedFileId === file.id ? "bg-orange-50 border border-orange-200" : "hover:bg-orange-50"
-                      )}
-                      onClick={() => setSelectedFileId(file.id)}
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm truncate font-medium text-orange-900 dark:text-orange-100">{file.name}</span>
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-orange-100 text-orange-700">{file.type}</span>
-                      </div>
-                      <Badge variant="secondary" className="ml-2">Pending</Badge>
-                    </div>
-                  ))
-                )}
-              </ScrollArea>
+              <FileTreeView
+                files={mappedPendingFiles}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+                defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+              />
             )}
           </CardContent>
         </Card>
@@ -287,7 +280,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
             <div className="flex items-center justify-between">
               <div className="font-semibold text-green-700 flex items-center gap-2">
                 <Folder className="h-4 w-4 text-green-600" />
-                Reviewed Files <span className="ml-1 bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-xs">{reviewedFiles.length}</span>
+                Reviewed Files <Badge className="ml-1" variant="secondary">{reviewedFiles.length}</Badge>
               </div>
               <button onClick={() => setShowReviewed(v => !v)} className="focus:outline-none">
                 {showReviewed ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -296,115 +289,104 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
-              <ScrollArea className="h-64 border rounded-md">
-                {mappedReviewedFiles.length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">No reviewed files</div>
-                ) : (
-                  mappedReviewedFiles.map(file => (
-                    <div
-                      key={file.id}
-                      className={cn(
-                        "flex items-center justify-between p-2 rounded cursor-pointer group transition-all duration-150",
-                        selectedFileId === file.id ? "bg-green-50 border border-green-200" : "hover:bg-green-50"
-                      )}
-                      onClick={() => setSelectedFileId(file.id)}
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm truncate font-medium text-green-900 dark:text-green-100">{file.name}</span>
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">{file.type}</span>
-                      </div>
-                      <Badge variant="default" className="ml-2">Reviewed</Badge>
-                    </div>
-                  ))
-                )}
-              </ScrollArea>
+              <FileTreeView
+                files={mappedReviewedFiles}
+                onFileSelect={file => setSelectedFileId(file.id)}
+                selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
+                hideActions={true}
+                defaultExpandedSections={[]}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onSearchTermChange={setSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+              />
             )}
           </CardContent>
         </Card>
       </div>
+      {/* Main Panel */}
       <div className="col-span-8">
-        {selectedFile ? (
-          <>
-            <ConversionViewer
-              file={{
-                ...selectedFile,
-                name: selectedFile.file_name,
-                content: selectedFile.original_code,
-                convertedContent: editingFile === selectedFile.id ? editedContent : selectedFile.converted_code,
-                aiGeneratedCode: selectedFile.ai_generated_code || selectedFile.converted_code || '',
-                conversionStatus: 'pending',
-                errorMessage: undefined,
-                type: (() => {
-                  const lower = selectedFile.file_name.toLowerCase();
-                  if (lower.includes('trig')) return 'trigger';
-                  if (lower.includes('proc')) return 'procedure';
-                  if (lower.includes('tab') || lower.includes('table')) return 'table';
-                  return 'other';
-                })() as 'table' | 'procedure' | 'trigger' | 'other',
-                path: selectedFile.file_name,
-                dataTypeMapping: selectedFile.data_type_mapping || [],
-                issues: selectedFile.issues || [],
-                performanceMetrics: selectedFile.performance_metrics || {},
-              }}
-              onManualEdit={content => {
-                setEditingFile(selectedFile.id);
-                setEditedContent(content);
-              }}
-              onSaveEdit={(newContent) => handleSaveEdit(selectedFile, newContent)}
-              onDismissIssue={() => {}}
-              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
-              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
-              hasPrev={hasPrev}
-              hasNext={hasNext}
-            />
-            <div className="flex gap-2 mt-4">
-              {/* Removed Edit button */}
-              {selectedFile.status !== 'reviewed' && (
-              <Button
-                size="sm"
-                onClick={() => handleMarkAsReviewed(selectedFile)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Mark as Reviewed & Save
-              </Button>
-              )}
+        {/* Review Progress Bar */}
+        {showReviewProgress && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-green-700 dark:text-green-200">Review Progress</span>
+              <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{reviewedCount} / {totalFiles} files reviewed</span>
             </div>
-          </>
+            <Progress value={reviewProgress} className="h-3 rounded-full bg-green-100 dark:bg-green-900/30" />
+          </div>
+        )}
+        {/* Main File Review Card */}
+        {selectedFile ? (
+          <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6 text-green-500" />
+                <CardTitle className="text-xl font-bold">{selectedFile.file_name}</CardTitle>
+                <span className="capitalize text-sm px-2 py-1 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-200 ml-2">{selectedFile.type}</span>
+                <span className={`text-xs px-2 py-1 rounded ml-2 ${selectedFile.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.status}</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4 pb-2">
+              <ConversionViewer
+                file={mapToFileItem(selectedFile)}
+                onManualEdit={newContent => setEditedContent(newContent)}
+                onDismissIssue={() => {}}
+                hideEdit={true}
+                onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+                onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+              />
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 mt-6">
+                {selectedFile.status !== 'reviewed' && (
+                  <Button
+                    onClick={() => handleMarkAsReviewed(selectedFile)}
+                    className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <Check className="h-5 w-5" />
+                    Mark as Reviewed
+                  </Button>
+                )}
+                <Button
+                  onClick={() => handleDelete(selectedFile.id)}
+                  className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 shadow-md hover:from-red-600 hover:to-pink-700 transition-all duration-200 flex items-center gap-2"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  Delete File
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ) : (
-          <Card className="h-full flex items-center justify-center">
+          <Card className="h-full flex items-center justify-center shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-slate-800">
             <CardContent className="text-center">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Select a file to review
+              <FileText className="h-16 w-16 text-green-200 mx-auto mb-6" />
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                No File Selected
               </h3>
-              <p className="text-gray-600">
-                Choose a file from the list to see its details
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Choose a file from the left to review its conversion details.
               </p>
+              <span className="inline-block bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-200 px-4 py-2 rounded-full text-sm">Tip: Use the search and filter to quickly find files</span>
             </CardContent>
           </Card>
         )}
-      </div>
-      {/* Complete Migration and Delete buttons always visible at bottom right */}
-      <div className="absolute right-0 bottom-0 p-4 flex gap-2">
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => handleDelete(selectedFile?.id)}
-          disabled={!selectedFile}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
-        </Button>
-        <Button 
-          className="bg-green-600 hover:bg-green-700" 
-          onClick={onCompleteMigration}
-          disabled={!canCompleteMigration}
-        >
-          <Check className="h-4 w-4 mr-2" />
-          Complete Migration
-        </Button>
+        {/* Complete Migration Button */}
+        <div className="flex justify-end mt-8">
+          <div className="relative group">
+            <Button
+              onClick={onCompleteMigration}
+              className="px-8 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-md hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center gap-2"
+              disabled={!canCompleteMigration}
+            >
+              <Check className="h-6 w-6" />
+              Complete Migration
+            </Button>
+            <span className="absolute left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 bg-black text-white text-xs rounded px-2 py-1 pointer-events-none transition-opacity">Finish review and generate the final migration report</span>
+          </div>
+        </div>
       </div>
     </div>
   );
