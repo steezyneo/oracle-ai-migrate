@@ -175,87 +175,89 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
         
         <TabsContent value="code" className="space-y-4">
           {file.convertedContent ? (
-            <div className="grid grid-cols-2 gap-4 relative">
-              {/* Left Arrow */}
-              {hasPrev && onPrevFile && (
-                <button
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
-                  onClick={onPrevFile}
-                  style={{ left: '-2.5rem' }}
-                  aria-label="Previous file"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                </button>
-              )}
-              {/* Right Arrow */}
-              {hasNext && onNextFile && (
-                <button
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
-                  onClick={onNextFile}
-                  style={{ right: '-2.5rem' }}
-                  aria-label="Next file"
-                >
-                  <ArrowRight className="h-6 w-6" />
-                </button>
-              )}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                  {file.content}
-                </pre>
+            <div className="relative grid grid-cols-2 gap-4">
+              {/* Left Column: Original Sybase Code with Prev Arrow */}
+              <div className="flex items-start">
+                {hasPrev && onPrevFile && (
+                  <button
+                    className="mr-2 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onPrevFile}
+                    aria-label="Previous file"
+                  >
+                    <ArrowLeft className="h-6 w-6" />
+                  </button>
+                )}
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium mb-2">Original Sybase Code:</h3>
+                  <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                    {file.content}
+                  </pre>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
-                {/* Human Edits Metric */}
-                {isEditing ? (
-                  hideEdit ? (
-                    <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                      {file.convertedContent}
-                    </pre>
+              {/* Right Column: Converted Oracle Code with Next Arrow */}
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium mb-2 text-green-700">Converted Oracle Code:</h3>
+                  {/* Human Edits Metric */}
+                  {isEditing ? (
+                    hideEdit ? (
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                    ) : (
+                      <>
+                        <Textarea
+                          value={editedContent}
+                          onChange={e => setEditedContent(e.target.value)}
+                          className="min-h-64 font-mono text-sm mb-2"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleSaveEdit}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </>
+                    )
                   ) : (
                     <>
-                      <Textarea
-                        value={editedContent}
-                        onChange={e => setEditedContent(e.target.value)}
-                        className="min-h-64 font-mono text-sm mb-2"
-                      />
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={handleSaveEdit}
-                        >
-                          <Save className="h-4 w-4 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditing(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                      <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
+                        {file.convertedContent}
+                      </pre>
+                      {!hideEdit && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditing(true)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      )}
                     </>
-                  )
-                ) : (
-                  <>
-                    <pre className="bg-green-50 p-4 rounded text-sm overflow-auto max-h-64 whitespace-pre-wrap">
-                      {file.convertedContent}
-                    </pre>
-                    {!hideEdit && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditing(true)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </>
+                  )}
+                </div>
+                {hasNext && onNextFile && (
+                  <button
+                    className="ml-2 bg-white border rounded-full shadow p-1 hover:bg-gray-100"
+                    onClick={onNextFile}
+                    aria-label="Next file"
+                  >
+                    <ArrowRight className="h-6 w-6" />
+                  </button>
                 )}
               </div>
             </div>

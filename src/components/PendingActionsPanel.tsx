@@ -234,8 +234,8 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
       {/* Sidebar */}
       <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px]" style={{ maxHeight: 'calc(100vh - 120px)' }}>
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-[inherit]">
-          <div className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
+        <div className="mb-4">
+          <div className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
             <div className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl px-6 pt-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-6 w-6 text-orange-500" />
