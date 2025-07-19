@@ -291,9 +291,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
           </CardHeader>
           <CardContent className="pt-0 pb-2">
             {showReviewed && (
-              <FileTreeView
+        <FileTreeView
                 files={mappedReviewedFiles}
-                onFileSelect={file => setSelectedFileId(file.id)}
+          onFileSelect={file => setSelectedFileId(file.id)}
                 selectedFile={selectedFile ? mapToFileItem(selectedFile) : null}
                 hideActions={true}
                 defaultExpandedSections={[]}
@@ -330,27 +330,27 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               </div>
             </CardHeader>
             <CardContent className="pt-4 pb-2">
-              <ConversionViewer
+            <ConversionViewer
                 file={mapToFileItem(selectedFile)}
                 onManualEdit={newContent => setEditedContent(newContent)}
-                onDismissIssue={() => {}}
+              onDismissIssue={() => {}}
                 hideEdit={true}
-                onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
-                onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
-                hasPrev={hasPrev}
-                hasNext={hasNext}
-              />
+              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+            />
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 mt-6">
-                {selectedFile.status !== 'reviewed' && (
-                  <Button
-                    onClick={() => handleMarkAsReviewed(selectedFile)}
+              {selectedFile.status !== 'reviewed' && (
+              <Button
+                onClick={() => handleMarkAsReviewed(selectedFile)}
                     className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
-                  >
+              >
                     <Check className="h-5 w-5" />
                     Mark as Reviewed
-                  </Button>
-                )}
+              </Button>
+              )}
                 <Button
                   onClick={() => handleDelete(selectedFile.id)}
                   className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 shadow-md hover:from-red-600 hover:to-pink-700 transition-all duration-200 flex items-center gap-2"
@@ -358,7 +358,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
                   <Trash2 className="h-5 w-5" />
                   Delete File
                 </Button>
-              </div>
+            </div>
             </CardContent>
           </Card>
         ) : (
@@ -378,14 +378,14 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         {/* Complete Migration Button */}
         <div className="flex justify-end mt-8">
           <div className="relative group">
-            <Button
-              onClick={onCompleteMigration}
+        <Button 
+          onClick={onCompleteMigration}
               className="px-8 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-md hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center gap-2"
-              disabled={!canCompleteMigration}
-            >
+          disabled={!canCompleteMigration}
+        >
               <Check className="h-6 w-6" />
-              Complete Migration
-            </Button>
+          Complete Migration
+        </Button>
             <span className="absolute left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 bg-black text-white text-xs rounded px-2 py-1 pointer-events-none transition-opacity">Finish review and generate the final migration report</span>
           </div>
         </div>
