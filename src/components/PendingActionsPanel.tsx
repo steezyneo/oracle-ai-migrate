@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +79,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               name: f.file_name,
               content: f.original_code,
               convertedContent: f.converted_code,
+              aiGeneratedCode: f.ai_generated_code || f.aiGeneratedCode || '',
               conversionStatus: 'pending',
       errorMessage: undefined,
               type,
@@ -140,14 +141,19 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
     setEditedContent('');
   };
 
+  // Fix handleSaveEdit to update aiGeneratedCode and converted_code
   const handleSaveEdit = async (file: UnreviewedFile, newCode: string) => {
+    // Save previous converted_code as ai_generated_code
+    const prevAICode = file.ai_generated_code || file.converted_code;
     const success = await updateUnreviewedFile({
       id: file.id,
-      converted_code: newCode
+      converted_code: newCode,
+      ai_generated_code: prevAICode,
     });
     if (success) {
       setEditingFile(null);
       setEditedContent('');
+      // Optionally refreshUnreviewedFiles() here if needed
     }
   };
 
@@ -338,7 +344,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         {/* Main File Review Card */}
         {selectedFile ? (
           <>
-            <Card className="h-full shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-green-800">
+            <Card className="shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-green-100 dark:border-green-800">
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-green-800">
                 <span className="text-xl font-bold">{selectedFile.file_name}</span>
                 <div className="flex items-center gap-3">
@@ -366,34 +372,27 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
               <CardContent className="pt-4 pb-2">
                 <ConversionViewer
                   file={mapToFileItem(selectedFile)}
-                  onManualEdit={newContent => setEditedContent(newContent)}
+                  onManualEdit={newContent => handleSaveEdit(selectedFile, newContent)}
                   onDismissIssue={() => {}}
-                  hideEdit={true}
+                  hideEdit={selectedFile.status === 'reviewed'}
                   onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
                   onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
                   hasPrev={hasPrev}
                   hasNext={hasNext}
                 />
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 mt-6">
-              {selectedFile.status !== 'reviewed' && (
-              <Button
-                onClick={() => handleMarkAsReviewed(selectedFile)}
-                    className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
-              >
-                    <Check className="h-5 w-5" />
+              </CardContent>
+              <CardFooter className="flex justify-end gap-4">
+                {/* Action Buttons previously outside the card, now inside */}
+                {/* Place your Mark as Reviewed, Delete File, etc. buttons here. Example: */}
+                {selectedFile.status !== 'reviewed' && (
+                  <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleMarkAsReviewed(selectedFile)}>
                     Mark as Reviewed
-              </Button>
-              )}
-                <Button
-                  onClick={() => handleDelete(selectedFile.id)}
-                  className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 shadow-md hover:from-red-600 hover:to-pink-700 transition-all duration-200 flex items-center gap-2"
-                >
-                  <Trash2 className="h-5 w-5" />
+                  </Button>
+                )}
+                <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDelete(selectedFile.id)}>
                   Delete File
                 </Button>
-              </div>
-            </CardContent>
+              </CardFooter>
             </Card>
             {/* Complete Migration Button */}
             <div className="flex justify-end mt-8">
