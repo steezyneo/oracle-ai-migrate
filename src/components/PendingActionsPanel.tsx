@@ -338,36 +338,29 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         {/* Main File Review Card */}
         {selectedFile ? (
           <>
-            <div className="flex flex-row items-center justify-between gap-2 pb-2 border-b border-green-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-green-500" />
-                <span className="text-xl font-bold">{selectedFile.file_name}</span>
-                <span className="capitalize text-sm px-2 py-1 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-200 ml-2">{selectedFile.type}</span>
-                <span className={`text-xs px-2 py-1 rounded ml-2 ${selectedFile.status === 'reviewed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{selectedFile.status}</span>
-              </div>
-            </div>
+            {/* Removed file name/status bar for minimal look */}
             <div className="pt-4 pb-2">
-              <ConversionViewer
+            <ConversionViewer
                 file={mapToFileItem(selectedFile)}
                 onManualEdit={newContent => setEditedContent(newContent)}
-                onDismissIssue={() => {}}
+              onDismissIssue={() => {}}
                 hideEdit={true}
-                onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
-                onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
-                hasPrev={hasPrev}
-                hasNext={hasNext}
-              />
+              onPrevFile={hasPrev ? () => setSelectedFileId(allFilteredFiles[currentIndex - 1].id) : undefined}
+              onNextFile={hasNext ? () => setSelectedFileId(allFilteredFiles[currentIndex + 1].id) : undefined}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+            />
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 mt-6">
-                {selectedFile.status !== 'reviewed' && (
-                  <Button
-                    onClick={() => handleMarkAsReviewed(selectedFile)}
+              {selectedFile.status !== 'reviewed' && (
+              <Button
+                onClick={() => handleMarkAsReviewed(selectedFile)}
                     className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
-                  >
+              >
                     <Check className="h-5 w-5" />
                     Mark as Reviewed
-                  </Button>
-                )}
+              </Button>
+              )}
                 <Button
                   onClick={() => handleDelete(selectedFile.id)}
                   className="px-6 py-3 text-lg font-semibold rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 shadow-md hover:from-red-600 hover:to-pink-700 transition-all duration-200 flex items-center gap-2"
