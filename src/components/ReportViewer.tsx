@@ -9,6 +9,7 @@ import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ReportViewerProps {
   report: ConversionReport;
@@ -319,15 +320,39 @@ const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
               <Database className="h-5 w-5 text-blue-500" />
               Oracle Deployment
             </CardTitle>
-            <Button 
-              onClick={handleDeploy}
-              disabled={isDeploying}
-              variant="primary"
-            >
-              {isDeploying && <span className="animate-spin mr-2"><svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg></span>}
-              <Upload className="h-4 w-4 mr-2" />
-              {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleDeploy}
+                    disabled={isDeploying}
+                    className="px-6 py-3 text-lg font-semibold rounded-lg shadow-md transition-all duration-200
+                      bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0
+                      hover:from-blue-600 hover:to-indigo-700 hover:shadow-xl
+                      focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    aria-label="Deploy to Oracle Database"
+                  >
+                    {isDeploying ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-spin inline-flex"><svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg></span>
+                        <Upload className="h-5 w-5 text-white" />
+                        <Database className="h-5 w-5 text-white" />
+                        Deploying to Oracle...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Upload className="h-5 w-5 text-white drop-shadow" />
+                        <Database className="h-5 w-5 text-white drop-shadow" />
+                        <span>Deploy to Oracle</span>
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-base max-w-xs">
+                  Deploy all successfully converted files to your Oracle database. This will insert the converted SQL into your configured Oracle instance and log the deployment.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent>
