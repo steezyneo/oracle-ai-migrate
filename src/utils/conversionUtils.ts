@@ -250,9 +250,11 @@ const generatePerformanceMetrics = (
   originalCode: string,
   convertedCode: string
 ) => {
+  // Use cyclomatic complexity for improvement calculation, allow negative values
   const improvementPercentage = Math.round(
-    ((originalComplexity.maintainabilityIndex - convertedComplexity.maintainabilityIndex) / originalComplexity.maintainabilityIndex) * 100
+    ((originalComplexity.cyclomaticComplexity - convertedComplexity.cyclomaticComplexity) / originalComplexity.cyclomaticComplexity) * 100
   );
+  console.log('[DEBUG] Improvement:', improvementPercentage, 'Original:', originalComplexity.cyclomaticComplexity, 'Converted:', convertedComplexity.cyclomaticComplexity);
   
   // Calculate lines reduced
   const originalLines = originalComplexity.totalLines;
@@ -312,7 +314,7 @@ const generatePerformanceMetrics = (
   return {
     originalComplexity: originalComplexity.cyclomaticComplexity,
     convertedComplexity: convertedComplexity.cyclomaticComplexity,
-    improvementPercentage: Math.abs(improvementPercentage),
+    improvementPercentage, // allow negative values
     conversionTimeMs: conversionTime,
     performanceScore,
     maintainabilityIndex: convertedComplexity.maintainabilityIndex,

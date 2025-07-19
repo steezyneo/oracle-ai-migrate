@@ -355,7 +355,13 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 
                 <Card className="p-4 text-center">
                   <h4 className="text-sm font-medium text-gray-600 mb-2">Converted Complexity</h4>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className={`text-2xl font-bold ${
+                    file.performanceMetrics.convertedComplexity < file.performanceMetrics.originalComplexity
+                      ? 'text-green-600'
+                      : file.performanceMetrics.convertedComplexity > file.performanceMetrics.originalComplexity
+                        ? 'text-red-600'
+                        : 'text-gray-600'
+                  }`}>
                     {file.performanceMetrics.convertedComplexity || 0}
                   </p>
                   <p className="text-xs text-gray-500">Cyclomatic Complexity</p>
@@ -363,8 +369,17 @@ const ConversionViewer: React.FC<ConversionViewerProps> = ({
                 
                 <Card className="p-4 text-center">
                   <h4 className="text-sm font-medium text-gray-600 mb-2">Improvement</h4>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {file.performanceMetrics.improvementPercentage || 0}%
+                  <p className={`text-2xl font-bold ${
+                    file.performanceMetrics.improvementPercentage > 0
+                      ? 'text-blue-600'
+                      : file.performanceMetrics.improvementPercentage < 0
+                        ? 'text-red-600'
+                        : 'text-gray-600'
+                  }`}>
+                    {file.performanceMetrics.improvementPercentage > 0
+                      ? `+${file.performanceMetrics.improvementPercentage}`
+                      : file.performanceMetrics.improvementPercentage}
+                    %
                   </p>
                   <p className="text-xs text-gray-500">Performance Gain</p>
                 </Card>
