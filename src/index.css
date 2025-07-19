@@ -126,3 +126,9 @@
 .syntax-highlight {
   @apply bg-yellow-400/20 rounded px-1;
 }
+
+@keyframes progress-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.animate-progress-shimmer { animation: progress-shimmer 1.2s linear infinite; }
