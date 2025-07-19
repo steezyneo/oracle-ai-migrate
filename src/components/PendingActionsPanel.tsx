@@ -215,9 +215,9 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
   }
 
   return (
-    <div className="grid grid-cols-12 gap-8 relative min-h-[500px] pb-20">
+    <div className="flex gap-8 relative min-h-[500px] pb-20">
       {/* Sidebar */}
-      <div className="col-span-4 flex flex-col h-full">
+      <div className="flex flex-col h-full w-[340px] min-w-[280px] max-w-[380px] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
         {/* Search/Filter Controls */}
         <Card className="mb-4 shadow-lg rounded-xl bg-white/90 dark:bg-slate-900/80 border border-blue-100 dark:border-slate-800">
           <CardHeader className="pb-2 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 rounded-t-xl">
@@ -305,7 +305,7 @@ const DevReviewPanel: React.FC<DevReviewPanelProps> = ({ canCompleteMigration, o
         </Card>
       </div>
       {/* Main Panel */}
-      <div className="col-span-8">
+      <div className="flex-1 min-w-0">
         {/* Review Progress Bar */}
         {showReviewProgress && (
           <div className="mb-6">
