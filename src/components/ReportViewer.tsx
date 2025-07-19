@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check, AlertTriangle, X, Download, Upload, Database, History } from 'lucide-react';
+import { Check, AlertTriangle, X, Download, Upload, Database, FileText, Info, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionReport } from '@/types';
 import { deployToOracle } from '@/utils/databaseUtils';
@@ -24,20 +24,14 @@ interface DeploymentLog {
   error_message: string | null;
 }
 
-const ReportViewer: React.FC<ReportViewerProps> = ({
-  report,
-  onBack,
-}) => {
+const ReportViewer: React.FC<ReportViewerProps> = ({ report, onBack }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentLogs, setDeploymentLogs] = useState<DeploymentLog[]>([]);
-  
-  // Fetch deployment logs from Supabase on component mount
+
   useEffect(() => {
     fetchDeploymentLogs();
-    
-    // Set up real-time subscription for deployment logs
     const channel = supabase
       .channel('deployment-logs-changes')
       .on(
@@ -45,14 +39,13 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         {
           event: '*',
           schema: 'public',
-          table: 'deployment_logs'
+          table: 'deployment_logs',
         },
         () => {
           fetchDeploymentLogs();
         }
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -86,7 +79,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           status,
           lines_of_sql: linesOfSql,
           file_count: fileCount,
-          error_message: errorMessage || null
+          error_message: errorMessage || null,
         })
         .select()
         .single();
@@ -100,23 +93,17 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       return null;
     }
   };
-  
+
   const handleDownload = () => {
-    // Create a blob with the report content
     const blob = new Blob([report.summary], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    
-    // Create a link element and trigger the download
     const a = document.createElement('a');
     a.href = url;
     a.download = `oracle-migration-report-${report.timestamp.split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
-    
-    // Clean up
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
     toast({
       title: 'Report Downloaded',
       description: 'The migration report has been downloaded to your device.',
@@ -126,12 +113,10 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const handleDeploy = async () => {
     setIsDeploying(true);
     try {
-      // Calculate lines of SQL and file count from the report
       const linesOfSql = report.summary.split('\n').length;
       const fileCount = report.filesProcessed;
       let allSuccess = true;
       let filesToInsert = [];
-      // Fetch latest reviewed files from unreviewed_files
       let latestFiles = [];
       if (user) {
         const { data: unreviewed, error } = await supabase
@@ -153,7 +138,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       if (latestFiles.length > 0) {
         filesToInsert = latestFiles;
       } else {
-        // fallback to report.results
         filesToInsert = report.results.map(r => ({
           file_name: r.originalFile.name,
           file_path: r.originalFile.name,
@@ -163,27 +147,25 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           conversion_status: r.status,
         }));
       }
-      // Simulate deployment for each file (replace with real logic as needed)
       for (const file of filesToInsert) {
         const deployResult = await deployToOracle(
-          { 
+          {
             type: 'oracle',
             host: 'localhost',
             port: '1521',
             username: 'system',
             password: 'password',
-            database: 'ORCL'
+            database: 'ORCL',
           },
           file.converted_content
         );
         if (!deployResult.success) allSuccess = false;
       }
-      // After deployment, create a migration/project and insert all files into migration_files
       const { data: migration, error: migrationError } = await supabase
         .from('migrations')
         .insert({
           user_id: user?.id,
-          project_name: `Oracle Deployment: ${new Date().toLocaleString()}`
+          project_name: `Oracle Deployment: ${new Date().toLocaleString()}`,
         })
         .select()
         .single();
@@ -191,10 +173,8 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         await supabase.from('migration_files').insert(
           filesToInsert.map(f => ({ ...f, migration_id: migration.id }))
         );
-        // After inserting into migration_files, delete only reviewed files from unreviewed_files
         await supabase.from('unreviewed_files').delete().eq('user_id', user.id).eq('status', 'reviewed');
       }
-      // Save deployment log to Supabase
       const logEntry = await saveDeploymentLog(
         allSuccess ? 'Success' : 'Failed',
         linesOfSql,
@@ -227,170 +207,184 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     }
   };
 
-  // Delete file from database
-  const handleDeleteFile = async (fileId: string) => {
-    try {
-      const { error } = await supabase.from('migration_files').delete().eq('id', fileId);
-      if (error) {
-        toast({ title: 'Delete Failed', description: 'Could not delete file from database.', variant: 'destructive' });
-      } else {
-        toast({ title: 'File Deleted', description: 'File deleted from database.' });
-        // Optionally refresh the report or file list here
-      }
-    } catch (error) {
-      toast({ title: 'Delete Failed', description: 'An error occurred while deleting the file.', variant: 'destructive' });
-    }
-  };
-  
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <Card>
+    <div className="space-y-8 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 p-6 flex items-center justify-between shadow-sm border mb-2">
+        <div className="flex items-center gap-4">
+          <FileText className="h-10 w-10 text-blue-500" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight mb-1 flex items-center gap-2">
+              Migration Report
+              <Badge variant="outline" className="ml-2 text-base font-normal px-3 py-1 bg-white/80 dark:bg-slate-900/60">
+                {new Date(report.timestamp).toLocaleString()}
+              </Badge>
+            </h1>
+            <CardDescription className="text-gray-500 dark:text-gray-400">
+              Report ID: <span className="font-mono text-xs">{report.timestamp.split('T')[0]}-{Date.now().toString().slice(-6)}</span>
+            </CardDescription>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onBack}>
+            Back to Review
+          </Button>
+          <Button onClick={handleDownload} variant="secondary">
+            <Download className="h-4 w-4 mr-2" />
+            Download Report
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 text-center shadow-none border bg-white/80 dark:bg-slate-900/60">
+          <div className="flex justify-center mb-2"><FileText className="h-6 w-6 text-blue-500" /></div>
+          <h3 className="text-sm font-medium text-gray-600">Total Files</h3>
+          <p className="text-2xl font-bold">{report.filesProcessed}</p>
+        </Card>
+        <Card className="p-4 text-center shadow-none border bg-green-50 dark:bg-green-900/20">
+          <div className="flex justify-center mb-2"><Check className="h-6 w-6 text-green-500" /></div>
+          <h3 className="text-sm font-medium text-green-600">Successful</h3>
+          <p className="text-2xl font-bold text-green-700">{report.successCount}</p>
+        </Card>
+        <Card className="p-4 text-center shadow-none border bg-red-50 dark:bg-red-900/20">
+          <div className="flex justify-center mb-2"><X className="h-6 w-6 text-red-500" /></div>
+          <h3 className="text-sm font-medium text-red-600">Failed</h3>
+          <p className="text-2xl font-bold text-red-700">{report.errorCount}</p>
+        </Card>
+        <Card className="p-4 text-center shadow-none border bg-blue-50 dark:bg-blue-900/20">
+          <div className="flex justify-center mb-2"><Info className="h-6 w-6 text-blue-600" /></div>
+          <h3 className="text-sm font-medium text-blue-600">Success Rate</h3>
+          <p className="text-2xl font-bold text-blue-700">
+            {Math.round((report.successCount / report.filesProcessed) * 100)}%
+          </p>
+        </Card>
+      </div>
+
+      {/* Processed Files List */}
+      <Card className="shadow-none border bg-white/80 dark:bg-slate-900/60">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-2xl">Migration Report</CardTitle>
-              <CardDescription>
-                Generated on {new Date(report.timestamp).toLocaleString()} | Report ID: {report.timestamp.split('T')[0]}-{Date.now().toString().slice(-6)}
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-base font-normal px-3 py-1">
-              {report.successCount + report.warningCount} of {report.filesProcessed} Successful
-            </Badge>
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-500" />
+            <CardTitle className="text-lg">Processed Files</CardTitle>
+            <span className="ml-2 text-gray-400 text-sm">({report.results.length})</span>
           </div>
         </CardHeader>
-        
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <Check className="h-6 w-6 text-green-500" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-1">Success</p>
-              <p className="text-2xl font-bold">{report.successCount}</p>
-            </div>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-1">Warnings</p>
-              <p className="text-2xl font-bold">{report.warningCount}</p>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md text-center">
-              <div className="flex justify-center mb-2">
-                <X className="h-6 w-6 text-red-500" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-1">Errors</p>
-              <p className="text-2xl font-bold">{report.errorCount}</p>
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Processed Files</h3>
-            <ScrollArea className="h-[200px] border rounded-md p-4">
-              <div className="space-y-2">
-                {report.results.map(result => (
-                  <div key={result.id} className="flex justify-between items-center p-2 border-b">
-                    <div className="flex items-center">
-                      {result.status === 'success' ? (
-                        <Check className="h-4 w-4 text-green-500 mr-2" />
-                      ) : result.status === 'warning' ? (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                      ) : (
-                        <X className="h-4 w-4 text-red-500 mr-2" />
-                      )}
-                      <span>{result.originalFile.name}</span>
-                    </div>
-                    <Badge>{result.originalFile.type}</Badge>
-                  </div>
+          <ScrollArea className="h-64 border rounded-md">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800">
+                  <th className="px-4 py-2 text-left font-semibold">File Name</th>
+                  <th className="px-4 py-2 text-left font-semibold">Type</th>
+                  <th className="px-4 py-2 text-left font-semibold">Status</th>
+                  <th className="px-4 py-2 text-left font-semibold">Issues</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.results.map((result: any, idx: number) => (
+                  <tr key={result.id} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900/60' : 'bg-slate-50 dark:bg-slate-800'}>
+                    <td className="px-4 py-2 font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-blue-400" />
+                      {result.originalFile.name}
+                    </td>
+                    <td className="px-4 py-2 capitalize">{result.originalFile.type}</td>
+                    <td className="px-4 py-2">
+                      <Badge variant={
+                        result.status === 'success' ? 'default' :
+                        result.status === 'error' ? 'destructive' : 'secondary'
+                      }>
+                        {result.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2">
+                      <Badge variant={result.issues?.length ? 'destructive' : 'default'}>
+                        {result.issues?.length || 0}
+                      </Badge>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </ScrollArea>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Full Report</h3>
-            <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
-              <ScrollArea className="h-[300px] p-4">
-                <pre className="text-sm whitespace-pre-wrap font-mono text-slate-800 dark:text-slate-200">
-                  {report.summary}
-                </pre>
-              </ScrollArea>
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Deployment Logs</h3>
-              <Button 
-                onClick={handleDeploy} 
-                disabled={isDeploying}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
-              </Button>
-            </div>
-            <div className="bg-slate-50 dark:bg-slate-900 border rounded-md">
-              <ScrollArea className="h-[300px] p-4">
-                {deploymentLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                    <Database className="h-16 w-16 mb-2 opacity-20" />
-                    <p>No deployment logs yet. Click "Deploy to Oracle" to update the database.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {deploymentLogs.map((log) => (
-                      <div key={log.id} className="border rounded-lg p-4 bg-white dark:bg-slate-800">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={log.status === 'Success' ? 'default' : 'destructive'}>
-                              {log.status}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              ID: {log.id.slice(0, 8)}
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(log.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium">Files: </span>
-                            <span>{log.file_count}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium">Lines of SQL: </span>
-                            <span>{log.lines_of_sql}</span>
-                          </div>
-                        </div>
-                        {log.error_message && (
-                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-300">
-                            <span className="font-medium">Error: </span>
-                            <span>{log.error_message}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          </div>
+              </tbody>
+            </table>
+          </ScrollArea>
         </CardContent>
-        
-        <CardFooter>
-          <div className="w-full flex justify-between items-center">
-            <Button variant="outline" className="flex items-center gap-2" onClick={onBack}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              Back
-            </Button>
-            <Button onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Report
+      </Card>
+
+      {/* Deployment Section */}
+      <Card className="shadow-none border bg-white/80 dark:bg-slate-900/60">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-500" />
+              Oracle Deployment
+            </CardTitle>
+            <Button 
+              onClick={handleDeploy}
+              disabled={isDeploying}
+              variant="primary"
+            >
+              {isDeploying && <span className="animate-spin mr-2"><svg className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg></span>}
+              <Upload className="h-4 w-4 mr-2" />
+              {isDeploying ? 'Deploying...' : 'Deploy to Oracle'}
             </Button>
           </div>
-        </CardFooter>
+        </CardHeader>
+        <CardContent>
+          <h3 className="text-lg font-medium mb-3 flex items-center gap-2"><Database className="h-5 w-5 text-blue-500" /> Deployment Logs</h3>
+          <ScrollArea className="h-64 border rounded-md">
+            {deploymentLogs.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <Database className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No deployment logs yet</p>
+                  <p className="text-sm">Click "Deploy to Oracle" to start</p>
+                </div>
+              </div>
+            ) : (
+              <ol className="relative border-l border-blue-200 dark:border-blue-900 ml-4 mt-2">
+                {deploymentLogs.map((log, idx) => (
+                  <li key={log.id} className="mb-8 ml-6">
+                    <span className={`absolute flex items-center justify-center w-6 h-6 bg-white dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-900 rounded-full -left-3 ring-4 ring-blue-100 dark:ring-blue-900`}>{log.status === 'Success' ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-500" />}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={log.status === 'Success' ? 'default' : 'destructive'}>{log.status}</Badge>
+                      <span className="text-xs text-gray-400">ID: {log.id.slice(0, 8)}...</span>
+                      <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-xs mb-1">
+                      <div>Files: <strong>{log.file_count}</strong></div>
+                      <div>SQL Lines: <strong>{log.lines_of_sql}</strong></div>
+                    </div>
+                    {log.error_message && (
+                      <div className="mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-700 dark:text-red-300">
+                        <X className="inline h-4 w-4 mr-1 align-text-bottom" />
+                        Error: {log.error_message}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      {/* Recommendations Section */}
+      <Card className="shadow-none border bg-yellow-50 dark:bg-yellow-900/20">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <CardTitle className="text-lg">Recommendations</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc pl-6 space-y-1 text-sm text-yellow-900 dark:text-yellow-100">
+            <li>Review all <span className="font-semibold">failed conversions</span> manually</li>
+            <li>Test converted procedures in <span className="font-semibold">Oracle environment</span></li>
+            <li>Validate <span className="font-semibold">data integrity</span> after migration</li>
+            <li>Monitor <span className="font-semibold">performance</span> after deployment</li>
+          </ul>
+        </CardContent>
       </Card>
     </div>
   );
