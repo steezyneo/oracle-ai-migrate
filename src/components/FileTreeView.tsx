@@ -230,11 +230,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const totalPending = files.filter(f => f.conversionStatus === 'pending').length;
 
   return (
-    <Card className="h-full">
+    <div className="w-full">
       {!hideActions && (
-        <CardHeader className="pb-3 flex flex-col gap-2">
+        <div className="pb-3 flex flex-col gap-2">
           <div className="flex flex-row items-center justify-between w-full mb-2">
-            <CardTitle className="text-lg">Project Structure</CardTitle>
+            <span className="text-lg font-semibold">Project Structure</span>
             <div className="flex gap-2">
               {onConvertAll && totalPending > 0 && (
                 <Button
@@ -247,26 +247,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               )}
             </div>
           </div>
-          <div className="flex flex-row gap-2 w-full mb-2">
-            <Input
-              type="text"
-              placeholder="Search files..."
-              value={searchTerm}
-              onChange={e => onSearchTermChange ? onSearchTermChange(e.target.value) : undefined}
-              className="flex-1 h-8 text-sm"
-            />
-            <select
-              value={statusFilter}
-              onChange={e => onStatusFilterChange ? onStatusFilterChange(e.target.value) : undefined}
-              className="h-8 text-sm border rounded px-2"
-            >
-              <option value="All">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Success">Success</option>
-              <option value="Failed">Failed</option>
-            </select>
-          </div>
-        </CardHeader>
+        </div>
       )}
       <CardContent className="p-0">
         <div className="space-y-1 px-4 pb-4 overflow-y-auto" style={{ maxHeight: 320 }}>
@@ -276,7 +257,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           {others.length > 0 && renderSection('other', 'Other Files', others)}
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 };
 
