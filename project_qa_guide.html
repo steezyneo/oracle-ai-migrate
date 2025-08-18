@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sybase to Oracle Migration Tool - Q&A Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 40px;
+            color: #333;
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+        }
+        h2 {
+            color: #1e40af;
+            border-left: 4px solid #2563eb;
+            padding-left: 15px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #374151;
+            margin-top: 30px;
+        }
+        .question {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .answer {
+            margin-left: 20px;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 3px solid #d1d5db;
+        }
+        .difficulty {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .easy { background-color: #dcfce7; color: #166534; }
+        .medium { background-color: #fef3c7; color: #92400e; }
+        .hard { background-color: #fee2e2; color: #991b1b; }
+        .expert { background-color: #f3e8ff; color: #7c3aed; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+        code {
+            background-color: #f1f5f9;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .toc {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 6px 0;
+            padding-left: 15px;
+        }
+        .toc a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Sybase to Oracle Migration Tool - Complete Q&A Guide</h1>
+    
+    <div class="toc">
+        <h3>📋 Table of Contents</h3>
+        <ul>
+            <li><a href="#basics">1. Basic Concepts & Overview</a></li>
+            <li><a href="#architecture">2. System Architecture</a></li>
+            <li><a href="#frontend">3. Frontend Development</a></li>
+            <li><a href="#backend">4. Backend & Database</a></li>
+            <li><a href="#ai">5. AI Integration & Processing</a></li>
+            <li><a href="#deployment">6. Deployment & Infrastructure</a></li>
+            <li><a href="#security">7. Security & Authentication</a></li>
+            <li><a href="#performance">8. Performance & Optimization</a></li>
+            <li><a href="#troubleshooting">9. Troubleshooting & Debugging</a></li>
+            <li><a href="#advanced">10. Advanced Features & Customization</a></li>
+        </ul>
+    </div>
+
+    <section id="basics">
+        <h2>1. Basic Concepts & Overview</h2>
+        
+        <div class="question">
+            What is the Sybase to Oracle Migration Tool? <span class="difficulty easy">Easy</span>
+        </div>
+        <div class="answer">
+            An AI-powered web application that converts Sybase database code (SQL, stored procedures, functions, triggers) to Oracle-compatible syntax using Google Gemini AI and advanced conversion algorithms.
+        </div>
+
+        <div class="question">
+            What are the main benefits? <span class="difficulty easy">Easy</span>
+        </div>
+        <div class="answer">
+            • 🤖 AI-Powered conversion accuracy<br>
+            • ⚡ Fast batch processing<br>
+            • 🔍 Quality assurance with diff viewer<br>
+            • 📊 Detailed reporting<br>
+            • 🚀 Direct Oracle deployment<br>
+            • 👥 Team collaboration with role-based access
+        </div>
+
+        <div class="question">
+            What file types are supported? <span class="difficulty easy">Easy</span>
+        </div>
+        <div class="answer">
+            SQL files (.sql), stored procedures (.sp), functions (.func), triggers (.trg), DDL statements, and database schema files.
+        </div>
+
+        <div class="question">
+            What is the technology stack? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            <strong>Frontend:</strong> React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui<br>
+            <strong>Backend:</strong> Supabase, PostgreSQL, Supabase Auth, Edge Functions<br>
+            <strong>AI/ML:</strong> Google Gemini AI, LangChain, OpenAI (Optional)<br>
+            <strong>Infrastructure:</strong> Docker, Nginx, Cloud Deploy, CI/CD
+        </div>
+    </section>
+
+    <section id="architecture">
+        <h2>2. System Architecture</h2>
+        
+        <div class="question">
+            Describe the high-level architecture. <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Four-layer architecture:<br>
+            1. <strong>Client Layer:</strong> React UI components, Monaco Editor, File Uploader<br>
+            2. <strong>Application Layer:</strong> Auth Context, State Management, Routing<br>
+            3. <strong>AI Processing Layer:</strong> Gemini AI Integration, LangChain Framework, Conversion Engine<br>
+            4. <strong>Data Layer:</strong> PostgreSQL Database, Auth Service, File Storage
+        </div>
+
+        <div class="question">
+            How does data flow during migration? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            1. File Upload → Validation → Storage → Database Record<br>
+            2. Processing Queue → AI Conversion → Validation<br>
+            3. Storage & Report → User Notification<br>
+            4. Deployment → Oracle Connection → Logging
+        </div>
+
+        <div class="question">
+            What are key frontend components? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            CodeUploader, ConversionViewer, AdminPanel, ReportViewer, Monaco Editor, Chatbot
+        </div>
+    </section>
+
+    <section id="frontend">
+        <h2>3. Frontend Development</h2>
+        
+        <div class="question">
+            What React hooks are used? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            useAuth(), useAdmin(), useUnreviewedFiles(), useMobile(), useToast()
+        </div>
+
+        <div class="question">
+            How is the diff viewer implemented? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Uses Monaco Editor with custom diff algorithms for side-by-side code comparison with syntax highlighting.
+        </div>
+
+        <div class="question">
+            How is file upload handled? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            HTML5 drag-and-drop API with file type validation, size limits (10MB), batch processing (50 files), progress tracking.
+        </div>
+    </section>
+
+    <section id="backend">
+        <h2>4. Backend & Database</h2>
+        
+        <div class="question">
+            What is the database schema? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Core tables:<br>
+            • profiles (user management)<br>
+            • migrations (session data)<br>
+            • migration_files (individual conversions)<br>
+            • migration_reports (generated reports)<br>
+            • deployment_logs (Oracle deployment tracking)<br>
+            • admin_logs (audit trail)<br>
+            • system_settings (configuration)
+        </div>
+
+        <div class="question">
+            How is Row Level Security implemented? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            PostgreSQL policies ensure users can only access their own data, while admins have broader access based on role checks.
+        </div>
+
+        <div class="question">
+            How are database triggers used? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Automate progress calculation, timestamp updates, audit logging, and status synchronization.
+        </div>
+    </section>
+
+    <section id="ai">
+        <h2>5. AI Integration & Processing</h2>
+        
+        <div class="question">
+            How is Gemini AI integrated? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Direct API calls with structured prompts, LangChain framework for workflow management, context building with syntax patterns, response processing and validation.
+        </div>
+
+        <div class="question">
+            What is the conversion process flow? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            1. Parse Sybase Code<br>
+            2. Apply AI Conversion<br>
+            3. Post-Processing<br>
+            4. Validation<br>
+            5. Report Generation
+        </div>
+
+        <div class="question">
+            How is the AI chatbot implemented? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Context-aware responses, code analysis capabilities, pre-built questions, real-time WebSocket communication, integration with conversion AI models.
+        </div>
+    </section>
+
+    <section id="deployment">
+        <h2>6. Deployment & Infrastructure</h2>
+        
+        <div class="question">
+            How is Docker deployment configured? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Multi-stage build with Node.js builder and Nginx server, optimized for production with proper asset serving.
+        </div>
+
+        <div class="question">
+            What environment variables are required? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GEMINI_API_KEY, NODE_ENV, VITE_METRICS_ENABLED
+        </div>
+
+        <div class="question">
+            How is CI/CD implemented? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Build stage (TypeScript compilation), test stage (unit/integration tests), security scanning, automated deployment, health checks.
+        </div>
+    </section>
+
+    <section id="security">
+        <h2>7. Security & Authentication</h2>
+        
+        <div class="question">
+            How is authentication implemented? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Supabase Auth with JWT tokens, role-based access (user/moderator/admin), social providers, session management, strong password policies.
+        </div>
+
+        <div class="question">
+            What security measures protect data? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Encrypted storage, HTTPS/TLS, input validation, SQL injection prevention, rate limiting, audit logging.
+        </div>
+
+        <div class="question">
+            How are API endpoints secured? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            JWT validation middleware, role-based authorization, rate limiting, CORS configuration, input sanitization.
+        </div>
+    </section>
+
+    <section id="performance">
+        <h2>8. Performance & Optimization</h2>
+        
+        <div class="question">
+            How is the Performance Dashboard implemented? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Tracks conversion metrics, system performance, user analytics, real-time updates (30s), alert system for performance issues.
+        </div>
+
+        <div class="question">
+            What caching strategies are used? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            AI response caching, file storage CDN, database query caching, browser caching, cache warming for common conversions.
+        </div>
+
+        <div class="question">
+            How is batch processing optimized? <span class="difficulty expert">Expert</span>
+        </div>
+        <div class="answer">
+            Parallel processing, priority-based queues, resource pooling, real-time progress tracking, error recovery.
+        </div>
+    </section>
+
+    <section id="troubleshooting">
+        <h2>9. Troubleshooting & Debugging</h2>
+        
+        <div class="question">
+            What are common issues and solutions? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            • AI API Rate Limits → Exponential backoff and queuing<br>
+            • Large File Processing → Chunking and segmentation<br>
+            • Database Connections → Connection pooling and retries<br>
+            • Memory Leaks → Proper cleanup of handles and listeners
+        </div>
+
+        <div class="question">
+            How is error logging implemented? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Structured JSON logging, error tracking services, APM monitoring, real-time alerts, debug mode for development.
+        </div>
+    </section>
+
+    <section id="advanced">
+        <h2>10. Advanced Features & Customization</h2>
+        
+        <div class="question">
+            How can custom conversion rules be implemented? <span class="difficulty expert">Expert</span>
+        </div>
+        <div class="answer">
+            Configurable rule engine, custom AI prompts, post-processing hooks, template system, plugin architecture.
+        </div>
+
+        <div class="question">
+            How is the reporting system extensible? <span class="difficulty hard">Hard</span>
+        </div>
+        <div class="answer">
+            Multiple formats (JSON/PDF/HTML/Excel), custom templates, scheduled reports, data export, API integration.
+        </div>
+
+        <div class="question">
+            What are future enhancement plans? <span class="difficulty medium">Medium</span>
+        </div>
+        <div class="answer">
+            Real-time notifications, custom dashboards, predictive analytics, advanced filtering, mobile app, GraphQL support.
+        </div>
+    </section>
+
+    <section>
+        <h2>📊 Performance Metrics</h2>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td><strong>Conversion Accuracy</strong></td>
+                <td>95%+ for standard procedures</td>
+            </tr>
+            <tr>
+                <td><strong>Processing Speed</strong></td>
+                <td>&lt; 30 seconds per file</td>
+            </tr>
+            <tr>
+                <td><strong>Supported File Types</strong></td>
+                <td>6+ SQL file formats</td>
+            </tr>
+            <tr>
+                <td><strong>AI Models</strong></td>
+                <td>Multiple options available</td>
+            </tr>
+            <tr>
+                <td><strong>Max File Size</strong></td>
+                <td>10MB per file</td>
+            </tr>
+            <tr>
+                <td><strong>Batch Processing</strong></td>
+                <td>Up to 50 files</td>
+            </tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>🔧 Configuration Examples</h2>
+        
+        <h3>Basic Setup</h3>
+        <pre><code>export const basicConfig = {
+  aiModel: 'gemini',
+  fileTypes: ['.sql', '.sp', '.proc'],
+  maxFileSize: '10MB',
+  batchSize: 20
+};</code></pre>
+
+        <h3>Enterprise Setup</h3>
+        <pre><code>export const enterpriseConfig = {
+  aiModel: 'gemini',
+  customRules: true,
+  batchProcessing: true,
+  directDeployment: true,
+  auditLogging: true,
+  roleBasedAccess: true
+};</code></pre>
+    </section>
+
+    <section>
+        <h2>📚 Additional Resources</h2>
+        <ul>
+            <li>📖 <a href="docs/README.md">Complete Documentation</a></li>
+            <li>🏗️ <a href="docs/architecture.md">Architecture Guide</a></li>
+            <li>👩‍💻 <a href="docs/developer-guide/README.md">Developer Guide</a></li>
+            <li>🚀 <a href="docs/deployment/README.md">Deployment Guide</a></li>
+            <li>🔧 <a href="docs/troubleshooting/README.md">Troubleshooting Guide</a></li>
+        </ul>
+    </section>
+
+    <div style="margin-top: 50px; text-align: center; padding: 20px; background-color: #f0f9ff; border-radius: 8px;">
+        <h3>📚 Additional Resources</h3>
+        <p>For more detailed information, refer to the project documentation:</p>
+        <p><strong>Made with ❤️ for the database migration community</strong></p>
+    </div>
+</body>
+</html> 

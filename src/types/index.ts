@@ -97,3 +97,6 @@ export * from './chatbot';
 
 // Re-export comment types
 export * from './comments';
+
+// Re-export rewrite prompts types
+export * from './rewritePrompts';

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      rewrite_prompts: {
+        Row: {
+          id: string
+          migration_file_id: string
+          prompt_text: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          migration_file_id: string
+          prompt_text: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          migration_file_id?: string
+          prompt_text?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewrite_prompts_migration_file_id_fkey"
+            columns: ["migration_file_id"]
+            isOneToOne: false
+            referencedRelation: "migration_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rewrite_prompts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      },
       deployment_logs: {
         Row: {
           created_at: string

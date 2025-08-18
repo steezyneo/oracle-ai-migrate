@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { CodeFile, ConversionResult, DatabaseConnection } from '@/types';
 import CodeDiffViewer from './CodeDiffViewer';
 import { generateBalancedConversionReport } from '@/utils/componentUtilswithlangchain';
+import { rewritePromptsService } from '@/services/rewritePromptsService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ConversionResultsProps {
   results: ConversionResult[];
@@ -19,6 +21,7 @@ interface ConversionResultsProps {
   onGenerateReport: () => void;
   onComplete: () => void;
   selectedAIModel: string;
+  userId?: string;
 }
 
 const ConversionResults: React.FC<ConversionResultsProps> = ({
@@ -28,12 +31,26 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
   onGenerateReport,
   onComplete,
   selectedAIModel,
+  userId,
 }) => {
   const { toast } = useToast();
   const [selectedResultId, setSelectedResultId] = useState<string>(results[0]?.id || '');
   const [isRewriting, setIsRewriting] = useState<boolean>(false);
+  const [promptQuotaReached, setPromptQuotaReached] = useState<boolean>(false);
   
   const selectedResult = results.find(r => r.id === selectedResultId);
+  
+  // Check if the prompt quota has been reached
+  useEffect(() => {
+    const checkPromptQuota = async () => {
+      if (userId) {
+        const isQuotaReached = await rewritePromptsService.isQuotaReached();
+        setPromptQuotaReached(isQuotaReached);
+      }
+    };
+    
+    checkPromptQuota();
+  }, [userId]);
   
   const handleUpdateConvertedCode = (resultId: string, updatedCode: string) => {
     toast({
@@ -42,12 +59,33 @@ const ConversionResults: React.FC<ConversionResultsProps> = ({
     });
   };
   
-  const handleRequestAIRewrite = (resultId: string, issue: string) => {
+  const handleRequestAIRewrite = async (resultId: string, issue: string) => {
     setIsRewriting(true);
     toast({
       title: 'AI Rewrite Requested',
       description: `Processing: ${issue}`
     });
+    
+    // Store the prompt if user is logged in and quota not reached
+    if (userId && !promptQuotaReached) {
+      try {
+        await rewritePromptsService.storePrompt(resultId, issue, userId);
+        
+        // Check if quota reached after storing
+        const isQuotaReached = await rewritePromptsService.isQuotaReached();
+        if (isQuotaReached) {
+          setPromptQuotaReached(true);
+          // Notify that quota has been reached (only visible to admins)
+          toast({
+            title: 'Prompt Quota Reached',
+            description: 'The rewrite prompts quota has been reached. Admins will be notified.',
+            variant: 'default',
+          });
+        }
+      } catch (error) {
+        console.error('Error storing rewrite prompt:', error);
+      }
+    }
     
     onRequestReconversion(resultId, issue);
     

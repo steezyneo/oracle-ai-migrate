@@ -12,15 +12,20 @@ import { z } from "zod";
 import { supabase } from '../integrations/supabase/client';
 import { isCacheEnabled } from '@/utils/conversionUtils';
 
-const _API_KEY = import.meta.env.VITE_API_KEY;
+const _API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 // console.log('Gemini API KEY:', _API_KEY); // Removed for security
 
-// Use a balanced model configuration
-const model = new ChatGoogleGenerativeAI({
+// Check if API key is available
+if (!_API_KEY) {
+  console.warn('Google Generative AI API key is missing. AI features will be disabled.');
+}
+
+// Use a balanced model configuration - only create if API key exists
+const model = _API_KEY ? new ChatGoogleGenerativeAI({
     apiKey: _API_KEY,
     model: "gemini-2.5-flash",
     temperature: 0.1, // Lower temperature for more consistent output
-});
+}) : null;
 
 // Simplified but effective output schema
 const conversionOutputSchema = z.object({
@@ -211,6 +216,33 @@ const convertSybaseToOracle = async (file: CodeFile): Promise<ConversionResult> 
         console.log('[LOCAL CACHE MISS]', file.name);
       }
     }
+    // Check if model is available
+    if (!model) {
+        return {
+            id: crypto.randomUUID(),
+            originalFile: file,
+            convertedCode: '-- ERROR: Google Generative AI API key is not configured.\n-- Please add VITE_GEMINI_API_KEY to your environment variables.',
+            issues: [{
+                id: crypto.randomUUID(),
+                lineNumber: 1,
+                description: 'CRITICAL: Google Generative AI API key is missing.',
+                severity: 'critical',
+                originalCode: file.content.substring(0, 100),
+                suggestedFix: 'Add VITE_GEMINI_API_KEY environment variable with your Google Generative AI API key.',
+                performanceImpact: 'high',
+                category: 'syntax'
+            }],
+            dataTypeMapping: [],
+            performance: { originalComplexity: 0, convertedComplexity: 0, improvementPercentage: 0, conversionTimeMs: Date.now() - startTime, performanceScore: 0, maintainabilityIndex: 0, codeQuality: { totalLines: 0, codeLines: 0, commentRatio: 0, complexityLevel: 'Low' }, recommendations: [], scalabilityMetrics: { bulkOperationsUsed: false, bulkCollectUsed: false, modernOracleFeaturesCount: 0, scalabilityScore: 1, maintainabilityScore: 1 } },
+            status: 'error',
+            explanations: ['Conversion failed: Google Generative AI API key is not configured.'],
+            scalabilityScore: 1,
+            maintainabilityScore: 1,
+            performanceOptimizations: [],
+            oracleFeatures: []
+        };
+    }
+
     const chain = promptTemplate.pipe(model).pipe(parser);
     let aiOutput;
     try {

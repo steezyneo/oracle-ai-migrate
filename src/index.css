@@ -188,10 +188,10 @@
 }
 
 /* Code editor dark mode fixes */
-[data-code-editor] .bg-\[#18181b\] {
+[data-code-editor] .bg-dark-editor {
   background-color: #18181b !important;
 }
 
-[data-code-editor] .bg-\[#23232a\] {
+[data-code-editor] .bg-dark-editor-secondary {
   background-color: #23232a !important;
 }

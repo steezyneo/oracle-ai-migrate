@@ -35,6 +35,7 @@ import { UserProfile, SystemSetting, AdminLog, MigrationStats } from '@/types/ad
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import RewritePromptsNotification from '@/components/RewritePromptsNotification';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -231,6 +232,9 @@ const AdminPanel = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Rewrite Prompts Notification for Admins */}
+             <RewritePromptsNotification isAdmin={isAdmin} />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1010,4 +1014,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel; 
+export default AdminPanel;
