@@ -28,6 +28,10 @@ const FAQ_DATA = {
   "conversion process": {
     answer: "The conversion process automatically transforms Sybase code to Oracle-compatible syntax. It handles data type mappings, function conversions, and syntax adjustments. The system provides real-time conversion status, quality metrics, and detailed reports. Users can review and approve conversions before deployment.",
     category: "process"
+  },
+  "help panel": {
+    answer: "The Help Panel provides context-sensitive help throughout the application. It includes FAQs, contact forms, resources, and shortcuts. Users can access step-by-step guides, video tutorials, knowledge base articles, and best practice guides. The panel also offers in-app chat support, email support, and community forum access for comprehensive assistance with migration projects.",
+    category: "support"
   }
 };
 
@@ -36,18 +40,20 @@ const DOC_LINKS = {
   "history": "/docs/history-page.md",
   "migration": "/docs/migration-process.md",
   "quality": "/docs/code-quality.md",
-  "conversion": "/docs/conversion-guide.md"
+  "conversion": "/docs/conversion-guide.md",
+  "support": "/docs/user-guide/README.md"
 };
 
 const SYSTEM_PROMPT = `You are an AI assistant for a Sybase to Oracle migration project.
 
 RESPONSE GUIDELINES:
-- Use the provided project knowledge and documentation to answer questions
-- If relevant documentation is provided, use it to give detailed, helpful answers
-- If the documentation contains related information, provide what you can and suggest additional resources
-- Only say you don't have information if the documentation truly doesn't contain any relevant content
-- Be helpful and provide actionable advice based on available information
-- Focus on practical, actionable advice for Oracle migration projects`;
+- For project-specific questions: Use the provided project documentation to give detailed, accurate answers
+- For general migration questions: Use your general knowledge about Sybase to Oracle migration
+- For code analysis: Analyze provided code and explain it thoroughly, suggesting improvements
+- Be comprehensive and helpful - don't restrict yourself unnecessarily
+- If project docs don't contain relevant information, use your general knowledge
+- Focus on practical, actionable advice for Oracle migration projects
+- You can answer questions about Sybase, Oracle, migration strategies, best practices, and technical details`;
 
 // RAG Integration Function
 async function getRAGContext(query) {
@@ -241,7 +247,11 @@ function getHybridResponse(userMessage) {
     'dev review': 'dev review',
     'development review': 'dev review',
     'migration': 'migration process',
-    'conversion': 'conversion process'
+    'conversion': 'conversion process',
+    'help': 'help panel',
+    'help panel': 'help panel',
+    'help tab': 'help panel',
+    'help menu': 'help panel'
   };
   
   for (const [flexibleKey, faqKey] of Object.entries(flexibleMatches)) {
@@ -349,7 +359,13 @@ exports.handler = async function(event, context) {
       message.toLowerCase().includes(keyword)
     );
     
-    if (hybridResponse && !isMigrationQuestion) {
+    // Only use hardcoded FAQ for very specific tool features, not general migration topics
+    const toolSpecificKeywords = ['admin panel', 'history page', 'dev review', 'code quality metrics'];
+    const isToolSpecificQuestion = toolSpecificKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+    
+    if (hybridResponse && isToolSpecificQuestion && !isMigrationQuestion) {
       
       let finalAnswer = hybridResponse.answer;
       if (hybridResponse.docLink) {
@@ -372,9 +388,63 @@ exports.handler = async function(event, context) {
     // Get RAG context
     const ragContext = await getRAGContext(message);
     
+    // Determine if we should use general knowledge
+    const hasProjectContext = ragContext && ragContext.context && ragContext.context.length > 0;
+    
+    // Check for general knowledge questions (what is, define, explain basic concepts)
+    const generalKnowledgePatterns = [
+      /what is (sybase|oracle)/i,
+      /define (sybase|oracle)/i,
+      /explain (sybase|oracle)/i,
+      /tell me about (sybase|oracle)/i
+    ];
+    
+    const isGeneralKnowledgeQuestion = generalKnowledgePatterns.some(pattern => 
+      pattern.test(message)
+    );
+    
+    // Check for migration-specific questions
+    const migrationSpecificPatterns = [
+      /how to convert/i,
+      /migration process/i,
+      /conversion process/i,
+      /data type mapping/i,
+      /function conversion/i,
+      /syntax differences/i
+    ];
+    
+    const isMigrationSpecificQuestion = migrationSpecificPatterns.some(pattern => 
+      pattern.test(message)
+    );
+    
     // Prepare conversation history for API
     const baseSystemPrompt = SYSTEM_PROMPT;
-    const enhancedSystemPrompt = buildEnhancedPrompt(baseSystemPrompt, ragContext);
+    let enhancedSystemPrompt;
+    
+    if (hasProjectContext && isMigrationSpecificQuestion) {
+      // Use project documentation for specific migration questions
+      enhancedSystemPrompt = buildEnhancedPrompt(baseSystemPrompt, ragContext);
+    } else if (isGeneralKnowledgeQuestion) {
+      // Use general knowledge for basic concept questions
+      enhancedSystemPrompt = `${baseSystemPrompt}
+
+INSTRUCTIONS:
+- This is a general knowledge question about basic concepts
+- Use your general knowledge to provide comprehensive, informative answers
+- Be helpful and don't restrict yourself unnecessarily
+- Provide detailed explanations about Sybase, Oracle, and database concepts`;
+    } else if (hasProjectContext) {
+      // Use project documentation if available
+      enhancedSystemPrompt = buildEnhancedPrompt(baseSystemPrompt, ragContext);
+    } else {
+      // Use general knowledge for other questions
+      enhancedSystemPrompt = `${baseSystemPrompt}
+
+INSTRUCTIONS:
+- Use your general knowledge to provide helpful answers
+- Be comprehensive and don't restrict yourself unnecessarily
+- Focus on being helpful and informative`;
+    }
     
     const messages = [
       { role: 'system', content: enhancedSystemPrompt },
@@ -411,7 +481,9 @@ exports.handler = async function(event, context) {
 
     // Prepare docsContext for UI display
     let docsContext = null;
-    if (ragContext && ragContext.context) {
+    let source = 'ai_with_general_knowledge';
+    
+    if (ragContext && ragContext.context && ragContext.context.length > 0) {
       // Parse the context into a structured format for the UI
       docsContext = [{
         file: 'Project Documentation',
@@ -422,6 +494,7 @@ exports.handler = async function(event, context) {
           lineNumber: 1
         }]
       }];
+      source = 'ai_with_rag';
     }
 
     return {
@@ -433,7 +506,7 @@ exports.handler = async function(event, context) {
         suggestions: suggestions,
         timestamp: new Date().toISOString(),
         docsContext: docsContext,
-        source: 'ai_with_rag'
+        source: source
       })
     };
 
