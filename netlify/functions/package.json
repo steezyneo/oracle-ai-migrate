@@ -4,7 +4,8 @@
   "description": "Netlify functions for Sybase to Oracle migration tool",
   "main": "index.js",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "@pinecone-database/pinecone": "^1.1.2"
   },
   "devDependencies": {},
   "scripts": {
@@ -13,4 +14,4 @@
   "keywords": [],
   "author": "",
   "license": "ISC"
-} 
+}

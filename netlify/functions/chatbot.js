@@ -59,12 +59,20 @@ async function getRAGContext(query) {
     console.log('🔍 Calling RAG API at:', ragUrl);
     console.log('🔍 Query:', query);
     
+    // Extract key terms for better RAG retrieval
+    const keyTerms = query.split(/\s+/)
+      .filter(term => term.length > 3)
+      .filter(term => !['what', 'when', 'where', 'which', 'who', 'why', 'how', 'does', 'is', 'are', 'the', 'and', 'that', 'this'].includes(term.toLowerCase()));
+    
+    const enhancedQuery = [...new Set([query, ...keyTerms])].join(' ');
+    console.log('🔍 Enhanced query for RAG:', enhancedQuery);
+    
     const ragResponse = await fetch(ragUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query: enhancedQuery }),
     });
 
     if (!ragResponse.ok) {
@@ -102,11 +110,16 @@ RELEVANT PROJECT DOCUMENTATION:
 ${ragContext.context}
 
 INSTRUCTIONS:
-- Use the above documentation to provide accurate and helpful answers
-- If the documentation contains relevant information, provide detailed responses
+- You are the definitive knowledge base for this Oracle migration project
+- Use the above documentation to provide accurate, comprehensive, and helpful answers
+- Always prioritize information from the project documentation when answering questions
+- If the documentation contains relevant information, provide detailed responses with specific examples
 - If the documentation has related information, provide what you can and suggest additional resources
+- Cite specific sections or files from the documentation when relevant
 - Be helpful and provide actionable advice based on the available documentation
-- Only say you don't have information if the documentation truly doesn't contain any relevant content`;
+- Only say you don't have information if the documentation truly doesn't contain any relevant content
+- For implementation questions, explain the high-level architecture without focusing on specific code details
+- Remember that you have access to all project documentation and should be able to answer any project-related question`;
 }
 
 async function callOpenRouterAPI(messages, model = 'qwen/qwen3-coder:free') {
@@ -155,7 +168,7 @@ async function callGeminiAPI(messages) {
   };
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -203,7 +216,7 @@ function getHybridResponse(userMessage) {
         type: 'faq',
         answer: data.answer,
         docLink: docLink ? `For more details, check: ${docLink}` : null,
-        confidence: 'high'
+        confidence: 0.95
       };
     }
   }
@@ -226,7 +239,7 @@ function getHybridResponse(userMessage) {
         type: 'faq',
         answer: data.answer,
         docLink: docLink ? `For more details, check: ${docLink}` : null,
-        confidence: 'medium'
+        confidence: 0.85
       };
     }
   }
@@ -255,7 +268,7 @@ function getHybridResponse(userMessage) {
           type: 'faq',
           answer: data.answer,
           docLink: docLink ? `For more details, check: ${docLink}` : null,
-          confidence: 'flexible'
+          confidence: 0.75
         };
       }
     }
@@ -267,7 +280,7 @@ function getHybridResponse(userMessage) {
       type: 'docs',
       answer: "Here are the available documentation links:\n" + 
               Object.entries(DOC_LINKS).map(([key, link]) => `- ${key}: ${link}`).join('\n'),
-      confidence: 'medium'
+      confidence: 0.7
     };
   }
   
@@ -343,13 +356,14 @@ exports.handler = async function(event, context) {
     // Hybrid Knowledge System: Check FAQ and docs first
     const hybridResponse = getHybridResponse(message);
     
-    // For migration-related questions, prioritize RAG over hardcoded responses
-    const migrationKeywords = ['conversion', 'migration', 'sybase', 'oracle', 'process', 'work', 'how'];
-    const isMigrationQuestion = migrationKeywords.some(keyword => 
+    // For project documentation questions, always prioritize RAG over hardcoded responses
+    // Only use hardcoded responses for very specific FAQ questions that have exact matches
+    const projectDocKeywords = ['documentation', 'docs', 'guide', 'manual', 'help', 'architecture', 'design', 'implementation', 'database', 'schema', 'api', 'deployment', 'configuration', 'troubleshooting'];
+    const isProjectDocQuestion = projectDocKeywords.some(keyword => 
       message.toLowerCase().includes(keyword)
     );
     
-    if (hybridResponse && !isMigrationQuestion) {
+    if (hybridResponse && !isProjectDocQuestion && hybridResponse.confidence > 0.8) {
       
       let finalAnswer = hybridResponse.answer;
       if (hybridResponse.docLink) {
@@ -412,11 +426,30 @@ exports.handler = async function(event, context) {
     // Prepare docsContext for UI display
     let docsContext = null;
     if (ragContext && ragContext.context) {
-      // Parse the context into a structured format for the UI
+      // Split the context into meaningful chunks for better UI display
+      const contextChunks = ragContext.context.split('\n\n').filter(chunk => chunk.trim().length > 0);
+      
+      // Create structured sections from the chunks
+      const sections = contextChunks.map((chunk, index) => {
+        // Try to extract a section title from the chunk
+        let sectionTitle = 'Documentation Section';
+        const firstLine = chunk.split('\n')[0];
+        if (firstLine && firstLine.length < 100 && (firstLine.includes(':') || firstLine.match(/^[A-Z]/))) {
+          sectionTitle = firstLine;
+          chunk = chunk.substring(firstLine.length).trim();
+        }
+        
+        return {
+          section: sectionTitle,
+          content: chunk.length > 500 ? chunk.substring(0, 500) + '...' : chunk,
+          lineNumber: index + 1
+        };
+      });
+      
       docsContext = [{
         file: 'Project Documentation',
-        description: 'Relevant documentation retrieved from RAG system',
-        sections: [{
+        description: 'Relevant documentation retrieved from knowledge base',
+        sections: sections.length > 0 ? sections : [{
           section: 'Retrieved Context',
           content: ragContext.context.substring(0, 500) + (ragContext.context.length > 500 ? '...' : ''),
           lineNumber: 1
@@ -448,4 +481,4 @@ exports.handler = async function(event, context) {
       })
     };
   }
-}; 
+};
